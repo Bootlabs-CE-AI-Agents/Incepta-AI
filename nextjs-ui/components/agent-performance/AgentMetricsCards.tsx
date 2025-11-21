@@ -40,7 +40,7 @@ export function AgentMetricsCards({ agentId, startDate, endDate }: AgentMetricsC
           <p className="text-sm text-red-700 mb-4">
             {error instanceof Error ? error.message : 'An error occurred while fetching data'}
           </p>
-          <Button onClick={() => refetch()} variant="outline">
+          <Button onClick={() => refetch()} variant="secondary">
             Retry
           </Button>
         </div>

@@ -542,10 +542,10 @@ async def regenerate_webhook_secret(
 )
 async def get_agent_error_analysis(
     agent_id: UUID,
-    start_date: str = Query(..., description="Start date ISO 8601 (e.g., 2025-01-15T00:00:00Z)"),
-    end_date: str = Query(..., description="End date ISO 8601 (e.g., 2025-01-21T23:59:59Z)"),
     tenant_id: Annotated[str, Depends(get_tenant_id)],
     db: Annotated[AsyncSession, Depends(get_tenant_db)],
+    start_date: str = Query(..., description="Start date ISO 8601 (e.g., 2025-01-15T00:00:00Z)"),
+    end_date: str = Query(..., description="End date ISO 8601 (e.g., 2025-01-21T23:59:59Z)"),
 ) -> dict:
     """
     Aggregate error analysis for agent performance dashboard.

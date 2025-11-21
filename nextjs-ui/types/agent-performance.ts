@@ -2,6 +2,19 @@
  * Types for Agent Performance Dashboard (Story 13, 14 & 15)
  */
 
+// Agent List Types
+export interface Agent {
+  id: string;
+  name: string;
+  description?: string;
+  status?: string;
+}
+
+export interface AgentListResponse {
+  agents: Agent[];
+  total: number;
+}
+
 // Story 13 - Metrics Overview Types
 export interface AgentMetricsDTO {
   agent_id: string;

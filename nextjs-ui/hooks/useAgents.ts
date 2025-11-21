@@ -21,7 +21,8 @@ export function useAgents() {
     queryKey: ['agents', 'active'],
     queryFn: async () => {
       const response = await apiClient.get<AgentListResponse>('/api/agents?status=active');
-      return response.data;
+      // Return just the agents array, not the whole response
+      return response.data.agents;
     },
     staleTime: 5 * 60 * 1000,  // 5 minutes (agents list changes rarely)
     refetchOnWindowFocus: false,

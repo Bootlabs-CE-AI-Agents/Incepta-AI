@@ -17,7 +17,7 @@ interface AgentSelectorProps {
 export function AgentSelector({ value, onChange }: AgentSelectorProps) {
   const { data: agents, isLoading } = useAgents();
 
-  const options = agents?.map(agent => ({
+  const options = agents?.map((agent: { id: string; name: string }) => ({
     value: agent.id,
     label: agent.name,
   })) || [];

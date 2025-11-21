@@ -6,7 +6,7 @@
 
 'use client';
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { getDateRangePreset } from '@/lib/utils/performance';
 
 type DateRangePreset = 'last_7' | 'last_30' | 'custom';

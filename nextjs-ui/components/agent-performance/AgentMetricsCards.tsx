@@ -9,7 +9,7 @@
 import { Activity, CheckCircle2, Clock, TrendingUp, XCircle, AlertTriangle } from 'lucide-react';
 import { MetricCard } from './MetricCard';
 import { EmptyState } from './EmptyState';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { useAgentMetrics } from '@/hooks/useAgentMetrics';
 import {
   formatExecutionTime,

@@ -20,8 +20,8 @@ import {
   transformTrendData,
 } from '@/lib/utils/chart';
 import { formatExecutionTime } from '@/lib/utils/performance';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Button } from '@/components/ui/Button';
 
 interface ExecutionTrendChartProps {
   agentId: string | null;

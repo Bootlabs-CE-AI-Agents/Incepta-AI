@@ -7,7 +7,6 @@
 'use client';
 
 import { Tabs, TabItem } from '@/components/ui/Tabs';
-import { getDateRangePreset } from '@/lib/utils/performance';
 import { Calendar } from 'lucide-react';
 
 type DateRangePreset = 'last_7' | 'last_30' | 'custom';
@@ -21,7 +20,7 @@ interface DateRangeSelectorProps {
 export function DateRangeSelector({ value, onChange, onDateChange }: DateRangeSelectorProps) {
   const presets: DateRangePreset[] = ['last_7', 'last_30', 'custom'];
 
-  const tabs: TabItem[] = presets.map((preset, index) => ({
+  const tabs: TabItem[] = presets.map((preset) => ({
     key: preset,
     label: preset === 'last_7' ? 'Last 7 Days' : preset === 'last_30' ? 'Last 30 Days' : 'Custom',
     icon: preset === 'custom' ? <Calendar className="h-4 w-4" /> : undefined,

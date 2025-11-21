@@ -1,18 +1,12 @@
 /**
  * Agent Selector Component
  * Dropdown for selecting an agent to view performance metrics
- * Following 2025 shadcn/ui Select patterns
+ * Refactored to use native Select component
  */
 
 'use client';
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/Select';
+import { Select } from '@/components/ui/Select';
 import { useAgents } from '@/hooks/useAgents';
 
 interface AgentSelectorProps {
@@ -21,30 +15,21 @@ interface AgentSelectorProps {
 }
 
 export function AgentSelector({ value, onChange }: AgentSelectorProps) {
-  const { data, isLoading, error } = useAgents();
+  const { data: agents, isLoading } = useAgents();
 
-  if (isLoading) {
-    return <div className="h-10 w-64 bg-gray-200 animate-pulse rounded-md" />;
-  }
-
-  if (error) {
-    return <div className="text-sm text-red-600">Failed to load agents</div>;
-  }
-
-  const agents = data?.data || [];
+  const options = agents?.map(agent => ({
+    value: agent.id,
+    label: agent.name,
+  })) || [];
 
   return (
-    <Select value={value || undefined} onValueChange={onChange}>
-      <SelectTrigger className="w-64">
-        <SelectValue placeholder="Select an agent..." />
-      </SelectTrigger>
-      <SelectContent>
-        {agents.map((agent) => (
-          <SelectItem key={agent.id} value={agent.id}>
-            {agent.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Select
+      label="Select Agent"
+      placeholder={isLoading ? 'Loading agents...' : 'Choose an agent'}
+      options={options}
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={isLoading}
+    />
   );
 }

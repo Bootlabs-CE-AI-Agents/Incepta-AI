@@ -70,11 +70,7 @@ async def perform_detailed_health_check(server: MCPServer) -> MCPHealthMetric:
     try:
         # 30-second timeout for health check operation
         async with asyncio.timeout(30.0):
-            client = MCPStdioClient(
-                command=server.command,
-                args=server.args or [],
-                env=server.env or {}
-            )
+            client = MCPStdioClient(server)
 
             async with client:
                 await client.initialize()

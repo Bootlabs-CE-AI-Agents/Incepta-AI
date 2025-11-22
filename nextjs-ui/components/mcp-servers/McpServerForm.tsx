@@ -38,23 +38,35 @@ export function McpServerForm({
     resolver: zodResolver(mcpServerCreateSchema),
     defaultValues: defaultValues || {
       name: '',
-      type: 'http',
+      transport_type: 'http_sse',
       description: '',
       health_check_enabled: true,
       is_active: true,
-      connection_config: {
-        url: '',
-        timeout: 30000,
-        headers: {},
-      },
+      // HTTP/SSE fields
+      url: '',
+      timeout: 30000,
+      headers: {},
+      // stdio fields
+      command: '',
+      args: [],
+      env: [],
+      cwd: '',
     },
   });
 
-  const serverType = form.watch('type');
+  const transportType = form.watch('transport_type');
 
   const handleSubmit = async (data: MCPServerCreateData) => {
     try {
-      await onSubmit(data);
+      // Transform env array to object for backend compatibility
+      const transformedData = {
+        ...data,
+        env: Array.isArray(data.env)
+          ? data.env.reduce((acc, { key, value }) => ({ ...acc, [key]: value }), {})
+          : data.env,
+      };
+
+      await onSubmit(transformedData as MCPServerCreateData);
       form.reset();
     } catch (error) {
       console.error('Form submission error:', error);
@@ -88,31 +100,29 @@ export function McpServerForm({
           )}
         />
 
-        {/* Type */}
+        {/* Transport Type */}
         <FormField
           // @ts-expect-error - react-hook-form type inference issue
           control={form.control}
-          name="type"
+          name="transport_type"
           render={({ field, fieldState }) => (
             <div className="space-y-2">
               <label className="block text-sm font-medium text-text-primary">
-                Server Type <span className="text-destructive">*</span>
+                Transport Type <span className="text-destructive">*</span>
               </label>
               <select
                 {...field}
                 className="w-full px-4 py-2 rounded-lg border border-border bg-white text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-blue"
               >
-                <option value="http">HTTP (Stateless)</option>
-                <option value="sse">SSE (Server-Sent Events)</option>
+                <option value="http_sse">HTTP+SSE (Server-Sent Events)</option>
                 <option value="stdio">stdio (Command-line)</option>
               </select>
               {fieldState.error && (
                 <p className="text-sm text-destructive">{fieldState.error.message}</p>
               )}
               <p className="text-xs text-text-secondary">
-                {serverType === 'http' && 'Stateless POST requests to HTTP endpoint'}
-                {serverType === 'sse' && 'Persistent connection using Server-Sent Events'}
-                {serverType === 'stdio' && 'Local subprocess communication via stdin/stdout'}
+                {transportType === 'http_sse' && 'Persistent HTTP connection using Server-Sent Events'}
+                {transportType === 'stdio' && 'Local subprocess communication via stdin/stdout'}
               </p>
             </div>
           )}
@@ -185,7 +195,7 @@ export function McpServerForm({
 
       {/* Conditional Connection Configuration */}
       <div className="glass-card p-6">
-        {serverType === 'stdio' ? (
+        {transportType === 'stdio' ? (
           // @ts-expect-error - Zod type inference issue with control prop
           <StdioConfig control={form.control} />
         ) : (

@@ -19,6 +19,7 @@ import { Plus, Search, Edit, TestTube, FileText, Trash2, Power, PowerOff } from 
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import type { Plugin } from '@/lib/api/plugins';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 export default function PluginsPage() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function PluginsPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="p-6">
+      <DashboardLayout>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Plugins</h1>
         </div>
@@ -72,23 +73,23 @@ export default function PluginsPage() {
             ))}
           </div>
         </Card>
-      </div>
+      </DashboardLayout>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <div className="p-6">
+      <DashboardLayout>
         <Card className="p-6">
           <p className="text-destructive">Failed to load plugins: {error.message}</p>
         </Card>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <DashboardLayout>
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -268,6 +269,6 @@ export default function PluginsPage() {
           </Dialog.Panel>
         </div>
       </Dialog>
-    </div>
+    </DashboardLayout>
   );
 }

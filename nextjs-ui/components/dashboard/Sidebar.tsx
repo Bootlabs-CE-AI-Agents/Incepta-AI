@@ -6,16 +6,11 @@ import {
   BarChart3,
   Bot,
   Cpu,
-  FileText,
-  Layers,
   MessageSquare,
-  Settings,
   Shield,
   Workflow,
   Database,
   Package,
-  Terminal,
-  TestTube,
   HeartPulse,
   Ticket,
   Activity,
@@ -65,24 +60,31 @@ const navigationData: NavCategory[] = [
       { label: "Tools", href: "/dashboard/tools", icon: <Cpu className="w-5 h-5" /> },
       { label: "Plugins", href: "/dashboard/plugins", icon: <Package className="w-5 h-5" /> },
       { label: "MCP Servers", href: "/dashboard/mcp-servers", icon: <Database className="w-5 h-5" /> },
-      { label: "Workflows", href: "/dashboard/workflows", icon: <Layers className="w-5 h-5" /> },
+      // Workflows page not implemented yet - hidden until implementation
+      // { label: "Workflows", href: "/dashboard/workflows", icon: <Layers className="w-5 h-5" /> },
     ],
   },
   {
     category: "Operations",
     items: [
-      { label: "Logs", href: "/dashboard/logs", icon: <FileText className="w-5 h-5" /> },
-      { label: "Audit Trail", href: "/dashboard/audit", icon: <Workflow className="w-5 h-5" /> },
-      { label: "Settings", href: "/dashboard/settings", icon: <Settings className="w-5 h-5" /> },
+      // Logs page not implemented yet - hidden until implementation
+      // { label: "Logs", href: "/dashboard/logs", icon: <FileText className="w-5 h-5" /> },
+      { label: "Audit Trail", href: "/dashboard/audit-logs", icon: <Workflow className="w-5 h-5" /> },
+      { label: "Execution History", href: "/dashboard/execution-history", icon: <Activity className="w-5 h-5" /> },
+      { label: "Operations", href: "/dashboard/operations", icon: <Cpu className="w-5 h-5" /> },
+      { label: "Workers", href: "/dashboard/workers", icon: <Bot className="w-5 h-5" /> },
+      // Settings page not implemented yet - hidden until implementation
+      // { label: "Settings", href: "/dashboard/settings", icon: <Settings className="w-5 h-5" /> },
     ],
   },
-  {
-    category: "Tools",
-    items: [
-      { label: "API Playground", href: "/dashboard/playground", icon: <Terminal className="w-5 h-5" /> },
-      { label: "Testing", href: "/dashboard/testing", icon: <TestTube className="w-5 h-5" /> },
-    ],
-  },
+  // Tools category hidden until pages are implemented
+  // {
+  //   category: "Tools",
+  //   items: [
+  //     { label: "API Playground", href: "/dashboard/playground", icon: <Terminal className="w-5 h-5" /> },
+  //     { label: "Testing", href: "/dashboard/testing", icon: <TestTube className="w-5 h-5" /> },
+  //   ],
+  // },
 ];
 
 export function Sidebar() {

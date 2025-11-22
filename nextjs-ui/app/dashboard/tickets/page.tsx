@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { useTicketMetrics } from '@/lib/hooks/useTicketMetrics';
+import { useQueueDepthHistory } from '@/lib/hooks/useQueueDepthHistory';
 import { QueueGauge } from '@/components/charts/QueueGauge';
 import { ProcessingRateCard } from '@/components/dashboard/tickets/ProcessingRateCard';
 import { ErrorRateCard } from '@/components/dashboard/tickets/ErrorRateCard';
@@ -16,6 +17,7 @@ import { RecentActivity } from '@/components/dashboard/tickets/RecentActivity';
 import { Button } from '@/components/ui/Button';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 /**
  * Error State Component
@@ -84,6 +86,7 @@ function SkeletonUI() {
  */
 export default function TicketProcessingPage() {
   const { data, isLoading, isError, refetch, isFetching } = useTicketMetrics();
+  const { data: depthHistory } = useQueueDepthHistory(720); // 12 hours of history
 
   // Handle ticket click (placeholder - would navigate to ticket details)
   const handleTicketClick = (ticketId: string) => {
@@ -95,45 +98,73 @@ export default function TicketProcessingPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Ticket Processing
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Monitor ticket queue depth and processing performance
-            </p>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">
+                Ticket Processing
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Monitor ticket queue depth and processing performance
+              </p>
+            </div>
           </div>
+          <SkeletonUI />
         </div>
-        <SkeletonUI />
-      </div>
+      </DashboardLayout>
     );
   }
 
   // Error state
   if (isError) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Ticket Processing
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Monitor ticket queue depth and processing performance
-            </p>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">
+                Ticket Processing
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Monitor ticket queue depth and processing performance
+              </p>
+            </div>
           </div>
+          <ErrorState onRetry={refetch} />
         </div>
-        <ErrorState onRetry={refetch} />
-      </div>
+      </DashboardLayout>
     );
   }
 
   // Empty state (no recent tickets)
   if (!data || data.recent_tickets.length === 0) {
     return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">
+                Ticket Processing
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                Monitor ticket queue depth and processing performance
+              </p>
+            </div>
+          </div>
+          <EmptyState />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Get real sparkline data from queue depth history (last 12 hours)
+  const sparklineData = depthHistory?.map(d => d.depth) || [];
+
+  return (
+    <DashboardLayout>
       <div className="space-y-6">
+        {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">
@@ -143,84 +174,62 @@ export default function TicketProcessingPage() {
               Monitor ticket queue depth and processing performance
             </p>
           </div>
-        </div>
-        <EmptyState />
-      </div>
-    );
-  }
 
-  // Generate mock sparkline data for processing rate (last 12 hours)
-  const sparklineData = Array.from({ length: 12 }, () =>
-    Math.floor(Math.random() * 30) + 70
-  );
-
-  return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            Ticket Processing
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Monitor ticket queue depth and processing performance
-          </p>
+          {/* Refresh Indicator */}
+          <div className="flex items-center gap-3">
+            {isFetching && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
+                <span>Updating...</span>
+              </div>
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => refetch()}
+              className="gap-2"
+              aria-label="Manually refresh data"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
-        {/* Refresh Indicator */}
-        <div className="flex items-center gap-3">
-          {isFetching && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-              <span>Updating...</span>
-            </div>
-          )}
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => refetch()}
-            className="gap-2"
-            aria-label="Manually refresh data"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
+        {/* Top Row: Queue Gauge + Processing Rate + Error Rate */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Queue Depth Gauge */}
+          <Card className="glass-card p-6">
+            <h3 className="text-lg font-semibold text-foreground mb-4">
+              Queue Depth
+            </h3>
+            <QueueGauge queueDepth={data.queue_depth} maxCapacity={200} />
+          </Card>
+
+          {/* Processing Rate */}
+          <ProcessingRateCard
+            ratePerHour={data.processing_rate_per_hour}
+            trendData={sparklineData}
+          />
+
+          {/* Error Rate */}
+          <ErrorRateCard
+            errorRate={data.error_rate_percentage}
+            totalProcessed={100}
+          />
         </div>
-      </div>
 
-      {/* Top Row: Queue Gauge + Processing Rate + Error Rate */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Queue Depth Gauge */}
-        <Card className="glass-card p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            Queue Depth
-          </h3>
-          <QueueGauge queueDepth={data.queue_depth} maxCapacity={200} />
-        </Card>
-
-        {/* Processing Rate */}
-        <ProcessingRateCard
-          ratePerHour={data.processing_rate_per_hour}
-          trendData={sparklineData}
+        {/* Recent Ticket Activity */}
+        <RecentActivity
+          tickets={data.recent_tickets}
+          onTicketClick={handleTicketClick}
         />
 
-        {/* Error Rate */}
-        <ErrorRateCard
-          errorRate={data.error_rate_percentage}
-          totalProcessed={100}
-        />
+        {/* Auto-refresh Info */}
+        <p className="text-xs text-muted-foreground text-center">
+          Queue depth refreshes every 10 seconds • Activity refreshes every 15 seconds • Last updated: {new Date().toLocaleTimeString()}
+        </p>
       </div>
-
-      {/* Recent Ticket Activity */}
-      <RecentActivity
-        tickets={data.recent_tickets}
-        onTicketClick={handleTicketClick}
-      />
-
-      {/* Auto-refresh Info */}
-      <p className="text-xs text-muted-foreground text-center">
-        Queue depth refreshes every 10 seconds • Activity refreshes every 15 seconds • Last updated: {new Date().toLocaleTimeString()}
-      </p>
-    </div>
+    </DashboardLayout>
   );
 }

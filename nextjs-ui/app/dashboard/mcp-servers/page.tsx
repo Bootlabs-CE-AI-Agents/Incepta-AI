@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { McpServerTable } from '@/components/mcp-servers/McpServerTable';
 import { useMCPServers, useDeleteMCPServer, useTestMCPServerConnection } from '@/lib/hooks/useMCPServers';
 import { toast } from 'sonner';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 /**
  * Loading State Component
@@ -139,24 +140,45 @@ export default function McpServersPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">MCP Servers</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage Model Context Protocol server connections
-            </p>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">MCP Servers</h1>
+              <p className="text-muted-foreground mt-2">
+                Manage Model Context Protocol server connections
+              </p>
+            </div>
           </div>
+          <LoadingState />
         </div>
-        <LoadingState />
-      </div>
+      </DashboardLayout>
     );
   }
 
   // Error state
   if (isError) {
     return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">MCP Servers</h1>
+              <p className="text-muted-foreground mt-2">
+                Manage Model Context Protocol server connections
+              </p>
+            </div>
+          </div>
+          <ErrorState onRetry={refetch} />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
       <div className="space-y-6">
+        {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">MCP Servers</h1>
@@ -164,47 +186,32 @@ export default function McpServersPage() {
               Manage Model Context Protocol server connections
             </p>
           </div>
+          <Link href="/dashboard/mcp-servers/new">
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Server
+            </Button>
+          </Link>
         </div>
-        <ErrorState onRetry={refetch} />
+
+        {/* MCP Servers Table */}
+        <McpServerTable
+          servers={servers || []}
+          onDelete={handleDelete}
+          onTest={handleTest}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDeleteDialog
+          isOpen={deleteDialogOpen}
+          serverName={serverToDelete?.name || ''}
+          onConfirm={confirmDelete}
+          onCancel={() => {
+            setDeleteDialogOpen(false);
+            setServerToDelete(null);
+          }}
+        />
       </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">MCP Servers</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage Model Context Protocol server connections
-          </p>
-        </div>
-        <Link href="/dashboard/mcp-servers/new">
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Server
-          </Button>
-        </Link>
-      </div>
-
-      {/* MCP Servers Table */}
-      <McpServerTable
-        servers={servers || []}
-        onDelete={handleDelete}
-        onTest={handleTest}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDeleteDialog
-        isOpen={deleteDialogOpen}
-        serverName={serverToDelete?.name || ''}
-        onConfirm={confirmDelete}
-        onCancel={() => {
-          setDeleteDialogOpen(false);
-          setServerToDelete(null);
-        }}
-      />
-    </div>
+    </DashboardLayout>
   );
 }

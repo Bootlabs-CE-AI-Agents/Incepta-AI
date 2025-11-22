@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/Button';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 /**
  * Error State Component
@@ -119,70 +120,76 @@ export default function LLMCostsPage() {
   // Show loading skeleton during initial load
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8">
-        <LoadingSkeleton />
-      </div>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <LoadingSkeleton />
+        </div>
+      </DashboardLayout>
     );
   }
 
   // Show error state if API request failed
   if (isError) {
     return (
-      <div className="container mx-auto py-8">
-        <ErrorState onRetry={refetch} error={error} />
-      </div>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <ErrorState onRetry={refetch} error={error} />
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            LLM Cost Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Real-time cost metrics across all agents and tenants • Auto-refreshes every 60s
-          </p>
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              LLM Cost Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Real-time cost metrics across all agents and tenants • Auto-refreshes every 60s
+            </p>
+          </div>
+
+          {/* Manual Refresh Button */}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => refetch()}
+            className="gap-2"
+            aria-label="Refresh cost data"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
         </div>
 
-        {/* Manual Refresh Button */}
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => refetch()}
-          className="gap-2"
-          aria-label="Refresh cost data"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
+        {/* Cost Metrics Cards Grid */}
+        <CostMetricsCards data={data} />
+
+        {/* Daily Spend Trend Chart (Story nextjs-story-10) */}
+        <DailySpendChart
+          data={trendData}
+          loading={trendLoading}
+          error={trendIsError ? trendError : null}
+          onRetry={trendRefetch}
+          className="mt-6"
+        />
+
+        {/* Token Breakdown Section (Story nextjs-story-11) */}
+        <TokenBreakdownSection />
+
+        {/* Budget Utilization Section (Story nextjs-story-12) */}
+        <BudgetUtilizationSection />
+
+        {/* Footer Info */}
+        <div className="text-xs text-muted-foreground text-center pt-4">
+          Last updated: {new Date().toLocaleTimeString()} • Data refreshes automatically
+        </div>
       </div>
-
-      {/* Cost Metrics Cards Grid */}
-      <CostMetricsCards data={data} />
-
-      {/* Daily Spend Trend Chart (Story nextjs-story-10) */}
-      <DailySpendChart
-        data={trendData}
-        loading={trendLoading}
-        error={trendIsError ? trendError : null}
-        onRetry={trendRefetch}
-        className="mt-6"
-      />
-
-      {/* Token Breakdown Section (Story nextjs-story-11) */}
-      <TokenBreakdownSection />
-
-      {/* Budget Utilization Section (Story nextjs-story-12) */}
-      <BudgetUtilizationSection />
-
-      {/* Footer Info */}
-      <div className="text-xs text-muted-foreground text-center pt-4">
-        Last updated: {new Date().toLocaleTimeString()} • Data refreshes automatically
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }
 

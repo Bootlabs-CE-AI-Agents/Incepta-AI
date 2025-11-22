@@ -22,14 +22,20 @@ export const createApiClient = (): AxiosInstance => {
     },
   });
 
-  // Request interceptor to add auth token
+  // Request interceptor to add auth token and tenant ID
   client.interceptors.request.use(
     async (config) => {
-      // Get NextAuth session for JWT token
+      // Get NextAuth session for JWT token and tenant info
       const session = await getSession();
 
       if (session?.accessToken) {
         config.headers.Authorization = `Bearer ${session.accessToken}`;
+      }
+
+      // Add X-Tenant-ID header if available
+      // Backend uses this to determine which tenant the request belongs to
+      if (session?.user?.defaultTenantId) {
+        config.headers['X-Tenant-ID'] = session.user.defaultTenantId;
       }
 
       return config;

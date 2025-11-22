@@ -10,24 +10,60 @@ import type {
   MCPServerCreateData,
   MCPServerUpdateData,
   MCPTestConnectionInput,
-  HTTPConnectionConfig,
-  StdioConnectionConfig
+  MCPTransportType,
+  EnvVar
 } from '../validations';
 
 /**
  * MCP Server API Response Type
+ * Flat structure matching backend Pydantic schema
  */
 export interface MCPServer {
   id: string;
   name: string;
-  type: 'http' | 'sse' | 'stdio';
+  transport_type: MCPTransportType;
   description?: string;
-  connection_config: HTTPConnectionConfig | StdioConnectionConfig;
-  health_check_enabled: boolean;
-  is_active: boolean;
-  tools_count?: number;
-  health_status?: 'healthy' | 'unhealthy' | 'unknown';
+
+  // stdio transport fields (omitted for http_sse servers)
+  command?: string;
+  args?: string[];
+  env?: EnvVar[];
+  cwd?: string;
+
+  // http_sse transport fields (omitted for stdio servers)
+  url?: string;
+  headers?: Record<string, string>;
+  timeout?: number;
+
+  // Discovered capabilities
+  discovered_tools?: Array<{
+    name: string;
+    description?: string;
+    inputSchema: Record<string, unknown>;
+  }>;
+  discovered_resources?: Array<{
+    uri: string;
+    name?: string;
+    description?: string;
+    mimeType?: string;
+  }>;
+  discovered_prompts?: Array<{
+    name: string;
+    description?: string;
+    arguments?: Array<{
+      name: string;
+      description?: string;
+      required?: boolean;
+    }>;
+  }>;
+
+  // Health and status
+  status: 'active' | 'inactive' | 'error';
   last_health_check?: string;
+  error_message?: string;
+  consecutive_failures: number;
+
+  // Timestamps
   created_at: string;
   updated_at: string;
 }
@@ -105,15 +141,40 @@ export const deleteMCPServer = async (id: string): Promise<void> => {
 };
 
 /**
+ * MCP Server response from /discover endpoint
+ */
+interface MCPServerDiscoverResponse {
+  id: string;
+  status: string;
+  discovered_tools: Array<{
+    name: string;
+    description?: string;
+    inputSchema: Record<string, unknown>;
+  }>;
+  error_message?: string;
+}
+
+/**
  * Test connection and discover tools
  */
 export const testMCPServerConnection = async (
   data: MCPTestConnectionInput
 ): Promise<ToolDiscoveryResponse> => {
-  const response = await apiClient.post<ToolDiscoveryResponse>(
-    `/api/v1/mcp-servers/${data.server_id}/test-connection`
+  const response = await apiClient.post<MCPServerDiscoverResponse>(
+    `/api/v1/mcp-servers/${data.server_id}/discover`
   );
-  return response.data;
+
+  // Transform MCPServerResponse to ToolDiscoveryResponse
+  const serverResponse = response.data;
+  return {
+    success: serverResponse.status === 'active',
+    tools: (serverResponse.discovered_tools || []).map(tool => ({
+      name: tool.name,
+      description: tool.description,
+      input_schema: tool.inputSchema
+    })),
+    error: serverResponse.error_message || undefined
+  };
 };
 
 /**

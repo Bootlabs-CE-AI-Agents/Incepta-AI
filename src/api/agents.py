@@ -553,31 +553,28 @@ async def get_agent_error_analysis(
     Returns errors grouped by message with counts, timestamps, stack traces.
     Used by Story 15 (nextjs-story-15-agent-performance-errors).
     """
-    # TODO: Implement actual query against agent_executions table
-    # For now, return mock data matching AC requirements
     from datetime import datetime
-
-    return {
-        "errors": [
-            {
-                "error_type": "ValidationError",
-                "error_message": "Invalid input format: expected JSON, received string",
-                "occurrences": 23,
-                "first_seen": "2025-01-15T10:30:00Z",
-                "last_seen": "2025-01-21T14:22:00Z",
-                "affected_executions": 23,
-                "sample_stack_trace": "Traceback (most recent call last):\\n  File src/services/agent.py, line 42\\n    raise ValidationError(...)",
-                "execution_ids": ["exec-123", "exec-456", "exec-789"]
-            },
-            {
-                "error_type": "TimeoutError",
-                "error_message": "Request timeout after 30 seconds",
-                "occurrences": 8,
-                "first_seen": "2025-01-18T09:15:00Z",
-                "last_seen": "2025-01-20T16:45:00Z",
-                "affected_executions": 8,
-                "sample_stack_trace": "Traceback (most recent call last):\\n  File src/services/http_client.py, line 67\\n    raise TimeoutError(...)",
-                "execution_ids": ["exec-234", "exec-567"]
-            }
-        ]
-    }
+    
+    try:
+        # Parse dates
+        start = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+        end = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+        
+        return await agent_service.get_agent_error_analysis(
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+            start_date=start,
+            end_date=end,
+            db=db
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid date format: {e}"
+        )
+    except Exception as e:
+        logger.error(f"Error getting agent error analysis: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get error analysis"
+        )

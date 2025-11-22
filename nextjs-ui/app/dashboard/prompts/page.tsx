@@ -13,6 +13,7 @@ import { usePrompts } from '@/lib/hooks/usePrompts';
 import { PromptCards } from '@/components/prompts/PromptCards';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 export default function PromptsPage() {
   const { data: session } = useSession();
@@ -23,29 +24,29 @@ export default function PromptsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <DashboardLayout>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">System Prompts</h1>
         </div>
         <Loading size="lg" text="Loading prompts..." />
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6">
+      <DashboardLayout>
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <p className="text-sm text-red-800">
             Failed to load prompts: {(error as Error).message}
           </p>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="p-6">
+    <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">System Prompts</h1>
@@ -64,6 +65,6 @@ export default function PromptsPage() {
       </div>
 
       <PromptCards prompts={prompts || []} canEdit={canEdit} />
-    </div>
+    </DashboardLayout>
   );
 }

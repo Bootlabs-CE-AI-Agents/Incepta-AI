@@ -20,7 +20,7 @@ interface ConnectionConfigProps {
 }
 
 export function ConnectionConfig({ control }: ConnectionConfigProps) {
-  const serverType = useWatch({ control, name: 'type' });
+  const transportType = useWatch({ control, name: 'transport_type' });
 
   return (
     <div className="space-y-6">
@@ -28,26 +28,26 @@ export function ConnectionConfig({ control }: ConnectionConfigProps) {
       <div className="flex items-center gap-2">
         <Globe className="h-5 w-5 text-accent-blue" />
         <h3 className="text-lg font-semibold text-text-primary">
-          {serverType === 'sse' ? 'SSE' : 'HTTP'} Connection
+          HTTP+SSE Connection
         </h3>
       </div>
 
       {/* URL */}
       <FormField
         control={control}
-        name="connection_config.url"
+        name="url"
         render={({ field, fieldState }) => (
           <Input
             {...field}
             label="Server URL"
             placeholder={
-              serverType === 'sse'
+              transportType === 'http_sse'
                 ? 'https://api.example.com/sse'
                 : 'https://api.example.com/mcp'
             }
             error={fieldState.error?.message}
             helpText={
-              serverType === 'sse'
+              transportType === 'http_sse'
                 ? 'SSE endpoint URL for Server-Sent Events connection'
                 : 'HTTP POST endpoint URL for stateless requests'
             }
@@ -59,7 +59,7 @@ export function ConnectionConfig({ control }: ConnectionConfigProps) {
       {/* Headers (JSON) */}
       <FormField
         control={control}
-        name="connection_config.headers"
+        name="headers"
         render={({ field, fieldState }) => (
           <Textarea
             {...field}
@@ -88,7 +88,7 @@ export function ConnectionConfig({ control }: ConnectionConfigProps) {
       {/* Timeout */}
       <FormField
         control={control}
-        name="connection_config.timeout"
+        name="timeout"
         render={({ field, fieldState }) => (
           <Input
             {...field}
@@ -106,10 +106,10 @@ export function ConnectionConfig({ control }: ConnectionConfigProps) {
       {/* Info Box */}
       <div className="glass-card p-4 bg-blue-50 border border-blue-200">
         <h4 className="text-sm font-semibold text-blue-900 mb-2">
-          {serverType === 'sse' ? 'SSE Server Info' : 'HTTP Server Info'}
+          {transportType === 'http_sse' ? 'SSE Server Info' : 'STDIO Server Info'}
         </h4>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          {serverType === 'sse' ? (
+          {transportType === 'http_sse' ? (
             <>
               <li>Maintains persistent connection for real-time updates</li>
               <li>Uses Server-Sent Events (SSE) protocol</li>
@@ -117,9 +117,9 @@ export function ConnectionConfig({ control }: ConnectionConfigProps) {
             </>
           ) : (
             <>
-              <li>Stateless POST requests to the endpoint</li>
+              <li>Local process communication via STDIO</li>
               <li>Each request is independent</li>
-              <li>Simple HTTP-based communication</li>
+              <li>Simple process-based communication</li>
             </>
           )}
         </ul>

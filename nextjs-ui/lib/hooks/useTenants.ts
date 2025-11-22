@@ -117,11 +117,11 @@ export const useUpdateTenant = () => {
 
       // Optimistically update detail
       if (previousTenant) {
-        queryClient.setQueryData<Tenant>(tenantKeys.detail(id), {
+        queryClient.setQueryData<Tenant>(tenantKeys.detail(id), () => ({
           ...previousTenant,
           ...data,
           updated_at: new Date().toISOString(),
-        });
+        } as Tenant));
       }
 
       // Optimistically update list
@@ -129,7 +129,7 @@ export const useUpdateTenant = () => {
         queryClient.setQueryData<Tenant[]>(tenantKeys.lists(), (old = []) =>
           old.map((tenant) =>
             tenant.id === id
-              ? { ...tenant, ...data, updated_at: new Date().toISOString() }
+              ? ({ ...tenant, ...data, updated_at: new Date().toISOString() } as Tenant)
               : tenant
           )
         );

@@ -32,50 +32,51 @@ class TenantConfigCreate(BaseModel):
     Tool-specific fields required based on tool_type.
     """
 
-    tenant_id: str = Field(..., pattern=r"^[a-z0-9\-]+$", max_length=100)
+    tenant_id: Optional[str] = Field(default="", pattern=r"^[a-z0-9\-]*$", max_length=100)
     name: str = Field(..., min_length=1, max_length=255)
     tool_type: str = Field(default="servicedesk_plus")
 
     # ServiceDesk Plus fields (required if tool_type='servicedesk_plus')
-    servicedesk_url: Optional[HttpUrl] = None
-    servicedesk_api_key: Optional[str] = Field(None, min_length=1)
+    servicedesk_url: Optional[str] = None
+    servicedesk_api_key: Optional[str] = None
 
     # Jira fields (required if tool_type='jira')
-    jira_url: Optional[HttpUrl] = None
-    jira_api_token: Optional[str] = Field(None, min_length=1)
-    jira_project_key: Optional[str] = Field(None, min_length=1)
+    jira_url: Optional[str] = None
+    jira_api_token: Optional[str] = None
+    jira_project_key: Optional[str] = None
 
     webhook_signing_secret: str = Field(..., min_length=1)
     enhancement_preferences: Optional[EnhancementPreferences] = None
 
     @field_validator("tenant_id")
     @classmethod
-    def validate_tenant_id(cls, v: str) -> str:
+    def validate_tenant_id(cls, v: Optional[str]) -> str:
         """Ensure tenant_id follows naming conventions."""
-        if not v or v.startswith("-") or v.endswith("-"):
+        if v and (v.startswith("-") or v.endswith("-")):
             raise ValueError("Tenant ID cannot start/end with hyphen")
-        return v.lower()
+        return v.lower() if v else ""
 
     @model_validator(mode="after")
     def validate_tool_specific_fields(self) -> "TenantConfigCreate":
         """Validate required fields present for tool_type."""
         if self.tool_type == "servicedesk_plus":
-            if not self.servicedesk_url or not self.servicedesk_api_key:
-                raise ValueError("ServiceDesk Plus requires: servicedesk_url, servicedesk_api_key")
+            if not self.servicedesk_url or self.servicedesk_url.strip() == "":
+                raise ValueError("ServiceDesk Plus requires: servicedesk_url")
+            if not self.servicedesk_api_key or self.servicedesk_api_key.strip() == "":
+                raise ValueError("ServiceDesk Plus requires: servicedesk_api_key")
         elif self.tool_type == "jira":
-            if not self.jira_url or not self.jira_api_token or not self.jira_project_key:
-                raise ValueError("Jira requires: jira_url, jira_api_token, jira_project_key")
+            if not self.jira_url or self.jira_url.strip() == "":
+                raise ValueError("Jira requires: jira_url")
+            if not self.jira_api_token or self.jira_api_token.strip() == "":
+                raise ValueError("Jira requires: jira_api_token")
+            if not self.jira_project_key or self.jira_project_key.strip() == "":
+                raise ValueError("Jira requires: jira_project_key")
         return self
 
     def model_post_init(self, __context: any) -> None:
         """Apply defaults to enhancement preferences."""
         if self.enhancement_preferences is None:
             self.enhancement_preferences = EnhancementPreferences()
-
-    @property
-    def servicedesk_url_str(self) -> str:
-        """Get servicedesk_url as string for storage."""
-        return str(self.servicedesk_url) if self.servicedesk_url else ""
 
 
 class TenantConfigUpdate(BaseModel):

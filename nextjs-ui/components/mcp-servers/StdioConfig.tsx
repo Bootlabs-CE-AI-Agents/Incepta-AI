@@ -33,7 +33,7 @@ export function StdioConfig({ control }: StdioConfigProps) {
       {/* Command */}
       <FormField
         control={control}
-        name="connection_config.command"
+        name="command"
         render={({ field, fieldState }) => (
           <Input
             {...field}
@@ -49,7 +49,7 @@ export function StdioConfig({ control }: StdioConfigProps) {
       {/* Arguments */}
       <FormField
         control={control}
-        name="connection_config.args"
+        name="args"
         render={({ field, fieldState }) => (
           <Input
             {...field}
@@ -69,7 +69,7 @@ export function StdioConfig({ control }: StdioConfigProps) {
       {/* Working Directory */}
       <FormField
         control={control}
-        name="connection_config.cwd"
+        name="cwd"
         render={({ field, fieldState }) => (
           <Input
             {...field}
@@ -82,7 +82,7 @@ export function StdioConfig({ control }: StdioConfigProps) {
       />
 
       {/* Environment Variables */}
-      <EnvironmentVariables control={control} name="connection_config.env" />
+      <EnvironmentVariables control={control} name="env" />
 
       {/* Info Box */}
       <div className="glass-card p-4 bg-blue-50 border border-blue-200">

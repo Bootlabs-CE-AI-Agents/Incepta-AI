@@ -200,9 +200,7 @@ describe('CustomTooltip', () => {
         },
       ];
 
-      render(
-        <CustomTooltip active={true} payload={mockPayload} />
-      );
+      render(<CustomTooltip active={true} payload={mockPayload} />);
 
       // Should have text-destructive class (red)
       const deltaElement = screen.getByText(/↑ 15.2% vs yesterday/);
@@ -247,9 +245,7 @@ describe('CustomTooltip', () => {
         },
       ];
 
-      render(
-        <CustomTooltip active={true} payload={mockPayload} />
-      );
+      render(<CustomTooltip active={true} payload={mockPayload} />);
 
       // Should have text-green-600 class
       const deltaElement = screen.getByText(/↓ 20.0% vs yesterday/);
@@ -317,11 +313,11 @@ describe('CustomTooltip', () => {
         },
       ];
 
-      const { container } = render(
+      render(
         <CustomTooltip active={true} payload={mockPayload} />
       );
 
-      const tooltipDiv = container.querySelector('.bg-card');
+      const tooltipDiv = document.querySelector('.bg-card');
       expect(tooltipDiv).toBeInTheDocument();
       expect(tooltipDiv).toHaveClass(
         'bg-card',

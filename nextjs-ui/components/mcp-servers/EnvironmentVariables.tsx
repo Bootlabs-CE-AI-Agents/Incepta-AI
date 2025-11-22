@@ -23,7 +23,7 @@ interface EnvironmentVariablesProps {
 export function EnvironmentVariables({ control, name }: EnvironmentVariablesProps) {
   const { fields, append, remove } = useFieldArray({
     control,
-    name: name as 'connection_config.env',
+    name: name as 'env',
   });
 
   return (

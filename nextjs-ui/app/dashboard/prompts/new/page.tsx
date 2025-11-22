@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Textarea } from '@/components/ui/Textarea';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 const createPromptSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
@@ -76,19 +77,20 @@ export default function NewPromptPage() {
 
   if (!canCreate) {
     return (
-      <div className="p-6">
+      <DashboardLayout>
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-800">
             You do not have permission to create prompts.
           </p>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="p-6 h-screen flex flex-col">
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
+    <DashboardLayout>
+      <div className="h-screen flex flex-col">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -152,6 +154,7 @@ export default function NewPromptPage() {
           )}
         </div>
       </form>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

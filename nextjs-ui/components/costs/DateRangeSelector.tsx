@@ -99,6 +99,16 @@ export function DateRangeSelector({ onChange, className }: DateRangeSelectorProp
   const [endDateStr, setEndDateStr] = React.useState('');
   const [validationError, setValidationError] = React.useState('');
 
+  /**
+   * Update URL query params without page reload
+   */
+  const updateURLParams = React.useCallback((start: Date, end: Date) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('start_date', formatDate(start));
+    params.set('end_date', formatDate(end));
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [searchParams, router, pathname]);
+
   // Parse dates from URL on mount
   React.useEffect(() => {
     const urlStartDate = searchParams.get('start_date');
@@ -120,17 +130,7 @@ export function DateRangeSelector({ onChange, className }: DateRangeSelectorProp
 
     // Set URL params to default
     updateURLParams(defaultRange.startDate, defaultRange.endDate);
-  }, []); // Run once on mount
-
-  /**
-   * Update URL query params without page reload
-   */
-  const updateURLParams = (start: Date, end: Date) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('start_date', formatDate(start));
-    params.set('end_date', formatDate(end));
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  };
+  }, [searchParams, onChange, updateURLParams]); // Run when URL params change or on mount
 
   /**
    * Handle preset button click (Last 7 days, Last 30 days)

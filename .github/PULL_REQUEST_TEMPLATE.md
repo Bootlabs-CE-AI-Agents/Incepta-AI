@@ -1,159 +1,147 @@
-# Pull Request
+## Description
 
-## Summary
+<!-- Provide a brief summary of the changes and the motivation behind them -->
 
-**Story ID:** <!-- e.g., Story 12.6 -->
+**Story/Epic Reference:** <!-- e.g., Story 0.4.3, Epic 12 -->
 
-**Brief Description:**
-<!-- 1-2 sentences describing what this PR changes -->
+**Type of Change:**
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Documentation update
+- [ ] Refactoring (no functional changes)
+- [ ] Performance improvement
+- [ ] Dependency update
 
-**Related Links:**
-- Story File: <!-- Link to story markdown file in docs/stories/ or .bmad-ephemeral/stories/ -->
-- Tech Spec: <!-- Link to epic tech spec if applicable -->
-- Issue: <!-- Link to GitHub issue if applicable -->
+## Changes Made
 
----
+<!-- List the key changes made in this PR -->
 
-## Pre-Merge Integration Checklist
+-
+-
+-
 
-Please verify ALL items below before requesting code review. This checklist enforces Epic 11 retrospective insights to prevent quality issues discovered during code review.
+## Testing
 
-### ✅ Story Completion
-- [ ] **All acceptance criteria (ACs) implemented and verified**
-  - ⚠️ NO partial ACs allowed (must fully meet or descope to new story)
-  - Link to self-review using [Pre-Review Self-Check Checklist](#pre-review-self-check)
-- [ ] **All tasks/subtasks completed and verified**
-  - ⚠️ Tasks must NOT be marked complete without actual verification
-  - Spot check recommended: Pick 3 random tasks and verify implementation
+### Test Coverage
+- [ ] Unit tests added/updated
+- [ ] Integration tests added/updated
+- [ ] E2E tests added/updated (if applicable)
+- [ ] Manual testing completed
 
-### 🧪 Testing
-- [ ] **Unit tests written and passing** (pass rate ≥95%)
-- [ ] **Integration tests written/updated and passing** (pass rate ≥90%)
-- [ ] **E2E tests passing if UI changes made** (pass rate 100%)
-- [ ] **Code coverage ≥80% for new/modified code**
-- [ ] **Security tests passing** (100% pass rate required)
+**Test Coverage:** <!-- e.g., 99.76%, 85%, etc. -->
 
-### 🔍 Code Quality
-- [ ] **Black formatting applied** (`black src/ tests/`)
-- [ ] **Ruff linting passed** (`ruff check src/ tests/`)
-- [ ] **Mypy type hints added** (`mypy src/ --ignore-missing-imports`)
-- [ ] **Bandit security scan passed** (`bandit -r src/ -ll`)
-- [ ] **No hardcoded secrets or credentials in code**
+### Test Plan
+<!-- Describe how you tested these changes -->
 
-### 📚 Documentation
-- [ ] **Documentation updated** (README, docstrings, tests/README.md)
-- [ ] **Database migrations tested** (if schema changes made)
-- [ ] **Manual smoke test performed locally** (critical workflows verified)
+1.
+2.
+3.
 
-### 🐳 Build & Deploy
-- [ ] **Docker images build successfully**
-  - API image: `docker build -f docker/backend.dockerfile .`
-  - Worker image: `docker build -f docker/celeryworker.dockerfile .`
+## Quality Gates Checklist
 
----
+### Automated Checks (CI will verify)
+- [ ] All tests passing
+- [ ] Code formatting (Black/Prettier) passing
+- [ ] Linting (Ruff/ESLint) passing
+- [ ] Type checking (mypy/TypeScript) passing
+- [ ] Build successful
+- [ ] No security vulnerabilities (Bandit/npm audit)
 
-## Testing Notes
+### Manual Checks
+- [ ] Code follows project style guide
+- [ ] No hardcoded secrets or credentials
+- [ ] Error handling implemented appropriately
+- [ ] Performance considerations addressed
+- [ ] Accessibility requirements met (WCAG 2.1 AA)
+- [ ] Documentation updated (README, API docs, comments)
 
-**Test Pass Rate Metrics:**
-- Unit tests: <!-- e.g., 285/287 passing (99.3%) -->
-- Integration tests: <!-- e.g., 45/49 passing (91.8%) -->
-- E2E tests: <!-- e.g., 3/3 passing (100%) -->
-- Overall: <!-- e.g., 333/339 passing (98.2%) -->
+## Technical Debt
 
-**New Tests Added:**
-- <!-- Count of new test files/functions -->
+<!--
+IMPORTANT: This section tracks technical debt that is deliberately deferred to maintain velocity.
+Sprint 1 retrospective identified that 50% of RE-REVIEW overhead came from undocumented debt handoffs.
 
-**Modified Tests:**
-- <!-- Count of modified test files/functions -->
+Use this format for ALL deferred work:
+TODO: [Story X.Y] - Brief description - Est: X hours - Owner: @username
 
-**Coverage Change:**
-- Before: <!-- e.g., 82% -->
-- After: <!-- e.g., 84% (+2%) -->
+Example:
+TODO: [Story 0.4.4] - Refactor CustomTooltip test fixtures to shared module - Est: 2 hours - Owner: @amelia
+-->
 
----
+### Deferred Technical Debt
 
-## Code Review Notes
+<!-- List any technical debt intentionally deferred in this PR -->
 
-### Pre-Review Self-Check
-- [ ] **Self-review completed** using [Pre-Review Self-Check Checklist](#pre-review-self-check)
-- [ ] **Story completion DoD verified** (all acceptance criteria fully met)
+- None
 
-### Notable Implementation Decisions
-<!-- Explain any significant technical choices, architectural patterns, or trade-offs -->
+<!-- OR -->
 
-### Known Limitations or Follow-up Items
-<!-- List any deferred work, known issues, or future improvements needed -->
+<!--
+- TODO: [Story X.Y] - Description - Est: X hours - Owner: @username
+- TODO: [Story X.Y] - Description - Est: X hours - Owner: @username
+-->
 
----
+### Debt Justification
 
-## Pre-Review Self-Check
+<!--
+If deferring debt, explain why:
+- Blocking higher-priority work?
+- Sequential story dependency (same developer)?
+- Requires separate investigation spike?
+-->
 
-**Epic 9 Action Item #1: Pre-Review Self-Check Checklist**
-- Run all quality checks locally before creating PR
-- Verify all ACs met (no "partial" compliance)
-- Verify all tasks marked complete have been implemented
-- Review code for security issues, hardcoded secrets, TODO comments
-- Test critical user workflows manually
+## Screenshots/Demo
 
-**Story Completion Definition of Done (DoD):**
-1. All acceptance criteria fully satisfied (100%, not partial)
-2. All tasks/subtasks checked and verified
-3. All tests passing (unit ≥95%, integration ≥90%, E2E 100%)
-4. Code coverage ≥80%
-5. Black formatting + Ruff linting + Mypy type checking passed
-6. Bandit security scan passed (0 high/medium issues)
-7. Documentation complete (README, docstrings, inline comments)
-8. Database migrations tested (if applicable)
-9. Docker images build successfully
-10. Manual smoke test of critical workflows performed
+<!-- If applicable, add screenshots, GIFs, or video demonstrating the changes -->
 
-**Local Quality Check Commands:**
-```bash
-# Format code
-black src/ tests/
+## Accessibility
 
-# Check linting
-ruff check src/ tests/
+<!-- For UI changes only -->
 
-# Type check
-mypy src/ --ignore-missing-imports
+- [ ] Keyboard navigation tested
+- [ ] Screen reader tested (if applicable)
+- [ ] Color contrast meets WCAG 2.1 AA
+- [ ] Focus indicators visible
+- [ ] ARIA labels added where appropriate
 
-# Security scan
-bandit -r src/ -ll
+## Performance Considerations
 
-# Run tests with coverage
-pytest tests/ --cov=src --cov-report=term --cov-fail-under=80
+<!-- For performance-critical changes -->
 
-# Run specific test suites
-pytest tests/unit/ -v         # Unit tests only
-pytest tests/integration/ -v  # Integration tests only
-pytest tests/e2e/ -v          # E2E tests only
-pytest tests/smoke/ -v        # Smoke tests only (Story 12.6+)
+- [ ] Load tested (if applicable)
+- [ ] Database queries optimized (if applicable)
+- [ ] Bundle size impact measured (for frontend changes)
+- [ ] API response time measured (for backend changes)
 
-# Build Docker images
-docker build -f docker/backend.dockerfile -t ai-agents-api:test .
-docker build -f docker/celeryworker.dockerfile -t ai-agents-worker:test .
-```
+**Performance Metrics:**
+<!-- e.g., "Page load time: <2s, Bundle size: +5KB, API response: <200ms" -->
 
----
+## Deployment Notes
 
-## Epic 11 Retrospective Enforcement
+<!-- Any special deployment considerations -->
 
-**Critical Insights from Epic 11 Retrospective (2025-11-10):**
+- [ ] No database migrations required
+- [ ] Environment variables need to be updated
+- [ ] Requires infrastructure changes
+- [ ] Backward compatible
 
-1. **Task Completion Discipline**: Story 11.2.5 required 3 BLOCKED reviews due to tasks marked complete without implementation verification. **Action**: All tasks must be verified before marking complete.
+## Reviewer Notes
 
-2. **UI Integration Review**: Story 11.2.5 had 2 CRITICAL bugs (UI integration never done) discovered only during code review. **Action**: E2E test pass rate 100% enforced to prevent UI regressions.
+<!-- Any specific areas you want reviewers to focus on? -->
 
-3. **Partial AC Implementation**: Story 11.1.7 had AC7 "PARTIALLY COMPLIANT" which normalized "good enough" culture. **Action**: All ACs must be fully met (no "partial" ACs allowed - descope or defer to new story).
+## Related PRs/Issues
 
-**Story 12.6 Philosophy:** Automate quality checks pre-merge so issues are caught by CI, not by reviewers. Branch protection + quality gates + this PR template = systematic quality improvement.
+<!-- Link related PRs or issues -->
+
+Closes #
+Related to #
 
 ---
 
-**Reviewer Guidance:**
-- Focus on architecture, business logic correctness, security implications
-- Quality gates have already validated formatting, linting, type safety, test coverage
-- Verify acceptance criteria are fully met (not partially compliant)
-- Verify tasks marked complete have been actually implemented
-- Check for proper error handling, edge cases, and test coverage
+**Checklist before requesting review:**
+- [ ] Self-review completed
+- [ ] All automated quality gates passing locally
+- [ ] Technical debt section completed (even if "None")
+- [ ] Tests added/updated and passing
+- [ ] Documentation updated

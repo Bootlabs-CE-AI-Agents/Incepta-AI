@@ -25,13 +25,13 @@ export function McpServerTable({ servers, onDelete, onTest }: McpServerTableProp
 
   // Filter servers
   const filteredServers = servers.filter((server) => {
-    const matchesType = typeFilter === 'all' || server.type === typeFilter;
+    const matchesType = typeFilter === 'all' || server.transport_type === typeFilter;
     const matchesStatus =
       statusFilter === 'all' ||
-      (statusFilter === 'active' && server.is_active) ||
-      (statusFilter === 'inactive' && !server.is_active) ||
-      (statusFilter === 'healthy' && server.health_status === 'healthy') ||
-      (statusFilter === 'unhealthy' && server.health_status === 'unhealthy');
+      (statusFilter === 'active' && server.status === 'active') ||
+      (statusFilter === 'inactive' && server.status === 'inactive') ||
+      (statusFilter === 'healthy' && server.status === 'active') ||
+      (statusFilter === 'unhealthy' && server.status === 'error');
     return matchesType && matchesStatus;
   });
 
@@ -39,7 +39,7 @@ export function McpServerTable({ servers, onDelete, onTest }: McpServerTableProp
    * Get status badge component
    */
   function getStatusBadge(server: MCPServer) {
-    if (!server.is_active) {
+    if (server.status === 'inactive') {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
           <AlertCircle className="h-3 w-3" />
@@ -48,20 +48,20 @@ export function McpServerTable({ servers, onDelete, onTest }: McpServerTableProp
       );
     }
 
-    if (server.health_status === 'healthy') {
+    if (server.status === 'active') {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700">
           <CheckCircle className="h-3 w-3" />
-          Healthy
+          Active
         </span>
       );
     }
 
-    if (server.health_status === 'unhealthy') {
+    if (server.status === 'error') {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-red-100 text-red-700">
           <XCircle className="h-3 w-3" />
-          Unhealthy
+          Error
         </span>
       );
     }
@@ -185,10 +185,10 @@ export function McpServerTable({ servers, onDelete, onTest }: McpServerTableProp
                       <p className="text-sm text-text-secondary mt-1">{server.description}</p>
                     )}
                   </td>
-                  <td className="px-6 py-4">{getTypeBadge(server.type)}</td>
+                  <td className="px-6 py-4">{getTypeBadge(server.transport_type)}</td>
                   <td className="px-6 py-4">{getStatusBadge(server)}</td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-text-primary">{server.tools_count || 0}</span>
+                    <span className="text-sm text-text-primary">{server.discovered_tools?.length || 0}</span>
                   </td>
                   <td className="px-6 py-4">
                     {server.last_health_check ? (

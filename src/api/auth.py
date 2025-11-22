@@ -284,9 +284,9 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Generate tokens (pass redis_client for token version tracking)
-    access_token = await create_access_token(user, auth_service.redis)
-    refresh_token = await create_refresh_token(user, auth_service.redis)
+    # Generate tokens (pass redis_client for token version tracking and db for tenant lookup)
+    access_token = await create_access_token(user, auth_service.redis, db=db)
+    refresh_token = await create_refresh_token(user, auth_service.redis, db=db)
 
     # Update last_login_at and reset failed_login_attempts
     user.last_login_at = datetime.now(UTC)
@@ -364,8 +364,8 @@ async def refresh_token(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Generate new access token (pass redis_client for token version tracking)
-        access_token = await create_access_token(user, auth_service.redis)
+        # Generate new access token (pass redis_client for token version tracking and db for tenant lookup)
+        access_token = await create_access_token(user, auth_service.redis, db=db)
 
         # Calculate expires_in
         from src.config import settings

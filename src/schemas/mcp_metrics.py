@@ -21,7 +21,7 @@ Following 2025 best practices from Context7 MCP research.
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict
+from typing import Dict, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -67,7 +67,7 @@ class MCPHealthMetric(BaseModel):
     Example:
         {
             "mcp_server_id": "550e8400-e29b-41d4-a716-446655440000",
-            "tenant_id": "660e8400-e29b-41d4-a716-446655440001",
+            "tenant_id": "default",
             "response_time_ms": 125,
             "check_timestamp": "2025-11-10T12:30:00Z",
             "status": "success",
@@ -80,7 +80,7 @@ class MCPHealthMetric(BaseModel):
     Error Example:
         {
             "mcp_server_id": "550e8400-e29b-41d4-a716-446655440000",
-            "tenant_id": "660e8400-e29b-41d4-a716-446655440001",
+            "tenant_id": "default",
             "response_time_ms": 5000,
             "check_timestamp": "2025-11-10T12:35:00Z",
             "status": "timeout",
@@ -96,7 +96,7 @@ class MCPHealthMetric(BaseModel):
             "examples": [
                 {
                     "mcp_server_id": "550e8400-e29b-41d4-a716-446655440000",
-                    "tenant_id": "660e8400-e29b-41d4-a716-446655440001",
+                    "tenant_id": "default",
                     "response_time_ms": 125,
                     "check_timestamp": "2025-11-10T12:30:00Z",
                     "status": "success",
@@ -110,7 +110,7 @@ class MCPHealthMetric(BaseModel):
     )
 
     mcp_server_id: UUID = Field(..., description="MCP server identifier")
-    tenant_id: UUID = Field(..., description="Tenant for isolation")
+    tenant_id: str = Field(..., description="Tenant for isolation")
     response_time_ms: int = Field(..., ge=0, description="Response time in milliseconds")
     check_timestamp: datetime = Field(
         ..., description="When the health check was performed (ISO 8601)"
@@ -151,6 +151,71 @@ class MCPHealthMetric(BaseModel):
         if v < 0:
             raise ValueError("response_time_ms must be >= 0")
         return v
+
+
+class HealthCheckLog(BaseModel):
+    """
+    Schema for health check log entry (simplified for UI display).
+
+    Used by GET /api/v1/mcp-servers/{id}/health-logs endpoint.
+    Returns recent health check history for display in UI Health tab.
+
+    Attributes:
+        id: Unique metric record ID
+        server_id: MCP server identifier
+        status: 'healthy' or 'unhealthy' (simplified from raw status)
+        response_time_ms: Response time in milliseconds (optional)
+        error: Error message if status is unhealthy (optional)
+        checked_at: When the check was performed (ISO 8601)
+
+    Example:
+        {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "server_id": "660e8400-e29b-41d4-a716-446655440001",
+            "status": "healthy",
+            "response_time_ms": 125,
+            "error": null,
+            "checked_at": "2025-11-10T12:30:00Z"
+        }
+
+    Unhealthy Example:
+        {
+            "id": "770e8400-e29b-41d4-a716-446655440002",
+            "server_id": "660e8400-e29b-41d4-a716-446655440001",
+            "status": "unhealthy",
+            "response_time_ms": 5000,
+            "error": "Health check exceeded 5000ms timeout",
+            "checked_at": "2025-11-10T12:35:00Z"
+        }
+    """
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "server_id": "660e8400-e29b-41d4-a716-446655440001",
+                    "status": "healthy",
+                    "response_time_ms": 125,
+                    "error": None,
+                    "checked_at": "2025-11-10T12:30:00Z",
+                }
+            ]
+        }
+    )
+
+    id: UUID = Field(..., description="Metric record identifier")
+    server_id: UUID = Field(..., description="MCP server identifier")
+    status: Literal["healthy", "unhealthy"] = Field(
+        ..., description="Health status: 'healthy' or 'unhealthy'"
+    )
+    response_time_ms: int | None = Field(
+        None, ge=0, description="Response time in milliseconds"
+    )
+    error: str | None = Field(None, description="Error message if unhealthy")
+    checked_at: datetime = Field(
+        ..., description="When the check was performed (ISO 8601)"
+    )
 
 
 class MCPServerMetrics(BaseModel):
@@ -325,6 +390,7 @@ class MCPMetricsQueryParams(BaseModel):
 __all__ = [
     "MCPHealthCheckStatus",
     "MCPHealthMetric",
+    "HealthCheckLog",
     "MCPServerMetrics",
     "MetricsData",
     "MCPMetricsQueryParams",

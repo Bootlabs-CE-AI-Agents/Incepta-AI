@@ -7,7 +7,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
  * Security Features:
  * - JWT-based authentication (lean tokens per tech-spec)
  * - Credentials provider integrating with FastAPI backend
- * - Roles fetched on-demand via /api/v1/users/me/role?tenant_id=xxx
+ * - Roles fetched during login for default tenant via /api/v1/users/me/role
+ * - Role stored in session for RBAC (enables pages to check session.user.role)
  * - Token versioning for password change revocation support
  *
  * Reference: docs/nextjs-ui-migration-tech-spec-v2.md Section 2.1.1
@@ -27,6 +28,7 @@ interface LoginResponse {
 interface JWTPayload {
   sub: string;  // User ID
   email: string;
+  default_tenant_id: string | null;  // Default tenant ID
   token_version: number;
   exp: number;
   jti: string;
@@ -81,10 +83,37 @@ export const authOptions: NextAuthOptions = {
           const data: LoginResponse = await response.json();
 
           // Decode JWT to extract user information from token payload
-          // FastAPI JWT contains: sub (user_id), email, token_version, exp, jti
+          // FastAPI JWT contains: sub (user_id), email, default_tenant_id, token_version, exp, jti
           const jwtPayload = decodeJWT(data.access_token);
 
-          // Return user object with access_token
+          // Fetch user's role for their default tenant
+          // This enables RBAC for pages that check session.user.role
+          let role = null;
+          const defaultTenantId = jwtPayload.default_tenant_id;
+
+          if (defaultTenantId) {
+            try {
+              const roleResponse = await fetch(
+                `${API_BASE_URL}/api/v1/users/me/role?tenant_id=${defaultTenantId}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${data.access_token}`,
+                  },
+                }
+              );
+
+              if (roleResponse.ok) {
+                const roleData = await roleResponse.json();
+                role = roleData.role;
+              } else {
+                console.warn("Failed to fetch user role:", roleResponse.statusText);
+              }
+            } catch (roleError) {
+              console.error("Error fetching user role:", roleError);
+            }
+          }
+
+          // Return user object with access_token, role, and tenant info
           // NextAuth will include this in the JWT token
           return {
             id: jwtPayload.sub,
@@ -92,6 +121,8 @@ export const authOptions: NextAuthOptions = {
             name: jwtPayload.email, // Use email as display name
             accessToken: data.access_token,
             tokenVersion: jwtPayload.token_version,
+            role: role, // User's role for default tenant
+            defaultTenantId: defaultTenantId,
           };
         } catch (error) {
           console.error("Authentication error:", error);
@@ -107,6 +138,14 @@ export const authOptions: NextAuthOptions = {
         token.accessToken = user.accessToken as string;
         token.userId = user.id;
         token.tokenVersion = user.tokenVersion as number;
+
+        // Add role and tenant info if available
+        if ("role" in user) {
+          token.role = user.role;
+        }
+        if ("defaultTenantId" in user) {
+          token.defaultTenantId = user.defaultTenantId;
+        }
       }
 
       return token;
@@ -117,6 +156,14 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.userId as string;
         session.accessToken = token.accessToken as string;
         session.tokenVersion = token.tokenVersion as number;
+
+        // Add role and tenant info to session
+        if (token.role) {
+          session.user.role = token.role as string;
+        }
+        if (token.defaultTenantId) {
+          session.user.defaultTenantId = token.defaultTenantId as string;
+        }
       }
 
       return session;

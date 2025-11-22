@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { Download, RefreshCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { ExecutionFilters } from '@/components/execution-history/ExecutionFilters';
 import { ExecutionTable } from '@/components/execution-history/ExecutionTable';
 import { ExecutionDetailModal } from '@/components/execution-history/ExecutionDetailModal';
@@ -75,145 +76,147 @@ export default function ExecutionHistoryPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
-            Execution History
-          </h1>
-          <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-            View and analyze agent execution records
-          </p>
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
+              Execution History
+            </h1>
+            <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+              View and analyze agent execution records
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              onClick={handleRefresh}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleExport}
+              disabled={exportMutation.isPending || isLoading || !data?.executions.length}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {exportMutation.isPending ? 'Exporting...' : 'Export CSV'}
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="secondary"
-            onClick={handleRefresh}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleExport}
-            disabled={exportMutation.isPending || isLoading || !data?.executions.length}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {exportMutation.isPending ? 'Exporting...' : 'Export CSV'}
-          </Button>
-        </div>
-      </div>
 
-      {/* Filters */}
-      <ExecutionFilters filters={filters} onFiltersChange={handleFiltersChange} />
+        {/* Filters */}
+        <ExecutionFilters filters={filters} onFiltersChange={handleFiltersChange} />
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex items-center justify-center py-16">
-          <Loading />
-        </div>
-      )}
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <Loading />
+          </div>
+        )}
 
-      {/* Error State */}
-      {isError && (
-        <EmptyState
-          icon="error"
-          title="Failed to load executions"
-          description={error instanceof Error ? error.message : 'An error occurred'}
-        />
-      )}
-
-      {/* Table */}
-      {!isLoading && !isError && data && (
-        <>
-          <ExecutionTable
-            executions={data.executions}
-            onRowClick={handleRowClick}
-            sorting={sorting}
-            onSortingChange={setSorting}
+        {/* Error State */}
+        {isError && (
+          <EmptyState
+            icon="error"
+            title="Failed to load executions"
+            description={error instanceof Error ? error.message : 'An error occurred'}
           />
+        )}
 
-          {/* Pagination */}
-          {data.pages > 1 && (
-            <div className="flex items-center justify-between pt-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                  Showing {(data.page - 1) * filters.limit! + 1} to{' '}
-                  {Math.min(data.page * filters.limit!, data.total)} of {data.total} executions
-                </span>
-                <select
-                  value={filters.limit}
-                  onChange={(e) => handleLimitChange(Number(e.target.value))}
-                  className="ml-4 px-3 py-1.5 text-sm border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
-                >
-                  <option value={25}>25 per page</option>
-                  <option value={50}>50 per page</option>
-                  <option value={100}>100 per page</option>
-                </select>
-              </div>
+        {/* Table */}
+        {!isLoading && !isError && data && (
+          <>
+            <ExecutionTable
+              executions={data.executions}
+              onRowClick={handleRowClick}
+              sorting={sorting}
+              onSortingChange={setSorting}
+            />
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handlePageChange(data.page - 1)}
-                  disabled={data.page === 1}
-                >
-                  Previous
-                </Button>
-
-                {/* Page Numbers */}
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(data.pages, 7) }, (_, i) => {
-                    let pageNum: number;
-                    if (data.pages <= 7) {
-                      pageNum = i + 1;
-                    } else if (data.page <= 4) {
-                      pageNum = i + 1;
-                    } else if (data.page >= data.pages - 3) {
-                      pageNum = data.pages - 6 + i;
-                    } else {
-                      pageNum = data.page - 3 + i;
-                    }
-
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                          pageNum === data.page
-                            ? 'bg-primary-500 text-white'
-                            : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+            {/* Pagination */}
+            {data.pages > 1 && (
+              <div className="flex items-center justify-between pt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    Showing {(data.page - 1) * filters.limit! + 1} to{' '}
+                    {Math.min(data.page * filters.limit!, data.total)} of {data.total} executions
+                  </span>
+                  <select
+                    value={filters.limit}
+                    onChange={(e) => handleLimitChange(Number(e.target.value))}
+                    className="ml-4 px-3 py-1.5 text-sm border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  >
+                    <option value={25}>25 per page</option>
+                    <option value={50}>50 per page</option>
+                    <option value={100}>100 per page</option>
+                  </select>
                 </div>
 
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handlePageChange(data.page + 1)}
-                  disabled={data.page === data.pages}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handlePageChange(data.page - 1)}
+                    disabled={data.page === 1}
+                  >
+                    Previous
+                  </Button>
 
-      {/* Detail Modal */}
-      <ExecutionDetailModal
-        executionId={selectedExecutionId}
-        onClose={handleCloseModal}
-        isDarkMode={isDarkMode}
-      />
-    </div>
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(data.pages, 7) }, (_, i) => {
+                      let pageNum: number;
+                      if (data.pages <= 7) {
+                        pageNum = i + 1;
+                      } else if (data.page <= 4) {
+                        pageNum = i + 1;
+                      } else if (data.page >= data.pages - 3) {
+                        pageNum = data.pages - 6 + i;
+                      } else {
+                        pageNum = data.page - 3 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                            pageNum === data.page
+                              ? 'bg-primary-500 text-white'
+                              : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handlePageChange(data.page + 1)}
+                    disabled={data.page === data.pages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Detail Modal */}
+        <ExecutionDetailModal
+          executionId={selectedExecutionId}
+          onClose={handleCloseModal}
+          isDarkMode={isDarkMode}
+        />
+      </div>
+    </DashboardLayout>
   );
 }

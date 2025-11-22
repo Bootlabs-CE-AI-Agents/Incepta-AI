@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import get_tenant_db, get_tenant_id
 from src.database.models import MCPServerStatus, TransportType
+from src.schemas.mcp_metrics import HealthCheckLog
 from src.schemas.mcp_server import (
     MCPServerCreate,
     MCPServerResponse,
@@ -745,6 +746,184 @@ async def get_mcp_server_metrics(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve metrics",
+        )
+
+
+
+# ============================================================================
+# Health Logs Endpoint (UI Health Tab)
+# ============================================================================
+
+
+@router.get(
+    "/{server_id}/health-logs",
+    response_model=list[HealthCheckLog],
+    status_code=status.HTTP_200_OK,
+    summary="Get Health Check Logs",
+    description="Returns recent health check logs for MCP server (for UI Health tab display). "
+    "Returns up to `limit` most recent health checks with simplified status (healthy/unhealthy). "
+    "Logs are sorted by check_timestamp descending (newest first). "
+    "Story 11.2.4: Enhanced MCP Health Monitoring",
+    responses={
+        200: {
+            "description": "List of health check logs (may be empty)",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "id": "550e8400-e29b-41d4-a716-446655440000",
+                            "server_id": "660e8400-e29b-41d4-a716-446655440001",
+                            "status": "healthy",
+                            "response_time_ms": 125,
+                            "error": None,
+                            "checked_at": "2025-11-10T12:30:00Z",
+                        },
+                        {
+                            "id": "770e8400-e29b-41d4-a716-446655440002",
+                            "server_id": "660e8400-e29b-41d4-a716-446655440001",
+                            "status": "unhealthy",
+                            "response_time_ms": 5000,
+                            "error": "Health check exceeded 5000ms timeout",
+                            "checked_at": "2025-11-10T12:25:00Z",
+                        },
+                    ]
+                }
+            },
+        },
+        404: {"description": "Server not found or not accessible by authenticated tenant"},
+    },
+)
+async def get_health_logs(
+    server_id: UUID,
+    tenant_id: Annotated[str, Depends(get_tenant_id)],
+    db: Annotated[AsyncSession, Depends(get_tenant_db)],
+    limit: Annotated[
+        int,
+        Query(
+            ge=1,
+            le=100,
+            description="Maximum number of logs to return (default 20, max 100)",
+        ),
+    ] = 20,
+) -> list[HealthCheckLog]:
+    """
+    Get recent health check logs for MCP server (Story 11.2.4).
+
+    Queries mcp_server_metrics table for recent health check history and
+    transforms to simplified HealthCheckLog format for UI display.
+
+    Status Mapping:
+        - 'success' → 'healthy'
+        - 'timeout', 'error', 'connection_failed' → 'unhealthy'
+
+    Args:
+        server_id: UUID of MCP server to retrieve logs for
+        tenant_id: Authenticated tenant ID (for tenant isolation)
+        db: Async database session (tenant-scoped)
+        limit: Maximum number of logs to return (1-100, default 20)
+
+    Returns:
+        List of HealthCheckLog objects sorted by check_timestamp descending
+
+    Raises:
+        HTTPException 404: If server not found or belongs to different tenant
+        HTTPException 400: If limit out of range
+
+    Example:
+        GET /api/v1/mcp-servers/{id}/health-logs?limit=10
+
+        Response 200:
+        [
+            {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "server_id": "660e8400-e29b-41d4-a716-446655440001",
+                "status": "healthy",
+                "response_time_ms": 125,
+                "error": null,
+                "checked_at": "2025-11-10T12:30:00Z"
+            },
+            {
+                "id": "770e8400-e29b-41d4-a716-446655440002",
+                "server_id": "660e8400-e29b-41d4-a716-446655440001",
+                "status": "unhealthy",
+                "response_time_ms": 5000,
+                "error": "Health check exceeded 5000ms timeout",
+                "checked_at": "2025-11-10T12:25:00Z"
+            }
+        ]
+    """
+    from src.database.models import MCPServer, MCPServerMetric
+    from sqlalchemy import select
+
+    try:
+        # Verify server exists and belongs to tenant (tenant isolation)
+        stmt = select(MCPServer).where(
+            MCPServer.id == server_id, MCPServer.tenant_id == tenant_id
+        )
+        result = await db.execute(stmt)
+        server = result.scalar_one_or_none()
+
+        if server is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Server {server_id} not found or not accessible",
+            )
+
+        # Query recent health check logs
+        logs_stmt = (
+            select(MCPServerMetric)
+            .where(
+                MCPServerMetric.mcp_server_id == server_id,
+                MCPServerMetric.tenant_id == tenant_id,
+            )
+            .order_by(MCPServerMetric.check_timestamp.desc())
+            .limit(limit)
+        )
+        logs_result = await db.execute(logs_stmt)
+        metrics = logs_result.scalars().all()
+
+        # Transform to HealthCheckLog format
+        health_logs = []
+        for metric in metrics:
+            # Map status: 'success' → 'healthy', others → 'unhealthy'
+            simplified_status: str = (
+                "healthy" if metric.status == "success" else "unhealthy"
+            )
+
+            health_logs.append(
+                HealthCheckLog(
+                    id=metric.id,
+                    server_id=metric.mcp_server_id,
+                    status=simplified_status,  # type: ignore
+                    response_time_ms=metric.response_time_ms,
+                    error=metric.error_message if simplified_status == "unhealthy" else None,
+                    checked_at=metric.check_timestamp,
+                )
+            )
+
+        logger.info(
+            f"Retrieved {len(health_logs)} health logs for server {server.name}",
+            extra={
+                "mcp_server_id": str(server.id),
+                "mcp_server_name": server.name,
+                "tenant_id": tenant_id,
+                "limit": limit,
+            },
+        )
+
+        return health_logs
+
+    except HTTPException:
+        # Re-raise HTTP exceptions (404)
+        raise
+    except Exception as e:
+        logger.error(
+            f"Failed to retrieve health logs for server {server_id}: {str(e)}",
+            extra={"mcp_server_id": str(server_id), "error": str(e)},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve health logs",
         )
 
 

@@ -15,6 +15,7 @@ import { AuthAuditTable } from '@/components/audit-logs/AuthAuditTable';
 import { GeneralAuditTable } from '@/components/audit-logs/GeneralAuditTable';
 import { useAuthAuditLogs, useGeneralAuditLogs } from '@/lib/hooks/useAudit';
 import { ShieldCheck, ClipboardList } from 'lucide-react';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 /**
  * Audit Logs page component
@@ -56,32 +57,34 @@ export default function AuditLogsPage() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Audit Logs</h1>
-        <p className="text-muted-foreground mt-1">
-          Track authentication events and system changes
-        </p>
-      </div>
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Audit Logs</h1>
+          <p className="text-muted-foreground mt-1">
+            Track authentication events and system changes
+          </p>
+        </div>
 
-      {/* Info Banner */}
-      <div className="bg-muted/30 border border-border rounded-lg p-4">
-        <p className="text-sm text-muted-foreground">
-          Audit logs track all authentication events and system changes. Use
-          the filters to narrow down your search. Click{' '}
-          <span className="font-medium">View Changes</span> to see detailed
-          diffs of updates.
-        </p>
-      </div>
+        {/* Info Banner */}
+        <div className="bg-muted/30 border border-border rounded-lg p-4">
+          <p className="text-sm text-muted-foreground">
+            Audit logs track all authentication events and system changes. Use
+            the filters to narrow down your search. Click{' '}
+            <span className="font-medium">View Changes</span> to see detailed
+            diffs of updates.
+          </p>
+        </div>
 
-      {/* Tabs */}
-      <Tabs
-        tabs={tabs}
-        selectedIndex={selectedIndex}
-        onChange={setSelectedIndex}
-        variant="pills"
-      />
-    </div>
+        {/* Tabs */}
+        <Tabs
+          tabs={tabs}
+          selectedIndex={selectedIndex}
+          onChange={setSelectedIndex}
+          variant="pills"
+        />
+      </div>
+    </DashboardLayout>
   );
 }

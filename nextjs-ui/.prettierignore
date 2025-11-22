@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build output
+.next
+out
+build
+dist
+
+# Coverage and test artifacts
+coverage
+.nyc_output
+
+# Environment files
+.env
+.env*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+.DS_Store
+*.pem
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Storybook
+storybook-static
+
+# Public assets (images, etc.)
+public/**/*.{jpg,jpeg,png,gif,svg,webp,ico}
+
+# MSW
+public/mockServiceWorker.js

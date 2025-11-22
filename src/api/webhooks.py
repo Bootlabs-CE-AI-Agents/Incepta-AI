@@ -17,7 +17,8 @@ from typing import Optional
 
 from src.schemas.webhook import WebhookPayload, ResolvedTicketWebhook, WebhookResponse
 from src.services.webhook_validator import validate_webhook_signature, validate_signature
-from src.services.queue_service import QueueService, get_queue_service
+from src.services.queue_service import QueueService
+from src.api.queue import get_queue_service
 from src.monitoring import enhancement_requests_total
 from src.services.ticket_storage_service import store_webhook_resolved_ticket
 from src.services.tenant_service import TenantService

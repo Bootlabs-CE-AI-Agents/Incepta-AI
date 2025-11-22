@@ -30,13 +30,16 @@ export const cognitiveArchitectureEnum = z.enum([
 
 /**
  * LLM Configuration Schema
- * Nested object for LLM provider settings
+ * Nested object for LLM provider settings (LiteLLM integration)
+ *
+ * Note: provider_id was removed in favor of direct LiteLLM integration
+ * The provider field should be set to "litellm" and uses LiteLLM proxy models
  */
 export const llmConfigSchema = z.object({
-  provider_id: z
+  provider: z
     .string()
     .min(1, { message: "LLM provider is required" })
-    .uuid({ message: "Invalid LLM provider" }),
+    .max(50),
 
   model: z
     .string()

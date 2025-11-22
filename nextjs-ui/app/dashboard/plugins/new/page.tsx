@@ -5,6 +5,7 @@ import { useCreatePlugin } from '@/lib/hooks/usePlugins';
 import { PluginForm } from '@/components/plugins/PluginForm';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 export default function NewPluginPage() {
   const router = useRouter();
@@ -78,7 +79,7 @@ export default function NewPluginPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <DashboardLayout>
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
@@ -99,6 +100,6 @@ export default function NewPluginPage() {
         isSubmitting={createPlugin.isPending}
         mode="create"
       />
-    </div>
+    </DashboardLayout>
   );
 }

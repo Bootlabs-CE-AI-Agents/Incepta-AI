@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/Label';
 import { Textarea } from '@/components/ui/Textarea';
 import { Loading } from '@/components/ui/Loading';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 export default function PromptDetailPage() {
   const params = useParams();
@@ -86,28 +87,29 @@ export default function PromptDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <DashboardLayout>
         <Loading size="lg" text="Loading prompt..." />
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (error || !prompt) {
     return (
-      <div className="p-6">
+      <DashboardLayout>
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <p className="text-sm text-red-800">
             Failed to load prompt: {error ? (error as Error).message : 'Not found'}
           </p>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="p-6 h-screen flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+    <DashboardLayout>
+      <div className="h-screen flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -185,17 +187,18 @@ export default function PromptDetailPage() {
         )}
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
-        title="Delete Prompt"
-        description={`Are you sure you want to delete "${prompt.name}"? This action cannot be undone.`}
-        confirmLabel="Delete Prompt"
-        onConfirm={handleDelete}
-        confirmVariant="danger"
-        isLoading={deleteMutation.isPending}
-      />
-    </div>
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          title="Delete Prompt"
+          description={`Are you sure you want to delete "${prompt.name}"? This action cannot be undone.`}
+          confirmLabel="Delete Prompt"
+          onConfirm={handleDelete}
+          confirmVariant="danger"
+          isLoading={deleteMutation.isPending}
+        />
+      </div>
+    </DashboardLayout>
   );
 }

@@ -20,7 +20,7 @@ export function useAgents() {
   return useQuery({
     queryKey: ['agents', 'active'],
     queryFn: async () => {
-      const response = await apiClient.get<AgentListResponse>('/api/agents?status=active');
+      const response = await apiClient.get<AgentListResponse>('/api/v1/agents?status=active');
       // Return just the agents array, not the whole response
       return response.data.agents;
     },

@@ -4,6 +4,8 @@ import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { TenantForm } from '@/components/tenants/TenantForm';
+import { BYOKConfiguration } from '@/components/tenants/BYOKConfiguration';
+import { BudgetDashboard } from '@/components/tenants/BudgetDashboard';
 import { Button, Loading, Badge, ConfirmDialog } from '@/components/ui';
 import { useTenant, useUpdateTenant, useDeleteTenant } from '@/lib/hooks/useTenants';
 import { TenantUpdateData } from '@/lib/validations/tenants';
@@ -158,6 +160,31 @@ export default function TenantDetailPage() {
             defaultValues={tenant}
             isLoading={updateTenantMutation.isPending}
             mode="edit"
+          />
+        </div>
+
+        {/* BYOK Configuration */}
+        <div className="glass-card p-6">
+          <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+            🔑 BYOK Configuration
+          </h3>
+          <BYOKConfiguration
+            tenantId={tenant.tenant_id}
+            hasVirtualKey={tenant.litellm_virtual_key != null}
+          />
+        </div>
+
+        {/* Budget Dashboard */}
+        <div className="glass-card p-6">
+          <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+            💰 Budget Dashboard
+          </h3>
+          <BudgetDashboard
+            tenantId={tenant.tenant_id}
+            maxBudget={tenant.max_budget ?? 500.0}
+            alertThreshold={tenant.alert_threshold ?? 80}
+            graceThreshold={tenant.grace_threshold ?? 110}
+            budgetDuration={tenant.budget_duration ?? '30d'}
           />
         </div>
 

@@ -2,8 +2,9 @@
 User management API endpoints for profile and password operations.
 
 This module provides protected endpoints for authenticated users:
-- GET /api/users/me - Get current user profile with roles
-- PUT /api/users/me/password - Change password with validation
+- GET /api/v1/users/me - Get current user profile with roles
+- GET /api/v1/users/me/role - Get user role for specific tenant
+- PUT /api/v1/users/me/password - Change password with validation
 
 Story: 1C - API Endpoints & Middleware
 Epic: 2 (Authentication & Authorization Foundation)
@@ -28,9 +29,9 @@ from src.database.session import get_async_session
 from src.services.auth_service import AuthService, hash_password, verify_password, validate_password_strength
 from src.services.user_service import UserService
 
-# Create router with /api/users prefix
+# Create router with /api/v1/users prefix
 router = APIRouter(
-    prefix="/api/users",
+    prefix="/api/v1/users",
     tags=["Users"],
 )
 
@@ -152,6 +153,56 @@ async def get_current_user_profile(
         last_login_at=current_user.last_login_at,
         is_active=current_user.is_active,
     )
+
+
+@router.get(
+    "/me/role",
+    response_model=RoleAssignment,
+    summary="Get user role for specific tenant",
+    response_description="User's role for the requested tenant",
+)
+async def get_user_role_for_tenant(
+    tenant_id: UUID,
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: AsyncSession = Depends(get_async_session),
+) -> RoleAssignment:
+    """
+    Get authenticated user's role for a specific tenant.
+
+    Args:
+        tenant_id: UUID of the tenant to check role for
+        current_user: User from JWT token
+        db: Database session
+
+    Returns:
+        RoleAssignment with tenant_id and role
+
+    Raises:
+        404: User has no role assignment for this tenant
+
+    Security:
+        Requires valid JWT access token
+
+    Example:
+        GET /api/users/me/role?tenant_id=123e4567-e89b-12d3-a456-426614174000
+        Headers: Authorization: Bearer <access_token>
+    """
+    # Fetch user's role for the specified tenant
+    # Note: tenant_id is VARCHAR in database, convert UUID to string
+    stmt = select(UserTenantRole).where(
+        UserTenantRole.user_id == current_user.id,
+        UserTenantRole.tenant_id == str(tenant_id)
+    )
+    result = await db.execute(stmt)
+    user_role = result.scalar_one_or_none()
+
+    if not user_role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User has no role assignment for tenant {tenant_id}"
+        )
+
+    return RoleAssignment(tenant_id=user_role.tenant_id, role=user_role.role)
 
 
 @router.put(

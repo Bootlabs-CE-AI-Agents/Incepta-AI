@@ -325,10 +325,37 @@ class MCPStdioClient:
         Raises:
             ProcessError: If subprocess spawning fails.
         """
-        # Merge env with os.environ to preserve system environment
-        full_env = {**os.environ, **self.env}
+        # BUGFIX: Docker-specific environment variable handling
+        # Reason: When command is "docker", environment variables must be passed
+        # as -e flags to the container, not to the docker CLI process.
+        # For non-Docker commands (npx, python, node), merge with os.environ.
+        if self.command == "docker" and self.env:
+            # Convert environment variables to Docker -e flags
+            env_args = []
+            for key, value in self.env.items():
+                env_args.extend(["-e", f"{key}={value}"])
 
-        logger.info(f"Spawning MCP server: {self.command} {' '.join(self.args)}")
+            # Find the image name (last non-flag argument in args)
+            # Typically: ["run", "--rm", "-i", "image:tag"]
+            image_index = len(self.args) - 1
+            for i in range(len(self.args) - 1, -1, -1):
+                if not self.args[i].startswith("-"):
+                    image_index = i
+                    break
+
+            # Insert -e flags before the image name
+            final_args = list(self.args[:image_index]) + env_args + [self.args[image_index]]
+            process_env = dict(os.environ)  # Convert to dict for docker CLI
+
+            logger.info(
+                f"Docker command detected: injecting {len(self.env)} environment variables as -e flags"
+            )
+        else:
+            # Non-Docker command: merge env with os.environ
+            final_args = self.args
+            process_env = {**dict(os.environ), **self.env}
+
+        logger.info(f"Spawning MCP server: {self.command} {' '.join(final_args)}")
 
         try:
             # BUGFIX: Celery wraps sys.stdout/sys.stderr in LoggingProxy objects
@@ -363,14 +390,14 @@ class MCPStdioClient:
                 )
 
             try:
-                logger.info(f"Creating subprocess with command: {self.command} {' '.join(self.args)}")
+                logger.info(f"Creating subprocess with command: {self.command} {' '.join(final_args)}")
                 self.process = await asyncio.create_subprocess_exec(
                     self.command,
-                    *self.args,
+                    *final_args,
                     stdin=asyncio.subprocess.PIPE,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                    env=full_env,
+                    env=process_env,
                 )
                 logger.info("Subprocess created successfully")
             finally:
@@ -386,7 +413,7 @@ class MCPStdioClient:
                 exc_info=True,
                 extra={
                     "command": self.command,
-                    "args": self.args,
+                    "command_args": self.args,
                     "error_type": type(e).__name__,
                 }
             )

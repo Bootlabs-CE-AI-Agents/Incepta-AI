@@ -1,0 +1,18 @@
+{
+	"ulid": "01KAP18YSZK9KDESD69ZS8J3VK",
+	"minTime": 1763812814748,
+	"maxTime": 1763820000000,
+	"stats": {
+		"numSamples": 10080,
+		"numFloatSamples": 10080,
+		"numSeries": 21,
+		"numChunks": 86
+	},
+	"compaction": {
+		"level": 1,
+		"sources": [
+			"01KAP18YSZK9KDESD69ZS8J3VK"
+		]
+	},
+	"version": 1
+}

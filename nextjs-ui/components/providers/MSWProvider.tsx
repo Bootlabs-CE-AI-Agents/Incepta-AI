@@ -18,19 +18,22 @@ import { useEffect, useState } from 'react'
 export function MSWProvider({ children }: { children: React.ReactNode }) {
   const [mswReady, setMswReady] = useState(
     // In production, SSR, or E2E tests, MSW is not needed
-    () =>
-      process.env.NODE_ENV !== 'development' ||
-      typeof window === 'undefined' ||
-      process.env.NEXT_PUBLIC_E2E_TEST === 'true'
+    // DISABLED: Disabling MSW in development to connect to real backend
+    () => true
+    // process.env.NODE_ENV !== 'development' ||
+    // typeof window === 'undefined' ||
+    // process.env.NEXT_PUBLIC_E2E_TEST === 'true'
   )
 
   useEffect(() => {
     // Skip MSW initialization in production, SSR, or E2E tests
-    if (
-      process.env.NODE_ENV !== 'development' ||
-      typeof window === 'undefined' ||
-      process.env.NEXT_PUBLIC_E2E_TEST === 'true'
-    ) {
+    // DISABLED: Disabling MSW in development to connect to real backend
+    if (true) {
+      // if (
+      //   process.env.NODE_ENV !== 'development' ||
+      //   typeof window === 'undefined' ||
+      //   process.env.NEXT_PUBLIC_E2E_TEST === 'true'
+      // ) {
       return
     }
 

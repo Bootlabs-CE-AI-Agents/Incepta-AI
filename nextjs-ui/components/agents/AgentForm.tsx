@@ -6,7 +6,12 @@ import { AgentFormData, agentCreateSchema, agentTypeEnum, cognitiveArchitectureE
 import { Form, FormField } from '@/components/forms';
 import { Input, Textarea, Button, Select } from '@/components/ui';
 import { Agent } from '@/lib/api/agents';
-import { useLLMProviders } from '@/lib/hooks/useLLMProviders';
+import { useAvailableModels } from '@/lib/hooks/useAvailableModels';
+import { RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import MCPToolDiscovery from '@/components/tools/MCPToolDiscovery';
+import { SystemPromptEditor } from '@/components/prompts/SystemPromptEditor';
+import { useSession } from 'next-auth/react';
 
 /**
  * Agent Form Component
@@ -30,7 +35,18 @@ export function AgentForm({
   onCancel,
   mode = 'create',
 }: AgentFormProps) {
-  const { data: llmProviders = [] } = useLLMProviders();
+  const { data: session } = useSession();
+  const [forceRefresh, setForceRefresh] = useState(false);
+  const { data: availableModels = [], isLoading: modelsLoading, refetch: refetchModels } = useAvailableModels(forceRefresh);
+
+  // Tool selection state
+  const [selectedToolIds, setSelectedToolIds] = useState<Set<string>>(
+    new Set(defaultValues?.tool_ids || [])
+  );
+
+  // Get tenant ID from session (Story 1C: Authentication integration)
+  // Fallback to 'default' if session not available (matches backend's AI_AGENTS_DEFAULT_TENANT_ID)
+  const tenantId = session?.user?.defaultTenantId || 'default';
 
   const form = useForm<AgentFormData>({
     resolver: zodResolver(agentCreateSchema),
@@ -40,7 +56,7 @@ export function AgentForm({
       description: defaultValues?.description || '',
       system_prompt: defaultValues?.system_prompt || '',
       llm_config: defaultValues?.llm_config || {
-        provider_id: '',
+        provider: 'litellm',  // Story 9.2: Direct LiteLLM integration
         model: '',
         temperature: 0.7,
         max_tokens: undefined,
@@ -52,9 +68,11 @@ export function AgentForm({
     },
   });
 
-  const selectedProvider = llmProviders.find(
-    (p) => p.id === form.watch('llm_config.provider_id')
-  );
+  const handleRefreshModels = async () => {
+    setForceRefresh(true);
+    await refetchModels();
+    setForceRefresh(false);
+  };
 
   return (
     <Form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -137,52 +155,70 @@ export function AgentForm({
       <div className="space-y-4 pt-4 border-white/20">
         <h3 className="text-lg font-semibold text-text-primary">LLM Configuration</h3>
 
-        <FormField
-          control={form.control}
-          name="llm_config.provider_id"
-          render={({ field, fieldState }) => (
-            <Select
-              {...field}
-              label="LLM Provider"
-              error={fieldState.error?.message}
-              options={llmProviders.map((provider) => ({
-                value: provider.id,
-                label: provider.name,
-              }))}
-              placeholder="Select a provider"
-              required
-            />
-          )}
-        />
+        {/* LiteLLM Provider (Story 9.2: Direct LiteLLM integration) */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-text-primary">
+            LLM Provider
+          </label>
+          <div className="px-3 py-2 bg-surface/50 border border-white/10 rounded-lg text-sm text-text-secondary">
+            🚀 LiteLLM (All models managed through LiteLLM proxy)
+          </div>
+          <p className="text-xs text-text-tertiary">
+            Models are configured and managed through the LiteLLM proxy. Select your model below.
+          </p>
+        </div>
 
-        <FormField
-          control={form.control}
-          name="llm_config.model"
-          render={({ field, fieldState }) => (
-            selectedProvider?.models && selectedProvider.models.length > 0 ? (
-              <Select
-                {...field}
-                label="Model"
-                error={fieldState.error?.message}
-                options={selectedProvider.models.map((model) => ({
-                  value: model.id,
-                  label: model.name,
-                }))}
-                placeholder="Select a model"
-                required
-              />
-            ) : (
-              <Input
-                {...field}
-                label="Model"
-                placeholder="gpt-4, claude-3-opus-20240229, etc."
-                error={fieldState.error?.message}
-                helpText={!selectedProvider ? "Select a provider first" : "Enter model name"}
-                required
-              />
-            )
-          )}
-        />
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-text-primary">
+              Model <span className="text-destructive">*</span>
+            </label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleRefreshModels}
+              disabled={modelsLoading}
+              className="h-7 px-2 text-xs"
+            >
+              <RefreshCw className={`h-3 w-3 mr-1 ${modelsLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+
+          <FormField
+            control={form.control}
+            name="llm_config.model"
+            render={({ field, fieldState }) => (
+              availableModels.length > 0 ? (
+                <Select
+                  {...field}
+                  error={fieldState.error?.message}
+                  options={availableModels.map((model) => ({
+                    value: model.id,
+                    label: `${model.name} (${model.provider})`,
+                  }))}
+                  placeholder={modelsLoading ? "Loading models..." : "Select a model"}
+                  required
+                  disabled={modelsLoading}
+                />
+              ) : modelsLoading ? (
+                <div className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Loading available models from LiteLLM...
+                </div>
+              ) : (
+                <Input
+                  {...field}
+                  placeholder="gpt-4, claude-3-opus-20240229, etc."
+                  error={fieldState.error?.message}
+                  helpText="No models available from LiteLLM. Enter model name manually or click Refresh."
+                  required
+                />
+              )
+            )}
+          />
+        </div>
 
         <div className="grid grid-cols-3 gap-4">
           <FormField
@@ -254,16 +290,41 @@ export function AgentForm({
           control={form.control}
           name="system_prompt"
           render={({ field, fieldState }) => (
-            <Textarea
-              {...field}
-              label="System Prompt"
-              placeholder="You are a helpful assistant..."
-              error={fieldState.error?.message}
-              rows={8}
-              helpText="Instructions that define the agent's behavior and personality"
-              required
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-text-primary">
+                System Prompt <span className="text-destructive">*</span>
+              </label>
+              <SystemPromptEditor
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="You are a helpful assistant..."
+                error={fieldState.error?.message}
+                model={form.watch('llm_config.model') || 'gpt-4'}
+                maxTokens={form.watch('llm_config.max_tokens') || 4000}
+                disabled={false}
+                minHeight={200}
+              />
+              <p className="text-xs text-text-tertiary">
+                Instructions that define the agent&apos;s behavior and personality
+              </p>
+            </div>
           )}
+        />
+      </div>
+
+      {/* Tool Assignment & Discovery */}
+      <div className="space-y-4 pt-4 border-t border-white/20">
+        <h3 className="text-lg font-semibold text-text-primary">
+          🛠️ Tool Assignment & Discovery
+        </h3>
+
+        <MCPToolDiscovery
+          tenantId={tenantId}
+          selectedToolIds={selectedToolIds}
+          onSelectionChange={(newSelection) => {
+            setSelectedToolIds(newSelection);
+            form.setValue('tool_ids', Array.from(newSelection));
+          }}
         />
       </div>
 

@@ -20,6 +20,7 @@ import { HealthLogs } from '@/components/mcp-servers/HealthLogs';
 import { TestConnection } from '@/components/mcp-servers/TestConnection';
 import { useMCPServer, useUpdateMCPServer } from '@/lib/hooks/useMCPServers';
 import type { MCPServerCreateData } from '@/lib/validations';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 type TabId = 'config' | 'tools' | 'health';
 
@@ -92,25 +93,47 @@ export default function McpServerDetailPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/mcp-servers">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold text-foreground">MCP Server Details</h1>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard/mcp-servers">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+            </Link>
+            <h1 className="text-3xl font-bold text-foreground">MCP Server Details</h1>
+          </div>
+          <LoadingState />
         </div>
-        <LoadingState />
-      </div>
+      </DashboardLayout>
     );
   }
 
   // Error state
   if (isError || !server) {
     return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard/mcp-servers">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+            </Link>
+            <h1 className="text-3xl font-bold text-foreground">MCP Server Details</h1>
+          </div>
+          <ErrorState onRetry={refetch} />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
       <div className="space-y-6">
+        {/* Back Button & Header */}
         <div className="flex items-center gap-4">
           <Link href="/dashboard/mcp-servers">
             <Button variant="ghost" size="sm" className="gap-2">
@@ -118,97 +141,81 @@ export default function McpServerDetailPage() {
               Back
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-foreground">MCP Server Details</h1>
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold text-foreground">{server.name}</h1>
+            {server.description && (
+              <p className="text-muted-foreground mt-2">{server.description}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center px-3 py-1 rounded-md text-sm font-medium ${
+                server.status === 'active'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              {server.status === 'active' ? 'Active' : 'Inactive'}
+            </span>
+            <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-blue-100 text-blue-700">
+              {server.transport_type.toUpperCase()}
+            </span>
+          </div>
         </div>
-        <ErrorState onRetry={refetch} />
-      </div>
-    );
-  }
 
-  return (
-    <div className="space-y-6">
-      {/* Back Button & Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/dashboard/mcp-servers">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-foreground">{server.name}</h1>
-          {server.description && (
-            <p className="text-muted-foreground mt-2">{server.description}</p>
+        {/* Tabs */}
+        <div className="border-b border-border">
+          <nav className="flex gap-4" role="tablist">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all ${
+                  activeTab === tab.id
+                    ? 'border-accent-blue text-accent-blue font-semibold'
+                    : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
+                }`}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                aria-controls={`${tab.id}-panel`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Tab Panels */}
+        <div className="mt-6">
+          {/* Configuration Tab */}
+          {activeTab === 'config' && (
+            <div role="tabpanel" id="config-panel" aria-labelledby="config-tab">
+              <McpServerForm
+                defaultValues={server}
+                onSubmit={handleSubmit}
+                isSubmitting={updateMutation.isPending}
+                submitLabel="Update Server"
+              />
+            </div>
+          )}
+
+          {/* Tools Tab */}
+          {activeTab === 'tools' && (
+            <div role="tabpanel" id="tools-panel" aria-labelledby="tools-tab" className="space-y-6">
+              <TestConnection serverId={serverId} />
+              <ToolsList tools={[]} />
+            </div>
+          )}
+
+          {/* Health Tab */}
+          {activeTab === 'health' && (
+            <div role="tabpanel" id="health-panel" aria-labelledby="health-tab">
+              <HealthLogs serverId={serverId} limit={20} />
+            </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <span
-            className={`inline-flex items-center px-3 py-1 rounded-md text-sm font-medium ${
-              server.is_active
-                ? 'bg-green-100 text-green-700'
-                : 'bg-gray-100 text-gray-700'
-            }`}
-          >
-            {server.is_active ? 'Active' : 'Inactive'}
-          </span>
-          <span className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-blue-100 text-blue-700">
-            {server.type.toUpperCase()}
-          </span>
-        </div>
       </div>
-
-      {/* Tabs */}
-      <div className="border-b border-border">
-        <nav className="flex gap-4" role="tablist">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all ${
-                activeTab === tab.id
-                  ? 'border-accent-blue text-accent-blue font-semibold'
-                  : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
-              }`}
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              aria-controls={`${tab.id}-panel`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Tab Panels */}
-      <div className="mt-6">
-        {/* Configuration Tab */}
-        {activeTab === 'config' && (
-          <div role="tabpanel" id="config-panel" aria-labelledby="config-tab">
-            <McpServerForm
-              defaultValues={server}
-              onSubmit={handleSubmit}
-              isSubmitting={updateMutation.isPending}
-              submitLabel="Update Server"
-            />
-          </div>
-        )}
-
-        {/* Tools Tab */}
-        {activeTab === 'tools' && (
-          <div role="tabpanel" id="tools-panel" aria-labelledby="tools-tab" className="space-y-6">
-            <TestConnection serverId={serverId} />
-            <ToolsList tools={[]} />
-          </div>
-        )}
-
-        {/* Health Tab */}
-        {activeTab === 'health' && (
-          <div role="tabpanel" id="health-panel" aria-labelledby="health-tab">
-            <HealthLogs serverId={serverId} limit={20} />
-          </div>
-        )}
-      </div>
-    </div>
+    </DashboardLayout>
   );
 }

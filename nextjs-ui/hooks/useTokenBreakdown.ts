@@ -4,12 +4,12 @@
  * TanStack Query hook for fetching token breakdown data with date range filtering.
  * Calculates percentages client-side for pie chart visualization.
  *
- * Maps to Backend API: GET /api/v1/costs/token-breakdown
+ * Maps to Backend API: GET /api/costs/token-breakdown
  * Uses TokenBreakdownDTO schema (types/costs.ts:68-79)
  */
 
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
-import axios from 'axios';
+import { apiClient } from '@/lib/api/client';
 import { TokenBreakdownDTO, TokenBreakdownWithPercentage } from '@/types/costs';
 
 /**
@@ -71,9 +71,9 @@ async function fetchTokenBreakdown(
   }
 
   // Use API endpoint with versioned URL per ADR-004
-  const url = `/api/v1/costs/token-breakdown${params.toString() ? `?${params.toString()}` : ''}`;
+  const url = `/api/costs/token-breakdown${params.toString() ? `?${params.toString()}` : ''}`;
 
-  const response = await axios.get<TokenBreakdownDTO[]>(url, {
+  const response = await apiClient.get<TokenBreakdownDTO[]>(url, {
     headers: {
       'Content-Type': 'application/json',
     },

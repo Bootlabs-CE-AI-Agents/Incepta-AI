@@ -12,7 +12,7 @@ Following 2025 FastAPI best practices:
 """
 
 import logging
-from datetime import date
+from datetime import date, timedelta
 from typing import Annotated, List, Optional
 from uuid import UUID
 
@@ -152,8 +152,8 @@ async def get_spend_by_model(
 async def get_token_breakdown(
     db: Annotated[AsyncSession, Depends(get_async_session)],
     tenant_id: Annotated[UUID, Depends(get_tenant_id)],
-    start_date: Annotated[date, Query(description="Start date (YYYY-MM-DD)")],
-    end_date: Annotated[date, Query(description="End date (YYYY-MM-DD)")],
+    start_date: Annotated[Optional[date], Query(description="Start date (YYYY-MM-DD), defaults to 30 days ago")] = None,
+    end_date: Annotated[Optional[date], Query(description="End date (YYYY-MM-DD), defaults to today")] = None,
     model: Annotated[Optional[str], Query(description="Optional model filter")] = None,
 ) -> List[TokenBreakdownDTO]:
     """
@@ -167,8 +167,16 @@ async def get_token_breakdown(
     - Percentages
 
     **Tenant Isolation**: Filters by authenticated tenant
+
+    **Date Range**: If not provided, defaults to last 30 days (30 days ago to today)
     """
     try:
+        # Default date range: last 30 days
+        if start_date is None:
+            start_date = date.today() - timedelta(days=30)
+        if end_date is None:
+            end_date = date.today()
+
         cost_service = LLMCostService(db)
         breakdown = await cost_service.get_token_breakdown(
             start_date, end_date, model, tenant_id

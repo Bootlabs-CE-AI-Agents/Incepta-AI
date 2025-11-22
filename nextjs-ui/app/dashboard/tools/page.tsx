@@ -17,6 +17,7 @@ import { ToolPreview } from '@/components/tools/ToolPreview';
 import { ImportConfig } from '@/components/tools/ImportConfig';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 type Step = 'upload' | 'validation' | 'preview' | 'import';
 
@@ -158,18 +159,19 @@ export default function ToolsPage() {
 
   if (!canImport) {
     return (
-      <div className="p-6">
+      <DashboardLayout>
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-800">
             You do not have permission to import tools.
           </p>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <DashboardLayout>
+      <div className="max-w-5xl mx-auto space-y-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Import Tools from OpenAPI</h1>
         <p className="text-sm text-gray-500 mt-1">
@@ -315,6 +317,7 @@ export default function ToolsPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

@@ -1,0 +1,18 @@
+{
+	"ulid": "01KANTD7HE66PCN0NCMZDD2X4V",
+	"minTime": 1763805600000,
+	"maxTime": 1763812800000,
+	"stats": {
+		"numSamples": 9156,
+		"numFloatSamples": 9156,
+		"numSeries": 21,
+		"numChunks": 67
+	},
+	"compaction": {
+		"level": 1,
+		"sources": [
+			"01KANTD7HE66PCN0NCMZDD2X4V"
+		]
+	},
+	"version": 1
+}

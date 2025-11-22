@@ -1,5 +1,5 @@
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
-import axios from "axios";
+import { apiClient } from "@/lib/api/client";
 import type {
   BudgetUtilizationResponse,
   BudgetFilter,
@@ -70,8 +70,8 @@ export function useBudgetUtilization(
         page_size: pageSize.toString(),
       });
 
-      const response = await axios.get<BudgetUtilizationResponse>(
-        `/api/v1/costs/budget-utilization?${params.toString()}`,
+      const response = await apiClient.get(
+        `/api/costs/budget-utilization?${params.toString()}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -80,7 +80,14 @@ export function useBudgetUtilization(
         }
       );
 
-      return response.data;
+      // Backend returns flat array, wrap it in expected response format
+      const data = Array.isArray(response.data) ? response.data : [];
+      return {
+        data,
+        total_count: data.length,
+        page,
+        page_size: pageSize,
+      };
     },
     // Auto-refresh every 60 seconds to keep data current
     refetchInterval: 60000,

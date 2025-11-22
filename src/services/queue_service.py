@@ -1,374 +1,446 @@
 """
-Redis queue operations service.
+Queue Management Service
 
-This module provides high-level queue operations for job processing.
-Implements push, pop, peek, and depth checking operations using Redis
-list data structures with JSON serialization. Includes both class-based
-QueueService and function-based utilities for backwards compatibility.
+Service layer for queue operations including status monitoring,
+task management, and queue control operations.
+
+Story 0.3: Queue Management API Implementation
 """
 
-import json
-import logging
-import uuid
-from typing import Any, Dict
+import math
+from datetime import datetime, timedelta
+from typing import List, Optional
 
-from redis import asyncio as aioredis
-from redis.exceptions import ConnectionError as RedisConnectionError, TimeoutError as RedisTimeoutError
+import pytz
+from sqlalchemy import and_, desc, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.cache.redis_client import get_shared_redis, get_redis_client
-from src.schemas.job import EnhancementJob
-from src.utils.exceptions import QueueServiceError
-from src.utils.logger import logger as app_logger, AuditLogger
-
-logger = logging.getLogger(__name__)
-audit_logger = AuditLogger()
-
-# Queue naming convention: module:purpose
-ENHANCEMENT_QUEUE = "enhancement:queue"
-ENHANCEMENT_QUEUE_KEY = "enhancement:queue"  # Alias for consistency
-BRPOP_TIMEOUT = 1  # Blocking pop timeout in seconds
+from src.cache.redis_client import get_redis_client
+from src.database.models import Agent, AgentTestExecution
+from src.schemas.queue import (
+    QueueDepthDataPoint,
+    QueueStatus,
+    QueueTask,
+    TaskListResponse,
+)
+from src.utils.logger import logger
+from src.workers.celery_app import celery_app
 
 
 class QueueService:
     """
-    Service for managing Redis queue operations.
+    Service layer for queue management operations.
 
-    Provides methods to push enhancement jobs to Redis queue using LPUSH command.
-    Uses connection pooling for performance and implements comprehensive error
-    handling for queue failures.
-
-    Attributes:
-        redis_client: Async Redis client instance with connection pooling
-
-    Example:
-        redis_client = await get_redis_client()
-        queue_service = QueueService(redis_client)
-        job_id = await queue_service.push_job(job_data)
+    Integrates with Celery for queue inspection, Redis for pause/resume,
+    and PostgreSQL for execution history with IST timezone support.
     """
 
-    def __init__(self, redis_client: aioredis.Redis):
+    def __init__(self):
+        """Initialize queue service with IST timezone."""
+        self.IST = pytz.timezone("Asia/Kolkata")
+
+    def _to_ist(self, dt: datetime) -> datetime:
         """
-        Initialize QueueService with Redis client.
+        Convert UTC datetime to IST.
 
         Args:
-            redis_client: Async Redis client instance with connection pooling.
-                         Should be obtained via dependency injection.
-        """
-        self.redis_client = redis_client
-
-    async def push_job(
-        self, job_data: Dict[str, Any], tenant_id: str = "", ticket_id: str = ""
-    ) -> str:
-        """
-        Push enhancement job to Redis queue for asynchronous processing.
-
-        Serializes job data to JSON and pushes to `enhancement:queue` using LPUSH
-        command. This implements FIFO queue where workers use BRPOP to consume jobs.
-        Returns unique job ID for tracking.
-
-        Args:
-            job_data: Dictionary with EnhancementJob fields (job_id, ticket_id, etc.)
-            tenant_id: Tenant identifier for error logging context (optional)
-            ticket_id: Ticket identifier for error logging context (optional)
+            dt: Datetime object (naive or aware)
 
         Returns:
-            str: UUID job_id that was queued
-
-        Raises:
-            QueueServiceError: If Redis push operation fails due to connection
-                              errors, timeouts, or other Redis issues
-
-        Example:
-            job_data = {
-                "job_id": "550e8400-e29b-41d4-a716-446655440000",
-                "ticket_id": "TKT-001",
-                "tenant_id": "tenant-abc",
-                "description": "Server issue",
-                "priority": "high",
-                "timestamp": "2025-11-01T12:00:00Z"
-            }
-            job_id = await queue_service.push_job(job_data, "tenant-abc", "TKT-001")
+            Datetime in IST timezone
         """
+        if dt.tzinfo is None:
+            dt = pytz.utc.localize(dt)
+        return dt.astimezone(self.IST)
+
+    def _get_ist_now(self) -> datetime:
+        """
+        Get current IST time.
+
+        Returns:
+            Current datetime in IST timezone
+        """
+        return datetime.now(self.IST)
+
+    async def get_queue_status(self, tenant_id: str, db: AsyncSession) -> QueueStatus:
+        """
+        Get current queue metrics.
+
+        Args:
+            tenant_id: Tenant identifier for isolation
+            db: Database session
+
+        Returns:
+            QueueStatus with depth, processing_rate, avg_wait_time, failed_tasks_24h, is_paused
+
+        Data Sources:
+            - depth: COUNT(*) from agent_test_executions WHERE status IN ('pending', 'processing')
+            - processing_rate: COUNT(*) from last 5 minutes / 5
+            - avg_wait_time: AVG(execution_time.total_duration_ms / 1000) from last hour
+            - failed_tasks_24h: COUNT(*) WHERE status='failed' AND created_at > NOW() - 24h
+            - is_paused: Redis.get("queue_paused_{tenant_id}") == "true"
+        """
+        logger.debug(f"Getting queue status for tenant: {tenant_id}")
+
         try:
-            # Create EnhancementJob instance for validation and serialization
-            job = EnhancementJob(**job_data)
-
-            # Serialize job to JSON for Redis storage
-            job_json = job.model_dump_json()
-
-            # Push job to Redis queue using LPUSH (producer side of FIFO queue)
-            # LPUSH inserts at head, BRPOP removes from tail (FIFO order)
-            queue_depth = await self.redis_client.lpush(
-                ENHANCEMENT_QUEUE_KEY, job_json
+            # Get current queue depth (pending + processing tasks)
+            depth_query = select(func.count(AgentTestExecution.id)).where(
+                and_(
+                    AgentTestExecution.tenant_id == tenant_id,
+                    AgentTestExecution.status.in_(["pending", "processing"]),
+                )
             )
+            depth_result = await db.execute(depth_query)
+            depth = depth_result.scalar() or 0
 
-            # Log job queueing with audit logger for compliance
-            audit_logger.audit_api_call(
-                tenant_id=job.tenant_id,
-                ticket_id=job.ticket_id,
-                correlation_id=job.correlation_id,
-                endpoint="enhancement:queue",
-                method="lpush",
-                status_code=200,
-                queue_depth=queue_depth,
-                job_id=job.job_id,
+            # Get processing rate (tasks completed in last 5 minutes)
+            five_min_ago = self._get_ist_now() - timedelta(minutes=5)
+            rate_query = select(func.count(AgentTestExecution.id)).where(
+                and_(
+                    AgentTestExecution.tenant_id == tenant_id,
+                    AgentTestExecution.status == "success",
+                    AgentTestExecution.created_at >= five_min_ago,
+                )
             )
+            rate_result = await db.execute(rate_query)
+            tasks_in_5min = rate_result.scalar() or 0
+            processing_rate = round(tasks_in_5min / 5.0, 2)  # tasks per minute
 
-            app_logger.info(
-                f"Job queued successfully: {job.job_id} "
-                f"(queue depth: {queue_depth})",
-                extra={
-                    "job_id": job.job_id,
-                    "ticket_id": job.ticket_id,
-                    "tenant_id": job.tenant_id,
-                    "queue_key": ENHANCEMENT_QUEUE_KEY,
-                    "queue_depth": queue_depth,
-                    "correlation_id": job.correlation_id,
-                },
+            # Get average wait time (last hour, using total_duration_ms from execution_time JSON)
+            one_hour_ago = self._get_ist_now() - timedelta(hours=1)
+            wait_query = select(AgentTestExecution.execution_time).where(
+                and_(
+                    AgentTestExecution.tenant_id == tenant_id,
+                    AgentTestExecution.status.in_(["success", "failed"]),
+                    AgentTestExecution.created_at >= one_hour_ago,
+                )
             )
+            wait_result = await db.execute(wait_query)
+            execution_times = wait_result.scalars().all()
 
-            return job.job_id
+            # Calculate average wait time from execution_time JSON
+            total_wait_ms = 0
+            count = 0
+            for exec_time in execution_times:
+                if exec_time and isinstance(exec_time, dict):
+                    total_duration_ms = exec_time.get("total_duration_ms", 0)
+                    if total_duration_ms > 0:
+                        total_wait_ms += total_duration_ms
+                        count += 1
 
-        except (RedisConnectionError, RedisTimeoutError) as e:
-            # Log error with context for debugging
-            error_msg = (
-                f"Redis queue push failed for tenant {tenant_id}, "
-                f"ticket {ticket_id}: {type(e).__name__} - {str(e)}"
+            avg_wait_time = round(total_wait_ms / count / 1000.0, 2) if count > 0 else 0.0
+
+            # Get failed tasks in last 24 hours
+            twenty_four_hours_ago = self._get_ist_now() - timedelta(hours=24)
+            failed_query = select(func.count(AgentTestExecution.id)).where(
+                and_(
+                    AgentTestExecution.tenant_id == tenant_id,
+                    AgentTestExecution.status == "failed",
+                    AgentTestExecution.created_at >= twenty_four_hours_ago,
+                )
             )
+            failed_result = await db.execute(failed_query)
+            failed_tasks_24h = failed_result.scalar() or 0
 
-            # Log audit event for queue failure
-            audit_logger.audit_api_call(
-                tenant_id=tenant_id,
-                ticket_id=ticket_id,
-                correlation_id=getattr(job, "correlation_id", ""),
-                endpoint="enhancement:queue",
-                method="lpush",
-                status_code=500,
-                error_type=type(e).__name__,
-                error_message=str(e),
-            )
+            # Check if queue is paused via Redis
+            redis_client = await get_redis_client()
+            pause_key = f"queue_paused_{tenant_id}"
+            is_paused = await redis_client.get(pause_key) == "true"
 
-            app_logger.error(
-                error_msg,
-                extra={
-                    "tenant_id": tenant_id,
-                    "ticket_id": ticket_id,
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                },
+            return QueueStatus(
+                depth=depth,
+                processing_rate=processing_rate,
+                avg_wait_time=avg_wait_time,
+                failed_tasks_24h=failed_tasks_24h,
+                is_paused=is_paused,
             )
-            raise QueueServiceError(error_msg) from e
 
         except Exception as e:
-            # Catch unexpected errors and wrap in QueueServiceError
-            error_msg = (
-                f"Unexpected error queuing job for tenant {tenant_id}, "
-                f"ticket {ticket_id}: {type(e).__name__} - {str(e)}"
+            logger.error(f"Error getting queue status: {str(e)}", exc_info=True)
+            raise
+
+    async def get_depth_history(
+        self,
+        tenant_id: str,
+        start_time: datetime,
+        end_time: datetime,
+        db: AsyncSession,
+    ) -> List[QueueDepthDataPoint]:
+        """
+        Get queue depth time series.
+
+        Args:
+            tenant_id: Tenant identifier
+            start_time: Start of time range (ISO 8601)
+            end_time: End of time range (ISO 8601)
+            db: Database session
+
+        Returns:
+            List of QueueDepthDataPoint (timestamp, depth) tuples
+
+        Implementation:
+            Since we don't have periodic snapshots in Redis yet, we'll calculate
+            depth at 5-minute intervals by counting tasks in "pending" or "processing"
+            status at each timestamp.
+        """
+        logger.debug(
+            f"Getting depth history for tenant {tenant_id}: {start_time} to {end_time}"
+        )
+
+        try:
+            # Generate 5-minute interval timestamps
+            interval_minutes = 5
+            current_time = start_time
+            data_points = []
+
+            while current_time <= end_time:
+                # Count tasks that were pending or processing at this timestamp
+                depth_query = select(func.count(AgentTestExecution.id)).where(
+                    and_(
+                        AgentTestExecution.tenant_id == tenant_id,
+                        AgentTestExecution.created_at <= current_time,
+                        AgentTestExecution.status.in_(["pending", "processing"]),
+                    )
+                )
+                depth_result = await db.execute(depth_query)
+                depth = depth_result.scalar() or 0
+
+                data_points.append(
+                    QueueDepthDataPoint(
+                        timestamp=self._to_ist(current_time),
+                        depth=depth,
+                    )
+                )
+
+                current_time += timedelta(minutes=interval_minutes)
+
+            return data_points
+
+        except Exception as e:
+            logger.error(f"Error getting depth history: {str(e)}", exc_info=True)
+            raise
+
+    async def get_queue_tasks(
+        self,
+        tenant_id: str,
+        page: int,
+        limit: int,
+        status_filter: Optional[str],
+        db: AsyncSession,
+    ) -> TaskListResponse:
+        """
+        Get paginated list of tasks in queue.
+
+        Args:
+            tenant_id: Tenant identifier
+            page: Page number (1-indexed)
+            limit: Tasks per page
+            status_filter: Optional status filter (pending, processing, completed, failed)
+            db: Database session
+
+        Returns:
+            TaskListResponse with tasks, total, page, pages
+
+        Query: SELECT * FROM agent_test_executions
+               JOIN agents ON agent_test_executions.agent_id = agents.id
+               WHERE tenant_id = ? [AND status = ?]
+               ORDER BY created_at DESC
+               LIMIT ? OFFSET ?
+        """
+        logger.debug(
+            f"Getting queue tasks for tenant {tenant_id}: page={page}, limit={limit}, status={status_filter}"
+        )
+
+        try:
+            # Build base query with JOIN to get agent name
+            base_query = (
+                select(
+                    AgentTestExecution.id,
+                    Agent.name.label("agent_name"),
+                    AgentTestExecution.status,
+                    AgentTestExecution.created_at,
+                    AgentTestExecution.tenant_id,
+                )
+                .join(Agent, AgentTestExecution.agent_id == Agent.id)
+                .where(AgentTestExecution.tenant_id == tenant_id)
             )
 
-            # Log audit event for unexpected failure
-            audit_logger.audit_api_call(
-                tenant_id=tenant_id,
-                ticket_id=ticket_id,
-                correlation_id=getattr(job, "correlation_id", "") if 'job' in locals() else "",
-                endpoint="enhancement:queue",
-                method="lpush",
-                status_code=500,
-                error_type=type(e).__name__,
-                error_message=str(e),
+            # Apply status filter if provided
+            if status_filter:
+                base_query = base_query.where(AgentTestExecution.status == status_filter)
+
+            # Get total count
+            count_query = select(func.count()).select_from(base_query.alias())
+            count_result = await db.execute(count_query)
+            total = count_result.scalar() or 0
+
+            # Calculate pagination
+            total_pages = math.ceil(total / limit) if total > 0 else 1
+            offset = (page - 1) * limit
+
+            # Get paginated results
+            paginated_query = base_query.order_by(desc(AgentTestExecution.created_at)).limit(limit).offset(offset)
+            result = await db.execute(paginated_query)
+            rows = result.all()
+
+            # Convert to QueueTask objects
+            tasks = [
+                QueueTask(
+                    id=str(row.id),
+                    agent_name=row.agent_name,
+                    status=row.status,
+                    queued_at=self._to_ist(row.created_at),
+                    priority=2,  # Default to "Normal" priority (no priority field in model yet)
+                    tenant_id=row.tenant_id,
+                )
+                for row in rows
+            ]
+
+            return TaskListResponse(
+                tasks=tasks,
+                total=total,
+                page=page,
+                pages=total_pages,
             )
 
-            # Use string concatenation to avoid f-string formatting issues
-            app_logger.error(
-                "Unexpected error queuing job for tenant %s, ticket %s: %s - %s",
-                tenant_id,
-                ticket_id,
-                type(e).__name__,
-                str(e),
-                extra={
-                    "tenant_id": tenant_id,
-                    "ticket_id": ticket_id,
-                    "error_type": type(e).__name__,
-                    "error_message": str(e),
-                },
+        except Exception as e:
+            logger.error(f"Error getting queue tasks: {str(e)}", exc_info=True)
+            raise
+
+    async def cancel_task(
+        self,
+        tenant_id: str,
+        task_id: str,
+        db: AsyncSession,
+    ) -> None:
+        """
+        Cancel a pending or processing task.
+
+        Args:
+            tenant_id: Tenant identifier for authorization
+            task_id: Task ID (AgentTestExecution ID)
+            db: Database session
+
+        Raises:
+            ValueError: If task not found or already completed
+            PermissionError: If task doesn't belong to tenant
+
+        Steps:
+            1. Verify task belongs to tenant
+            2. Verify status is 'pending' or 'processing'
+            3. Call Celery: celery_app.control.revoke(task_id, terminate=True)
+            4. Update DB: status='cancelled', errors={'message': 'Cancelled by user'}
+        """
+        logger.info(f"Cancelling task {task_id} for tenant {tenant_id}")
+
+        try:
+            # Fetch task from database
+            query = select(AgentTestExecution).where(AgentTestExecution.id == task_id)
+            result = await db.execute(query)
+            execution = result.scalar_one_or_none()
+
+            # Verify task exists
+            if not execution:
+                raise ValueError(f"Task {task_id} not found")
+
+            # Verify tenant ownership
+            if execution.tenant_id != tenant_id:
+                raise PermissionError(
+                    f"Task {task_id} does not belong to tenant {tenant_id}"
+                )
+
+            # Verify task can be cancelled
+            if execution.status not in ["pending", "processing"]:
+                raise ValueError(
+                    f"Cannot cancel task in '{execution.status}' status. "
+                    "Only 'pending' or 'processing' tasks can be cancelled."
+                )
+
+            # Revoke Celery task if task_id is available
+            if execution.task_id:
+                try:
+                    celery_app.control.revoke(execution.task_id, terminate=True)
+                    logger.info(f"Revoked Celery task: {execution.task_id}")
+                except Exception as celery_error:
+                    logger.warning(
+                        f"Failed to revoke Celery task {execution.task_id}: {str(celery_error)}"
+                    )
+                    # Continue with DB update even if Celery revoke fails
+
+            # Update database status
+            execution.status = "cancelled"
+            execution.errors = {
+                "error_type": "UserCancellation",
+                "message": "Cancelled by user",
+                "cancelled_at": self._get_ist_now().isoformat(),
+            }
+            await db.commit()
+
+            logger.info(f"Task {task_id} cancelled successfully")
+
+        except (ValueError, PermissionError):
+            # Re-raise validation errors
+            raise
+        except Exception as e:
+            logger.error(f"Error cancelling task {task_id}: {str(e)}", exc_info=True)
+            await db.rollback()
+            raise
+
+    async def pause_queue(self, tenant_id: str, reason: Optional[str] = None) -> None:
+        """
+        Pause queue processing for a tenant.
+
+        Args:
+            tenant_id: Tenant identifier
+            reason: Optional reason for pausing
+
+        Steps:
+            1. Redis.set(f"queue_paused_{tenant_id}", "true")
+            2. Workers check this flag before processing new tasks
+        """
+        logger.warning(
+            f"Pausing queue for tenant {tenant_id}: {reason or 'No reason provided'}"
+        )
+
+        try:
+            redis_client = await get_redis_client()
+            pause_key = f"queue_paused_{tenant_id}"
+            await redis_client.set(pause_key, "true")
+
+            logger.info(f"Queue paused successfully for tenant {tenant_id}")
+
+            # TODO: Log to audit_logs table when implemented
+
+        except Exception as e:
+            logger.error(
+                f"Error pausing queue for tenant {tenant_id}: {str(e)}", exc_info=True
             )
-            raise QueueServiceError(error_msg) from e
+            raise
 
+    async def resume_queue(self, tenant_id: str) -> None:
+        """
+        Resume queue processing for a tenant.
 
-async def get_queue_service() -> QueueService:
-    """
-    FastAPI dependency to provide QueueService instance.
+        Args:
+            tenant_id: Tenant identifier
 
-    Creates and returns a QueueService with async Redis client.
-    This function follows FastAPI dependency injection pattern.
+        Steps:
+            1. Redis.delete(f"queue_paused_{tenant_id}")
+            2. Workers will resume processing tasks
+        """
+        logger.info(f"Resuming queue for tenant {tenant_id}")
 
-    Returns:
-        QueueService: Configured queue service instance
+        try:
+            redis_client = await get_redis_client()
+            pause_key = f"queue_paused_{tenant_id}"
+            await redis_client.delete(pause_key)
 
-    Example:
-        # In FastAPI endpoint
-        @router.post("/webhook")
-        async def webhook(queue: QueueService = Depends(get_queue_service)):
-            job_id = await queue.push_job(job_data)
-    """
-    redis_client = await get_redis_client()
-    return QueueService(redis_client)
+            logger.info(f"Queue resumed successfully for tenant {tenant_id}")
 
+            # TODO: Log to audit_logs table when implemented
 
-async def push_to_queue(queue_name: str, data: dict) -> bool:
-    """
-    Push a job to the queue.
-
-    Args:
-        queue_name: Redis list key name (e.g., 'enhancement:queue')
-        data: Job data to enqueue (will be JSON serialized)
-
-    Returns:
-        bool: True if successful, False if failed
-
-    Raises:
-        ConnectionError: If Redis connection fails
-        TimeoutError: If operation times out
-    """
-    try:
-        client = get_shared_redis()
-        # Serialize data to JSON string
-        job_json = json.dumps(data)
-        # LPUSH adds to the left side of the list (enqueue)
-        result = await client.lpush(queue_name, job_json)
-        logger.debug(f"Pushed job to queue '{queue_name}': {result} items in queue")
-        return result > 0
-    except RedisTimeoutError as e:
-        logger.error("Queue push timeout", extra={"queue": queue_name, "error": str(e)})
-        raise
-    except RedisConnectionError as e:
-        logger.error("Queue push connection error", extra={"queue": queue_name, "error": str(e)})
-        raise
-    except Exception as e:
-        logger.error("Queue push failed", extra={"queue": queue_name, "error": str(e)})
-        raise
-
-
-async def pop_from_queue(queue_name: str) -> dict[str, Any] | None:
-    """
-    Pop a job from the queue (blocking).
-
-    Uses BRPOP (blocking right pop) to fetch jobs from the right side
-    of the list with a 1-second timeout.
-
-    Args:
-        queue_name: Redis list key name
-
-    Returns:
-        dict: Deserialized job data, or None if queue is empty or timeout
-
-    Raises:
-        ConnectionError: If Redis connection fails
-        json.JSONDecodeError: If stored data is not valid JSON
-    """
-    try:
-        client = get_shared_redis()
-        # BRPOP waits up to timeout seconds for an item on the right
-        result = await client.brpop(queue_name, timeout=BRPOP_TIMEOUT)
-
-        if result is None:
-            logger.debug(f"Queue '{queue_name}' is empty or timeout reached")
-            return None
-
-        # result is a tuple: (key, value)
-        _, job_json = result
-        job_data = json.loads(job_json)
-        logger.debug(f"Popped job from queue '{queue_name}'")
-        return job_data
-    except RedisTimeoutError as e:
-        logger.error("Queue pop timeout", extra={"queue": queue_name, "error": str(e)})
-        raise
-    except RedisConnectionError as e:
-        logger.error("Queue pop connection error", extra={"queue": queue_name, "error": str(e)})
-        raise
-    except json.JSONDecodeError as e:
-        logger.error("Invalid JSON in queue", extra={"queue": queue_name, "error": str(e)})
-        raise
-    except Exception as e:
-        logger.error("Queue pop failed", extra={"queue": queue_name, "error": str(e)})
-        raise
-
-
-async def peek_queue(queue_name: str, count: int = 10) -> list[dict[str, Any]]:
-    """
-    Peek at jobs in the queue without removing them.
-
-    Returns the next `count` jobs that would be processed in FIFO order
-    (shows what would be dequeued by BRPOP next).
-
-    Args:
-        queue_name: Redis list key name
-        count: Number of jobs to peek at (default: 10)
-
-    Returns:
-        list: List of deserialized job data dictionaries in FIFO order
-              (first item is next to be dequeued)
-
-    Raises:
-        ConnectionError: If Redis connection fails
-        json.JSONDecodeError: If stored data is not valid JSON
-    """
-    try:
-        client = get_shared_redis()
-        # LPUSH adds to left, BRPOP takes from right
-        # To peek at what would be popped next, get rightmost items and reverse
-        # LRANGE -count -1 returns the rightmost `count` items from left to right
-        # We reverse them to show in the order they'll be processed (right-to-left)
-        job_jsons = await client.lrange(queue_name, -count, -1)
-
-        jobs = []
-        for job_json in reversed(job_jsons):
-            try:
-                job_data = json.loads(job_json)
-                jobs.append(job_data)
-            except json.JSONDecodeError as e:
-                logger.error(f"Invalid JSON in queue '{queue_name}': {str(e)}")
-                # Continue processing other items
-                continue
-
-        logger.debug(f"Peeked {len(jobs)} jobs from queue '{queue_name}'")
-        return jobs
-    except RedisTimeoutError as e:
-        logger.error("Queue peek timeout", extra={"queue": queue_name, "error": str(e)})
-        raise
-    except RedisConnectionError as e:
-        logger.error("Queue peek connection error", extra={"queue": queue_name, "error": str(e)})
-        raise
-    except Exception as e:
-        logger.error("Queue peek failed", extra={"queue": queue_name, "error": str(e)})
-        raise
-
-
-async def get_queue_depth(queue_name: str) -> int:
-    """
-    Get the number of jobs currently in the queue.
-
-    Args:
-        queue_name: Redis list key name
-
-    Returns:
-        int: Number of jobs in the queue (0 if queue doesn't exist)
-
-    Raises:
-        ConnectionError: If Redis connection fails
-    """
-    try:
-        client = get_shared_redis()
-        # LLEN returns the length of the list
-        depth = await client.llen(queue_name)
-        logger.debug(f"Queue '{queue_name}' depth: {depth}")
-        return depth
-    except RedisTimeoutError as e:
-        logger.error("Queue depth timeout", extra={"queue": queue_name, "error": str(e)})
-        raise
-    except RedisConnectionError as e:
-        logger.error("Queue depth connection error", extra={"queue": queue_name, "error": str(e)})
-        raise
-    except Exception as e:
-        logger.error("Queue depth failed", extra={"queue": queue_name, "error": str(e)})
-        raise
+        except Exception as e:
+            logger.error(
+                f"Error resuming queue for tenant {tenant_id}: {str(e)}", exc_info=True
+            )
+            raise

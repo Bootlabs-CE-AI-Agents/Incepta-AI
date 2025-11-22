@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/agent-performance/EmptyState';
 import { getDateRangePreset } from '@/lib/utils/performance';
 import { autoSelectGranularity } from '@/lib/utils/chart';
 import { RefreshCw } from 'lucide-react';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 type DateRangePreset = 'last_7' | 'last_30' | 'custom';
 
@@ -88,14 +89,15 @@ export default function AgentPerformancePage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Agent Performance Dashboard</h1>
-        <p className="text-muted-foreground mt-2">
-          Monitor execution metrics, success rates, and performance trends for your agents
-        </p>
-      </div>
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Agent Performance Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
+            Monitor execution metrics, success rates, and performance trends for your agents
+          </p>
+        </div>
 
       {/* Controls Row */}
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -167,6 +169,7 @@ export default function AgentPerformancePage() {
           endDate={new Date(dateRange.end)}
         />
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

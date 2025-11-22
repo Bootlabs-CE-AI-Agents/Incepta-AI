@@ -4,7 +4,7 @@
  * TanStack Query hook for fetching daily LLM cost trend data with auto-refresh.
  * Follows 2025 React Query v5 best practices validated via Context7 MCP research.
  *
- * Maps to Backend API: GET /api/v1/costs/trend (src/api/llm_costs.py:183-202)
+ * Maps to Backend API: GET /api/costs/trend (src/api/llm_costs.py:183-202)
  * Uses DailySpendDTO schema (src/schemas/llm_cost.py:75-89)
  *
  * Research Notes:
@@ -14,7 +14,7 @@
  */
 
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
-import axios from 'axios';
+import { apiClient } from '@/lib/api/client';
 import { DailySpendDTO } from '@/types/costs';
 
 /**
@@ -24,9 +24,9 @@ import { DailySpendDTO } from '@/types/costs';
  * @throws Error if API request fails or returns non-200 status
  */
 async function fetchDailyTrend(days: number): Promise<DailySpendDTO[]> {
-  // Use API endpoint with versioned URL per ADR-004
-  const response = await axios.get<DailySpendDTO[]>(
-    `/api/v1/costs/trend?days=${days}`,
+  // LLM Costs API uses /api/costs/* (no v1 prefix)
+  const response = await apiClient.get<DailySpendDTO[]>(
+    `/api/costs/trend?days=${days}`,
     {
       headers: {
         'Content-Type': 'application/json',

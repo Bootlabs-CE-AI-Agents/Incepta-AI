@@ -4,12 +4,12 @@
  * TanStack Query hook for fetching LLM cost summary metrics with auto-refresh.
  * Follows 2025 React Query v5 best practices for real-time dashboards.
  *
- * Maps to Backend API: GET /api/v1/costs/summary (src/api/llm_costs.py:40-64)
+ * Maps to Backend API: GET /api/costs/summary (src/api/llm_costs.py:40-64)
  * Uses CostSummaryDTO schema (src/schemas/llm_cost.py:187-201)
  */
 
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
-import axios from 'axios';
+import { apiClient } from '@/lib/api/client';
 import { CostSummaryDTO } from '@/types/costs';
 
 /**
@@ -18,8 +18,8 @@ import { CostSummaryDTO } from '@/types/costs';
  * @throws Error if API request fails or returns non-200 status
  */
 async function fetchCostSummary(): Promise<CostSummaryDTO> {
-  // Use API endpoint with versioned URL per ADR-004
-  const response = await axios.get<CostSummaryDTO>('/api/v1/costs/summary', {
+  // LLM Costs API uses /api/costs/* (no v1 prefix)
+  const response = await apiClient.get<CostSummaryDTO>('/api/costs/summary', {
     headers: {
       'Content-Type': 'application/json',
     },

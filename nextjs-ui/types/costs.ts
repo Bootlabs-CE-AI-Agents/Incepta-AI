@@ -113,7 +113,7 @@ export interface BudgetAgentSpendDTO {
 
 /**
  * Budget utilization data for a single tenant
- * Maps to Python BudgetUtilizationDTO (backend schema to be implemented)
+ * Maps to Python BudgetUtilizationDTO in src/schemas/llm_cost.py:127-149
  */
 export interface BudgetUtilizationDTO {
   /** Unique tenant identifier */
@@ -122,20 +122,23 @@ export interface BudgetUtilizationDTO {
   /** Human-readable tenant name */
   tenant_name: string;
 
-  /** Budget allocation in USD, null if not configured */
-  budget_amount: number | null;
+  /** Monthly budget limit in USD */
+  budget_limit: number;
 
-  /** Cumulative amount spent in USD */
-  spent_amount: number;
+  /** Current month spend in USD */
+  current_spend: number;
 
-  /** Utilization percentage (0-100+), calculated as (spent/budget) * 100 */
-  utilization_percentage: number;
+  /** Remaining budget in USD */
+  remaining: number;
 
-  /** Breakdown of spend by agent */
-  agent_breakdown: BudgetAgentSpendDTO[];
+  /** Budget utilization percentage (0-200) */
+  utilization_pct: number;
 
-  /** ISO 8601 timestamp of last data update */
-  last_updated: string;
+  /** Color indicator: green/yellow/red */
+  color: "green" | "yellow" | "red";
+
+  /** True if tenant uses own keys (BYOK) */
+  is_byok: boolean;
 }
 
 /**

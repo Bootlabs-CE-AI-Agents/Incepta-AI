@@ -17,7 +17,7 @@ export async function getAgentErrorAnalysis(
   });
 
   const response = await apiClient.get<ErrorAnalysisResponse>(
-    `/agents/${agentId}/error-analysis?${params}`
+    `/api/v1/agents/${agentId}/error-analysis?${params}`
   );
 
   return response.data;

@@ -803,9 +803,8 @@ class AgentService:
                 detail="Webhook trigger not found for agent",
             )
 
-        # Generate new HMAC secret
-        new_secret = generate_hmac_secret()
-        # BUG FIX: encrypt() only takes 1 parameter (plaintext), not 2
+        # Generate new secret
+        new_secret = secrets.token_urlsafe(32)
         encrypted_secret = encrypt(new_secret)
 
         # Update database

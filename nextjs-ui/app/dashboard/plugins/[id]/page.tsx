@@ -24,6 +24,7 @@ import {
 import { ArrowLeft, RefreshCw, PlayCircle, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import type { UpdatePluginRequest } from '@/lib/api/plugins';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 interface PluginDetailPageProps {
   params: Promise<{
@@ -116,24 +117,24 @@ export default function PluginDetailPage({ params }: PluginDetailPageProps) {
   // Loading state
   if (isLoading) {
     return (
-      <div className="p-6">
+      <DashboardLayout>
         <Card className="p-6">
           <div className="h-96 flex items-center justify-center">
             <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         </Card>
-      </div>
+      </DashboardLayout>
     );
   }
 
   // Error state
   if (error || !plugin) {
     return (
-      <div className="p-6">
+      <DashboardLayout>
         <Card className="p-6">
           <p className="text-destructive">Failed to load plugin: {error?.message || 'Not found'}</p>
         </Card>
-      </div>
+      </DashboardLayout>
     );
   }
 
@@ -159,7 +160,7 @@ export default function PluginDetailPage({ params }: PluginDetailPageProps) {
       : undefined;
 
   return (
-    <div className="p-6 space-y-6">
+    <DashboardLayout>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -401,6 +402,6 @@ export default function PluginDetailPage({ params }: PluginDetailPageProps) {
           },
         ]}
       />
-    </div>
+    </DashboardLayout>
   );
 }

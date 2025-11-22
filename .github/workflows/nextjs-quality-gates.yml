@@ -1,0 +1,201 @@
+name: Next.js UI Quality Gates
+
+# Workflow triggers: Run on all pull requests and main branch pushes
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'nextjs-ui/**'
+      - '.github/workflows/nextjs-quality-gates.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'nextjs-ui/**'
+      - '.github/workflows/nextjs-quality-gates.yml'
+
+# Workflow permissions: Minimum required for secure operation
+permissions:
+  contents: read        # Required to checkout code
+  pull-requests: write  # Required to comment on PRs with coverage reports
+
+# Environment variables
+env:
+  NODE_VERSION: '18'
+  WORKING_DIR: nextjs-ui
+
+jobs:
+  # Job: Next.js Quality Checks and Tests
+  # Purpose: Enforce automated quality gates identified in Sprint 1 retrospective
+  # Context: 50% RE-REVIEW rate (4/8 stories) caused by missing automated checks
+  # Expected Impact: Reduce RE-REVIEW rate from 50% to <20% (save 4-6 days per sprint)
+  nextjs-quality-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Default working directory for all run steps
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+
+    steps:
+      # Step 1: Checkout repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      # Step 2: Set up Node.js 18 environment
+      # Reason: Next.js 14 requires Node 18+
+      # Version matches local development environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '${{ env.WORKING_DIR }}/package-lock.json'
+
+      # Step 3: Install dependencies
+      # Reason: Required for all subsequent quality checks
+      # npm ci ensures reproducible builds from package-lock.json
+      - name: Install dependencies
+        run: npm ci
+
+      # Step 4: Code formatting check with Prettier
+      # Reason: Enforces consistent code formatting across team
+      # Configured in .prettierrc.json with 80-char line width
+      # Tip: Run `npm run format` locally to auto-format before pushing
+      - name: Check code formatting (Prettier)
+        run: npm run format:check
+        continue-on-error: false
+
+      # Step 5: Linting with ESLint
+      # Reason: Catches code quality issues, unused imports, potential bugs
+      # Context: Story 9 had 41 ESLint errors (unused imports, `as any` casts)
+      # Context: Story 10 CustomTooltip RE-REVIEW due to ESLint issues
+      # ESLint configured in .eslintrc.json with TypeScript rules
+      # Common fixes:
+      #   - Remove unused imports/variables
+      #   - Fix React Hooks dependency arrays
+      #   - Replace `as any` with proper types
+      # Tip: Run `npm run lint:fix` locally to auto-fix some issues
+      - name: Lint code (ESLint)
+        run: npm run lint
+        continue-on-error: false
+
+      # Step 6: Type checking with TypeScript
+      # Reason: Static type checking prevents runtime errors
+      # Context: Sprint 1 achieved 0 TypeScript errors in all 29 routes
+      # TypeScript configured in tsconfig.json with strict mode enabled
+      # Benefits:
+      #   - Catches typos in variable/method names
+      #   - Prevents passing wrong argument types
+      #   - Documents expected types in function signatures
+      # This check ensures type safety is maintained
+      - name: Type check (TypeScript)
+        run: npm run type-check
+        continue-on-error: false
+
+      # Step 7: Build Next.js application
+      # Reason: Validates all routes compile successfully
+      # Context: Sprint 1 production builds validated all 29 routes
+      # Build failures indicate:
+      #   - Type errors in components
+      #   - Missing dependencies
+      #   - Invalid imports
+      # Build must pass before merge to prevent production deployment failures
+      - name: Build Next.js application
+        run: npm run build
+        continue-on-error: false
+        env:
+          # Required for Next.js build
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+
+      # Step 8: Run unit tests with coverage
+      # Reason: Validates component functionality and maintains test coverage
+      # Context: Sprint 1 achieved 99.76% test coverage (128 tests)
+      # Coverage threshold: 80% minimum (per retrospective DoD agreement)
+      # Tests include:
+      #   - Unit tests for hooks
+      #   - Component tests for UI elements
+      #   - Integration tests for pages
+      # Jest configured in jest.config.js with React Testing Library
+      - name: Run unit tests with coverage
+        run: npm test -- --coverage --watchAll=false --passWithNoTests
+        continue-on-error: false
+        env:
+          CI: true
+
+      # Step 9: Check test coverage thresholds
+      # Reason: Enforce minimum 80% coverage requirement from retrospective
+      # Context: Sprint 1 DoD requires comprehensive test coverage
+      # Coverage thresholds defined in jest.config.js:
+      #   - Statements: 80%
+      #   - Branches: 80%
+      #   - Functions: 80%
+      #   - Lines: 80%
+      - name: Verify coverage thresholds
+        run: |
+          # Jest automatically fails if coverage thresholds not met
+          # This step is explicit validation that occurred in test step
+          echo "Coverage thresholds validated in test step"
+
+      # Step 10: Upload coverage report as artifact
+      # Reason: Allows review of coverage details in GitHub Actions UI
+      # Coverage report can be integrated with external services (Codecov, Coveralls)
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        if: always()  # Upload even if tests fail
+        with:
+          name: nextjs-coverage-report
+          path: ${{ env.WORKING_DIR }}/coverage/
+          retention-days: 30
+
+      # Step 11: Comment coverage summary on PR
+      # Reason: Provides visibility of coverage changes directly in PR
+      # Only runs on pull requests, not main branch pushes
+      - name: Comment coverage on PR
+        uses: ArtiomTr/jest-coverage-report-action@v2
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          working-directory: ${{ env.WORKING_DIR }}
+          coverage-file: ./coverage/coverage-summary.json
+          base-coverage-file: ./coverage/coverage-summary.json
+          threshold: 80
+          annotations: all
+
+  # Job: Component Visual Regression Tests (Optional Enhancement)
+  # Purpose: Prevent visual regressions in Apple Liquid Glass design system
+  # Context: Sprint 1 focused on functional testing, visual testing identified as future enhancement
+  # Status: Placeholder for future Chromatic/Percy integration
+  visual-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: false  # Disabled for now, enable when Chromatic/Percy configured
+
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIR }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '${{ env.WORKING_DIR }}/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Placeholder for Chromatic visual regression tests
+      # - name: Run Chromatic
+      #   uses: chromaui/action@v1
+      #   with:
+      #     projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+      #     workingDir: ${{ env.WORKING_DIR }}

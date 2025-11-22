@@ -13,7 +13,10 @@ from typing import List
 
 from src.database.session import get_async_session
 from src.database.models import TenantConfig, User
-from src.api.dependencies import get_current_user
+from src.api.dependencies import get_current_active_user, get_tenant_id, get_tenant_db
+from src.schemas.tenant import TenantConfigCreate, TenantConfigResponse, EnhancementPreferences
+from src.services.tenant_service import TenantService
+from src.cache.redis_client import get_redis_client
 from loguru import logger
 
 router = APIRouter(prefix="/api/v1/tenants", tags=["tenants"])
@@ -55,10 +58,103 @@ class TenantResponse:
 # ============================================================================
 
 
+@router.post("", status_code=status.HTTP_201_CREATED)
+async def create_tenant(
+    config: TenantConfigCreate,
+    current_user: User = Depends(get_current_active_user),
+    current_tenant_id: str = Depends(get_tenant_id),
+    db: AsyncSession = Depends(get_tenant_db),
+) -> dict:
+    """
+    Create a new tenant configuration.
+
+    Args:
+        config: Tenant configuration data from request body
+        current_user: Authenticated user from session
+        db: Database session
+
+    Returns:
+        Created tenant object with masked sensitive fields
+
+    Raises:
+        HTTPException(400): If tenant_id already exists or validation fails
+        HTTPException(500): If tenant creation fails
+    """
+    try:
+        # Auto-generate tenant_id from name if not provided
+        if not config.tenant_id or config.tenant_id.strip() == "":
+            # Generate tenant_id from name: lowercase, replace spaces with hyphens, remove special chars
+            import re
+            generated_id = re.sub(r'[^a-z0-9\-]', '', config.name.lower().replace(' ', '-'))
+            config.tenant_id = generated_id[:100]  # Ensure max length
+            logger.info(f"Auto-generated tenant_id: {config.tenant_id} from name: {config.name}")
+
+        # Get Redis client for tenant service
+        redis_client = await get_redis_client()
+
+        # Initialize tenant service
+        tenant_service = TenantService(db, redis_client)
+
+        # Create tenant using service layer (handles encryption, LiteLLM key creation, etc.)
+        tenant_internal = await tenant_service.create_tenant(config)
+
+        # Commit the transaction
+        await db.commit()
+
+        # Convert to response format (masks sensitive fields)
+        response = TenantConfigResponse(
+            id=tenant_internal.id,
+            tenant_id=tenant_internal.tenant_id,
+            name=tenant_internal.name,
+            tool_type=tenant_internal.tool_type,
+            servicedesk_url=tenant_internal.servicedesk_url,
+            servicedesk_api_key_encrypted="***encrypted***",
+            jira_url=tenant_internal.jira_url,
+            jira_api_token_encrypted="***encrypted***",
+            jira_project_key=tenant_internal.jira_project_key,
+            webhook_signing_secret_encrypted="***encrypted***",
+            enhancement_preferences=tenant_internal.enhancement_preferences,
+            is_active=tenant_internal.is_active,
+            created_at=tenant_internal.created_at,
+            updated_at=tenant_internal.updated_at,
+        )
+
+        logger.info(
+            f"User {current_user.email} created tenant {tenant_internal.tenant_id}",
+            extra={"user_id": current_user.id, "tenant_id": tenant_internal.tenant_id}
+        )
+
+        return response.model_dump()
+
+    except ValueError as e:
+        # Validation errors or business logic errors
+        logger.warning(
+            f"Tenant creation validation failed: {str(e)}",
+            extra={"user_id": current_user.id, "error": str(e)}
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    except Exception as e:
+        # Rollback on any error
+        await db.rollback()
+
+        logger.error(
+            f"Failed to create tenant: {str(e)}",
+            extra={"user_id": current_user.id, "error": str(e)}
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create tenant: {str(e)}",
+        )
+
+
 @router.get("")
 async def list_tenants(
-    db: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
+    current_tenant_id: str = Depends(get_tenant_id),
+    db: AsyncSession = Depends(get_tenant_db),
 ) -> List[dict]:
     """
     List all tenants accessible to the authenticated user.
@@ -108,8 +204,9 @@ async def list_tenants(
 @router.get("/{tenant_id}")
 async def get_tenant(
     tenant_id: str,
-    db: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
+    current_tenant_id: str = Depends(get_tenant_id),
+    db: AsyncSession = Depends(get_tenant_db),
 ) -> dict:
     """
     Get specific tenant by ID.

@@ -161,7 +161,7 @@ def validate_password_strength(password: str) -> tuple[bool, str]:
 
 
 async def create_access_token(
-    user: User, redis_client=None, expires_delta: Optional[timedelta] = None
+    user: User, redis_client=None, expires_delta: Optional[timedelta] = None, db: Optional[AsyncSession] = None
 ) -> str:
     """
     Create JWT access token for authenticated user.
@@ -169,7 +169,7 @@ async def create_access_token(
     CRITICAL: JWT payload contains ONLY these fields (ADR 003):
     - sub: user.id (UUID as string)
     - email: user.email
-    - default_tenant_id: user.default_tenant_id (UUID as string or None)
+    - default_tenant_id: tenant's string ID (NOT UUID) - e.g., "default", not "9b831fca-..."
     - iat: issued at timestamp
     - exp: expiration timestamp (7 days from now by default)
     - jti: JWT ID (UUID) for token uniqueness
@@ -182,6 +182,7 @@ async def create_access_token(
         user: Authenticated user
         redis_client: Optional Redis client for token version tracking
         expires_delta: Optional custom expiration (default: 7 days)
+        db: Optional database session for tenant lookup (required if user has default_tenant_id)
 
     Returns:
         JWT token string
@@ -208,6 +209,16 @@ async def create_access_token(
         if version_str:
             token_version = int(version_str)
 
+    # Look up tenant's string ID from UUID (if user has a default tenant)
+    tenant_string_id = None
+    if user.default_tenant_id and db:
+        from src.database.models import TenantConfig
+        stmt = select(TenantConfig).where(TenantConfig.id == user.default_tenant_id)
+        result = await db.execute(stmt)
+        tenant_config = result.scalar_one_or_none()
+        if tenant_config:
+            tenant_string_id = tenant_config.tenant_id  # Use string ID, not UUID
+
     # Minimal JWT payload per ADR 003
     # Include jti (JWT ID) for token uniqueness (prevents identical tokens when created in same second)
     # Include token_version for password change revocation
@@ -216,7 +227,7 @@ async def create_access_token(
     payload = {
         "sub": str(user.id),
         "email": user.email,
-        "default_tenant_id": str(user.default_tenant_id) if user.default_tenant_id else None,
+        "default_tenant_id": tenant_string_id,  # Use string ID instead of UUID
         "iat": int(now.timestamp()),
         "exp": int(expire.timestamp()),
         "jti": str(uuid4()),  # Unique token identifier
@@ -233,7 +244,7 @@ async def create_access_token(
 
 
 async def create_refresh_token(
-    user: User, redis_client=None, expires_delta: Optional[timedelta] = None
+    user: User, redis_client=None, expires_delta: Optional[timedelta] = None, db: Optional[AsyncSession] = None
 ) -> str:
     """
     Create JWT refresh token with 30-day default expiration.
@@ -242,6 +253,7 @@ async def create_refresh_token(
         user: Authenticated user
         redis_client: Optional Redis client for token version tracking
         expires_delta: Optional custom expiration (default: 30 days)
+        db: Optional database session for tenant lookup (passed through to create_access_token)
 
     Returns:
         JWT refresh token string
@@ -254,7 +266,7 @@ async def create_refresh_token(
     if expires_delta is None:
         expires_delta = timedelta(days=settings.jwt_refresh_expiration_days)
 
-    return await create_access_token(user, redis_client, expires_delta)
+    return await create_access_token(user, redis_client, expires_delta, db)
 
 
 async def verify_token(redis_client, token: str) -> dict:

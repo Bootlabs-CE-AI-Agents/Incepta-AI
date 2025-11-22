@@ -1,9 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
 import { BudgetProgressBar } from "./BudgetProgressBar";
-import { AgentBreakdownTable } from "./AgentBreakdownTable";
 import { formatCurrency } from "@/lib/utils/budget";
 import type { BudgetUtilizationDTO } from "@/types/costs";
 import { cn } from "@/lib/utils/cn";
@@ -51,19 +48,6 @@ export function BudgetUtilizationRow({
   tenant,
   className,
 }: BudgetUtilizationRowProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const handleToggle = () => {
-    setIsExpanded((prev) => !prev);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleToggle();
-    }
-  };
-
   return (
     <div
       className={cn(
@@ -71,26 +55,9 @@ export function BudgetUtilizationRow({
         className
       )}
     >
-      {/* Main Row (Clickable) */}
-      <div
-        className="p-4 hover:bg-gray-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-inset"
-        onClick={handleToggle}
-        onKeyDown={handleKeyDown}
-        role="button"
-        tabIndex={0}
-        aria-expanded={isExpanded}
-        aria-label={`${tenant.tenant_name} budget details. Click to ${isExpanded ? "collapse" : "expand"} agent breakdown.`}
-      >
+      {/* Main Row (Non-clickable until agent breakdown is supported) */}
+      <div className="p-4">
         <div className="flex items-start gap-4">
-          {/* Expand/Collapse Icon */}
-          <div className="flex-shrink-0 pt-1">
-            {isExpanded ? (
-              <ChevronDown className="w-5 h-5 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            )}
-          </div>
-
           {/* Tenant Info */}
           <div className="flex-1 min-w-0">
             {/* Tenant Name */}
@@ -101,30 +68,27 @@ export function BudgetUtilizationRow({
             {/* Budget Summary */}
             <div className="flex items-center gap-3 text-sm text-muted-foreground mb-3">
               <span>
-                Spent: <span className="font-medium tabular-nums">{formatCurrency(tenant.spent_amount)}</span>
+                Spent: <span className="font-medium tabular-nums">{formatCurrency(tenant.current_spend)}</span>
               </span>
-              {tenant.budget_amount !== null && (
-                <>
-                  <span className="text-gray-300">|</span>
-                  <span>
-                    Budget: <span className="font-medium tabular-nums">{formatCurrency(tenant.budget_amount)}</span>
-                  </span>
-                </>
-              )}
+              <span className="text-gray-300">|</span>
+              <span>
+                Budget: <span className="font-medium tabular-nums">{formatCurrency(tenant.budget_limit)}</span>
+              </span>
             </div>
 
             {/* Progress Bar */}
             <BudgetProgressBar
-              utilized={tenant.utilization_percentage}
-              budget={tenant.budget_amount}
-              spent={tenant.spent_amount}
+              utilized={tenant.utilization_pct}
+              budget={tenant.budget_limit}
+              spent={tenant.current_spend}
             />
           </div>
         </div>
       </div>
 
-      {/* Expanded Section (Agent Breakdown) */}
-      {isExpanded && (
+      {/* Expanded Section (Agent Breakdown) - Not yet supported by backend */}
+      {/* TODO: Enable when backend supports agent_breakdown field */}
+      {/* {isExpanded && (
         <div
           className="bg-gray-50 px-4 py-4 animate-slideDown"
           role="region"
@@ -135,7 +99,7 @@ export function BudgetUtilizationRow({
           </h4>
           <AgentBreakdownTable agents={tenant.agent_breakdown} />
         </div>
-      )}
+      )} */}
     </div>
   );
 }

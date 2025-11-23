@@ -382,6 +382,7 @@ class UserService:
                 (UserTenantRole.role == RoleEnum.SUPER_ADMIN)
                 | (UserTenantRole.role == RoleEnum.TENANT_ADMIN)
             )
+            .limit(1)
         )
         result = await db.execute(stmt)
         admin_role = result.scalar_one_or_none()

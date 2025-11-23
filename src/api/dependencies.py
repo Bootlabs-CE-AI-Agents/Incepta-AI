@@ -478,3 +478,53 @@ async def require_role(
         return current_user
 
     return role_checker
+
+
+# ==============================================================================
+# Infrastructure Admin Role Dependency (No Tenant Isolation)
+# ==============================================================================
+
+
+async def require_admin_role(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+    db: Annotated[AsyncSession, Depends(get_async_session)],
+    user_service: Annotated[UserService, Depends(get_user_service)],
+) -> User:
+    """
+    Require admin role for infrastructure endpoints (no tenant isolation).
+
+    This dependency enforces admin-only access for global infrastructure
+    operations like worker monitoring, system health checks, etc. Unlike
+    tenant-scoped endpoints, these do not require X-Tenant-ID header.
+
+    Args:
+        current_user: Authenticated user from JWT token
+        db: Database session
+        user_service: User service instance
+
+    Returns:
+        User: Authenticated admin user
+
+    Raises:
+        HTTPException: 403 if user does not have admin role
+
+    Example:
+        @router.get("/api/workers")
+        async def list_workers(
+            user: User = Depends(require_admin_role)
+        ):
+            # Only admins can access worker monitoring
+            pass
+
+    Story: nextjs-story-17-workers-api-backend (AC-5: RBAC Enforcement)
+    """
+    # Check if user has admin role in ANY tenant
+    has_admin = await user_service.has_admin_role(current_user.id, db)
+
+    if not has_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions. Admin role required.",
+        )
+
+    return current_user

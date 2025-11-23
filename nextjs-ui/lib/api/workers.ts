@@ -1,14 +1,16 @@
 import { apiClient } from './client';
 
+export type WorkerStatusEnum = 'active' | 'idle' | 'unresponsive';
+
 export interface WorkerStatus {
     hostname: string;
-    status: 'active' | 'idle' | 'unresponsive';
-    active_tasks_count: number;
-    completed_tasks_count: number;
-    concurrency: number;
-    uptime: number;
-    cpu_usage_percent: number;
-    memory_usage_percent: number;
+    status: WorkerStatusEnum;
+    uptime_seconds: number;
+    active_tasks: number;
+    completed_tasks: number;
+    cpu_percent: number;
+    memory_percent: number;
+    throughput_per_minute: number;
 }
 
 export interface WorkerLogsResponse {

@@ -1,36 +1,41 @@
 /**
  * Worker Logs Viewer Modal
  *
- * Full-featured logs viewer with:
- * - Log level filtering (ERROR/WARNING/INFO/DEBUG)
- * - Line count selection (50/100/250/500/1000)
- * - Search/filter logs by text
- * - Auto-refresh toggle (5s/10s/30s/off)
- * - Download logs as .log file
- * - Auto-scroll to bottom (tail mode)
- * - Syntax highlighting & line numbers
+ * Full-featured logs viewer with virtualization for performance.
  *
- * Story 3.3: Worker Logs Viewer (P1)
+ * Features (All 9 ACs):
+ * - AC-1: Modal opens with log display, controls, dark theme
+ * - AC-2: Log level color coding (ERROR/WARN/INFO/DEBUG)
+ * - AC-3: Search/filter with debouncing (300ms)
+ * - AC-4: Auto-scroll toggle with session storage
+ * - AC-5: Refresh logs with Ctrl+R/Cmd+R
+ * - AC-6: Download logs as .txt file
+ * - AC-7: Virtualized list for performance (TanStack Virtual)
+ * - AC-8: Full keyboard navigation (ESC, Ctrl+F, Ctrl+R, Ctrl+D)
+ * - AC-9: Enhanced error handling (404/503/network)
+ *
+ * Story: nextjs-story-19-workers-logs-viewer
  */
 
 'use client';
 
-import React, { useState, useRef, useEffect, Fragment } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { workersApi } from '@/lib/api/workers';
+import React, { useState, useRef, useEffect, Fragment, useMemo } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Button } from '@/components/ui/Button';
+import { useWorkerLogs } from '@/lib/hooks/useWorkers';
+import { useDebounce } from '@/lib/hooks/useDebounce';
+import { parseLogLine, getLogLevelColor, formatLogTimestamp } from '@/lib/utils/logParser';
+import { downloadLogs } from '@/lib/utils/downloadLogs';
 import {
   Download,
   Search,
   RefreshCw,
   X,
   AlertCircle,
-  Info,
-  AlertTriangle,
-  Bug,
   XCircle,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface WorkerLogsModalProps {
   hostname: string;
@@ -38,111 +43,211 @@ interface WorkerLogsModalProps {
   onClose: () => void;
 }
 
-type LogLevel = 'ALL' | 'ERROR' | 'WARNING' | 'INFO' | 'DEBUG';
 type LineCount = 50 | 100 | 250 | 500 | 1000;
-type RefreshInterval = 0 | 5000 | 10000 | 30000;
 
-const LOG_LEVEL_COLORS: Record<string, string> = {
-  ERROR: 'bg-red-500/10 text-red-500 border-red-500/20',
-  WARN: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  WARNING: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  INFO: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  DEBUG: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
-};
-
-const LOG_LEVEL_ICONS: Record<string, React.ReactNode> = {
-  ERROR: <XCircle className="h-3 w-3" />,
-  WARN: <AlertTriangle className="h-3 w-3" />,
-  WARNING: <AlertTriangle className="h-3 w-3" />,
-  INFO: <Info className="h-3 w-3" />,
-  DEBUG: <Bug className="h-3 w-3" />,
-};
+// Session storage key for auto-scroll preference
+const getAutoScrollKey = (hostname: string) => `worker-logs-autoscroll-${hostname}`;
 
 export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalProps) {
-  const [logLevel, setLogLevel] = useState<LogLevel>('ALL');
   const [lineCount, setLineCount] = useState<LineCount>(100);
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>(0);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const logsEndRef = useRef<HTMLDivElement>(null);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300); // AC-3: 300ms debounce
 
+  // AC-4: Auto-scroll with session storage
+  const [autoScroll, setAutoScroll] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const stored = sessionStorage.getItem(getAutoScrollKey(hostname));
+    return stored === 'true' || stored === null; // Default ON
+  });
+
+  const parentRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const lastRefreshTimeRef = useRef<Date>(new Date());
+
+  // Fetch logs with React Query
   const {
     data: logsData,
     isLoading,
     isError,
+    error,
     refetch,
     isFetching,
-  } = useQuery({
-    queryKey: ['worker-logs', hostname, lineCount],
-    queryFn: () => workersApi.getWorkerLogs(hostname, lineCount),
-    enabled: isOpen,
-    refetchInterval: refreshInterval,
-    refetchOnWindowFocus: false,
+  } = useWorkerLogs(hostname, lineCount, isOpen);
+
+  // Parse and filter logs
+  const parsedLogs = useMemo(() => {
+    if (!logsData?.logs) return [];
+    return logsData.logs.map(parseLogLine);
+  }, [logsData]);
+
+  const filteredLogs = useMemo(() => {
+    if (!debouncedSearchQuery) return parsedLogs;
+    const query = debouncedSearchQuery.toLowerCase();
+    return parsedLogs.filter((log) => log.raw.toLowerCase().includes(query));
+  }, [parsedLogs, debouncedSearchQuery]);
+
+  // AC-7: Virtualization with TanStack Virtual
+  const rowVirtualizer = useVirtualizer({
+    count: filteredLogs.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 32, // Fixed row height (font-mono text-xs with py-1)
+    overscan: 10, // Buffer rows (AC-7 requirement: 10 rows above/below)
   });
 
-  // Auto-scroll to bottom when new logs arrive
+  // AC-4: Auto-scroll to bottom
   useEffect(() => {
-    if (autoScroll && logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (autoScroll && filteredLogs.length > 0) {
+      rowVirtualizer.scrollToIndex(filteredLogs.length - 1, {
+        align: 'end',
+        behavior: 'smooth',
+      });
     }
-  }, [logsData, autoScroll]);
+  }, [filteredLogs.length, autoScroll, rowVirtualizer]);
 
-  // Parse log line to extract level, timestamp, and message
-  const parseLogLine = (line: string) => {
-    // Typical format: "2025-01-21 14:30:45,123 INFO: Message here"
-    const logRegex = /^(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}[,.]?\d*)\s+(\w+):?\s+(.*)$/;
-    const match = line.match(logRegex);
-
-    if (match) {
-      return {
-        timestamp: match[1],
-        level: match[2].toUpperCase(),
-        message: match[3],
-        raw: line,
-      };
+  // AC-4: Persist auto-scroll preference to session storage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(getAutoScrollKey(hostname), String(autoScroll));
     }
+  }, [autoScroll, hostname]);
 
-    // Fallback if no match
-    return {
-      timestamp: '',
-      level: 'INFO',
-      message: line,
-      raw: line,
+  // AC-8: Keyboard shortcuts
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+F / Cmd+F: Focus search input
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+
+      // Ctrl+R / Cmd+R: Refresh logs
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        handleRefresh();
+      }
+
+      // Ctrl+D / Cmd+D: Download logs
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+        e.preventDefault();
+        handleDownload();
+      }
+
+      // ESC: Close modal (handled by Headless UI, but explicit for clarity)
+      if (e.key === 'Escape') {
+        onClose();
+      }
     };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, filteredLogs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // AC-8: Focus management - focus search input on open
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
+
+  // AC-5: Refresh logs
+  const handleRefresh = async () => {
+    lastRefreshTimeRef.current = new Date();
+    await refetch();
+    if (autoScroll && filteredLogs.length > 0) {
+      rowVirtualizer.scrollToIndex(filteredLogs.length - 1, { align: 'end' });
+    }
   };
 
-  // Filter logs by level and search query
-  const filteredLogs = React.useMemo(() => {
-    if (!logsData?.logs) return [];
+  // AC-6: Download logs
+  const handleDownload = () => {
+    if (!filteredLogs.length) {
+      toast.error('No logs to download');
+      return;
+    }
 
-    return logsData.logs
-      .map(parseLogLine)
-      .filter((log) => {
-        // Level filter
-        if (logLevel !== 'ALL' && log.level !== logLevel) return false;
+    downloadLogs(hostname, filteredLogs);
+    toast.success('Logs downloaded');
+  };
 
-        // Search filter
-        if (searchQuery && !log.raw.toLowerCase().includes(searchQuery.toLowerCase())) {
-          return false;
-        }
+  // AC-9: Error handling - detect specific error types
+  const errorType = useMemo(() => {
+    if (!isError || !error) return null;
 
-        return true;
-      });
-  }, [logsData, logLevel, searchQuery]);
+    const err = error as any;
+    if (err.response?.status === 404) return '404';
+    if (err.response?.status === 503) return '503';
+    if (err.message?.includes('Network') || err.code === 'ERR_NETWORK') return 'network';
+    return 'unknown';
+  }, [isError, error]);
 
-  // Download logs as .log file
-  const handleDownloadLogs = () => {
-    if (!logsData?.logs) return;
+  // AC-9: Error state rendering
+  const renderErrorState = () => {
+    switch (errorType) {
+      case '404':
+        return (
+          <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+            <XCircle className="h-12 w-12 text-red-500 mb-4" />
+            <p className="text-red-500 font-semibold mb-2">
+              Worker {hostname} not found
+            </p>
+            <p className="text-muted-foreground text-sm mb-4">
+              It may have been terminated or the hostname is incorrect.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Refresh button is disabled. Close this modal and try again.
+            </p>
+          </div>
+        );
 
-    const blob = new Blob([logsData.logs.join('\n')], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${hostname}_${new Date().toISOString()}.log`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      case '503':
+        return (
+          <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+            <AlertCircle className="h-12 w-12 text-yellow-500 mb-4" />
+            <p className="text-yellow-500 font-semibold mb-2">
+              API service unavailable
+            </p>
+            <p className="text-muted-foreground text-sm mb-4">
+              The backend service is temporarily unavailable.
+            </p>
+            <Button onClick={() => refetch()} variant="secondary" size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </div>
+        );
+
+      case 'network':
+        return (
+          <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+            <AlertCircle className="h-12 w-12 text-orange-500 mb-4" />
+            <p className="text-orange-500 font-semibold mb-2">Network error</p>
+            <p className="text-muted-foreground text-sm mb-4">
+              Check your connection and try again.
+            </p>
+            <Button onClick={() => refetch()} variant="secondary" size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="flex flex-col items-center justify-center h-64 text-center px-4">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <p className="text-red-500 font-semibold mb-2">Failed to load logs</p>
+            <p className="text-muted-foreground text-sm mb-4">
+              {(error as any)?.message || 'An unexpected error occurred'}
+            </p>
+            <Button onClick={() => refetch()} variant="secondary" size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </div>
+        );
+    }
   };
 
   return (
@@ -178,16 +283,21 @@ export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalPr
                     Worker Logs: {hostname}
                   </Dialog.Title>
                   <div className="flex items-center gap-2">
-                    {isFetching && <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    {isFetching && (
+                      <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
                     <button
-                      onClick={() => refetch()}
-                      className="p-1.5 rounded-md hover:bg-white/10 transition-colors"
+                      onClick={handleRefresh}
+                      disabled={errorType === '404'} // AC-9: Disable refresh on 404
+                      className="p-1.5 rounded-md hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Refresh logs"
                     >
                       <RefreshCw className="h-4 w-4" />
                     </button>
                     <button
                       onClick={onClose}
                       className="p-1.5 rounded-md hover:bg-white/10 transition-colors"
+                      aria-label="Close modal"
                     >
                       <X className="h-5 w-5" />
                     </button>
@@ -196,26 +306,13 @@ export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalPr
 
                 {/* Filters & Controls */}
                 <div className="flex items-center gap-4 flex-wrap mb-4">
-                  {/* Log Level Filter */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm text-muted-foreground">Level:</label>
-                    <select
-                      value={logLevel}
-                      onChange={(e) => setLogLevel(e.target.value as LogLevel)}
-                      className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
-                    >
-                      <option value="ALL">All Levels</option>
-                      <option value="ERROR">ERROR</option>
-                      <option value="WARNING">WARNING</option>
-                      <option value="INFO">INFO</option>
-                      <option value="DEBUG">DEBUG</option>
-                    </select>
-                  </div>
-
                   {/* Line Count */}
                   <div className="flex items-center gap-2">
-                    <label className="text-sm text-muted-foreground">Lines:</label>
+                    <label className="text-sm text-muted-foreground" htmlFor="line-count">
+                      Lines:
+                    </label>
                     <select
+                      id="line-count"
                       value={lineCount}
                       onChange={(e) => setLineCount(Number(e.target.value) as LineCount)}
                       className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
@@ -228,99 +325,115 @@ export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalPr
                     </select>
                   </div>
 
-                  {/* Auto-refresh */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm text-muted-foreground">Refresh:</label>
-                    <select
-                      value={refreshInterval}
-                      onChange={(e) => setRefreshInterval(Number(e.target.value) as RefreshInterval)}
-                      className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
-                    >
-                      <option value={0}>Off</option>
-                      <option value={5000}>5s</option>
-                      <option value={10000}>10s</option>
-                      <option value={30000}>30s</option>
-                    </select>
-                  </div>
-
-                  {/* Search */}
+                  {/* Search - AC-3 */}
                   <div className="flex-1 relative min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     <input
+                      ref={searchInputRef}
                       type="text"
-                      placeholder="Search logs..."
+                      placeholder="Search logs... (Ctrl+F)"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-1.5 text-sm border border-border rounded-md bg-background"
+                      className="w-full pl-10 pr-10 py-1.5 text-sm border border-border rounded-md bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
+                      aria-label="Search logs"
                     />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-text-primary"
+                        aria-label="Clear search"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
 
-                  {/* Download */}
-                  <Button variant="secondary" size="sm" onClick={handleDownloadLogs}>
+                  {/* Download - AC-6 */}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleDownload}
+                    disabled={!filteredLogs.length}
+                    title="Ctrl+D / Cmd+D"
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Download
                   </Button>
 
-                  {/* Auto-scroll toggle */}
+                  {/* Auto-scroll toggle - AC-4 */}
                   <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
                     <input
                       type="checkbox"
                       checked={autoScroll}
                       onChange={(e) => setAutoScroll(e.target.checked)}
                       className="rounded border-border"
+                      aria-label="Auto-scroll to bottom"
                     />
                     Auto-scroll
                   </label>
                 </div>
 
-                {/* Logs Display */}
-                <div className="flex-1 overflow-auto bg-gray-950 rounded-md border border-border">
+                {/* Logs Display - AC-7: Virtualized */}
+                <div
+                  ref={parentRef}
+                  className="flex-1 overflow-auto bg-gray-950 rounded-md border border-border"
+                  style={{ height: '500px' }}
+                >
                   {isLoading ? (
-                    <div className="flex items-center justify-center h-64 text-muted-foreground">
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
                       <RefreshCw className="h-6 w-6 animate-spin mr-2" />
                       Loading logs...
                     </div>
                   ) : isError ? (
-                    <div className="flex items-center justify-center h-64 text-red-500">
-                      <AlertCircle className="h-6 w-6 mr-2" />
-                      Failed to load logs
-                    </div>
+                    renderErrorState()
                   ) : filteredLogs.length === 0 ? (
-                    <div className="flex items-center justify-center h-64 text-muted-foreground">
-                      No logs found
+                    <div className="flex items-center justify-center h-full text-muted-foreground">
+                      {searchQuery
+                        ? `No logs match your search: "${searchQuery}"`
+                        : 'No logs found'}
                     </div>
                   ) : (
-                    <div className="p-4 font-mono text-xs leading-relaxed">
-                      {filteredLogs.map((log, index) => (
-                        <div
-                          key={index}
-                          className="grid grid-cols-[60px_80px_1fr] gap-4 py-1 hover:bg-white/5 px-2 -mx-2 rounded"
-                        >
-                          {/* Line Number */}
-                          <span className="text-gray-600 text-right select-none">{index + 1}</span>
+                    <div
+                      style={{
+                        height: `${rowVirtualizer.getTotalSize()}px`,
+                        width: '100%',
+                        position: 'relative',
+                      }}
+                    >
+                      {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                        const log = filteredLogs[virtualRow.index];
+                        const colorClass = getLogLevelColor(log.level);
 
-                          {/* Log Level Badge */}
-                          <div className="flex items-center">
-                            {log.level && (
-                              <div
-                                className={`${LOG_LEVEL_COLORS[log.level] || 'bg-gray-500/10 text-gray-500'} text-[10px] px-2 py-0.5 rounded-full border flex items-center gap-1`}
-                              >
-                                {LOG_LEVEL_ICONS[log.level]}
-                                <span>{log.level}</span>
-                              </div>
-                            )}
-                          </div>
+                        return (
+                          <div
+                            key={virtualRow.key}
+                            data-index={virtualRow.index}
+                            ref={rowVirtualizer.measureElement}
+                            className="absolute top-0 left-0 w-full grid grid-cols-[60px_1fr] gap-4 px-4 py-1 hover:bg-white/5 font-mono text-xs"
+                            style={{
+                              transform: `translateY(${virtualRow.start}px)`,
+                            }}
+                          >
+                            {/* Line Number - AC-2 */}
+                            <span className="text-gray-600 text-right select-none">
+                              {virtualRow.index + 1}
+                            </span>
 
-                          {/* Log Content */}
-                          <div className="text-gray-300 break-all">
-                            {log.timestamp && (
-                              <span className="text-gray-500 mr-2">[{log.timestamp}]</span>
-                            )}
-                            <span>{log.message}</span>
+                            {/* Log Content - AC-2 */}
+                            <div className={`break-all ${colorClass}`}>
+                              {log.timestamp && (
+                                <span className="text-gray-500 mr-2">
+                                  [{formatLogTimestamp(log.timestamp)}]
+                                </span>
+                              )}
+                              {log.level && (
+                                <span className="font-semibold mr-2">[{log.level}]</span>
+                              )}
+                              <span>{log.message}</span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                      <div ref={logsEndRef} />
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -328,14 +441,20 @@ export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalPr
                 {/* Footer Stats */}
                 <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-2 mt-4">
                   <div>
-                    Showing {filteredLogs.length} of {logsData?.logs.length || 0} lines
+                    Showing {filteredLogs.length} of {parsedLogs.length} lines
+                    {searchQuery && ` (filtered)`}
                   </div>
-                  {refreshInterval > 0 && (
-                    <div className="flex items-center gap-1">
-                      <RefreshCw className="h-3 w-3 animate-spin" />
-                      Auto-refreshing every {refreshInterval / 1000}s
-                    </div>
-                  )}
+                  <div className="text-xs text-muted-foreground">
+                    Last refreshed: {lastRefreshTimeRef.current.toLocaleTimeString()}
+                  </div>
+                </div>
+
+                {/* Keyboard Shortcuts Help - AC-8 */}
+                <div className="text-xs text-muted-foreground mt-2 flex gap-4 flex-wrap">
+                  <span>ESC: Close</span>
+                  <span>Ctrl+F: Search</span>
+                  <span>Ctrl+R: Refresh</span>
+                  <span>Ctrl+D: Download</span>
                 </div>
               </Dialog.Panel>
             </Transition.Child>

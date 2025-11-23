@@ -1,0 +1,270 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>nextjs-story-18-workers-page-list</storyId>
+    <title>Workers Page - Overview &amp; List</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-18-workers-page-list.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>admin</asA>
+    <iWant>to see all Celery workers and their health status in the Next.js UI</iWant>
+    <soThat>I can monitor infrastructure health and identify worker issues</soThat>
+    <tasks>
+### Component Setup (4 tasks)
+- Task 1: Create `nextjs-ui/app/dashboard/workers/page.tsx` with RBAC check
+- Task 2: Create layout structure (header, metrics row, table container)
+- Task 3: Create `WorkerMetricsCards` component for 4 summary cards
+- Task 4: Create `WorkersTable` component with columns definition
+
+### Data Fetching &amp; State (3 tasks)
+- Task 5: Create `useWorkers()` hook with React Query (TanStack Query v5)
+- Task 6: Define TypeScript types for WorkerStatusDTO, WorkerStatus enum
+- Task 7: Implement auto-refresh toggle state (useState + effect)
+
+### Formatters &amp; Utilities (3 tasks)
+- Task 8: Create `formatUptime()` helper (seconds → "2d 5h 30m")
+- Task 9: Create `getCPUMemoryColor()` helper (thresholds → Tailwind class)
+- Task 10: Create `abbreviateNumber()` helper (1234 → "1.2K")
+
+### Table Features (4 tasks)
+- Task 11: Implement column sorting (useState for sort column + direction)
+- Task 12: Implement status filter dropdown (shadcn/ui Select)
+- Task 13: Implement hostname search with debounce (300ms)
+- Task 14: Add "View Logs" and "Restart" buttons (stub actions for Stories 19-20)
+
+### Loading &amp; Error States (3 tasks)
+- Task 15: Create skeleton loaders for metrics cards + table
+- Task 16: Implement error handling with retry button
+- Task 17: Add RBAC redirect logic (non-admin → dashboard)
+
+### Polish &amp; Testing (3 tasks)
+- Task 18: Add last refreshed timestamp with relative time (e.g., "30 sec ago")
+- Task 19: Test responsive layout on 3 breakpoints (mobile/tablet/desktop)
+- Task 20: Write unit tests for formatters and filter logic
+</tasks>
+  </story>
+
+  <acceptanceCriteria>
+### AC-1: Page Layout &amp; Navigation ✅
+**Given** I have admin role
+**When** I navigate to `/dashboard/workers`
+**Then** I see:
+- Page title: "Worker Monitoring"
+- Summary metrics cards in row layout (4 cards)
+- Workers table below metrics
+- Last refreshed timestamp (e.g., "Updated 30 seconds ago")
+- Auto-refresh toggle switch (ON by default)
+- Refresh interval: 30 seconds
+- RBAC enforcement: Redirect non-admins to `/dashboard` with error toast
+
+**And** responsive layout:
+- Desktop (≥1024px): 4 metrics cards in row
+- Tablet (768-1023px): 2 cards per row
+- Mobile (≤767px): 1 card per column, stacked
+
+### AC-2: Summary Metrics Cards ✅
+**Given** I am on the workers page
+**When** metrics load
+**Then** I see 4 cards displaying:
+- Card 1: Active Workers (count, green theme)
+- Card 2: Total Active Tasks (count, blue theme)
+- Card 3: Total Completed Tasks (abbreviated, gray theme)
+- Card 4: Average Throughput (Tasks/Min, purple theme)
+
+**And** metrics calculation:
+- Active workers: Count of workers with `status !== "unresponsive"`
+- Total active tasks: Sum of `active_tasks` across all workers
+- Total completed: Sum of `completed_tasks` across all workers
+- Avg throughput: Mean of `throughput_per_minute` across all workers
+
+### AC-3: Workers Table with Status &amp; Metrics ✅
+**Given** metrics cards loaded
+**When** workers table renders
+**Then** I see table with columns: Hostname | Status | Uptime | Active Tasks | CPU % | Memory % | Throughput | Actions
+
+**And** status badges:
+- `active`: Green badge
+- `idle`: Gray badge
+- `unresponsive`: Red badge with warning icon
+
+**And** CPU/Memory color coding:
+- &lt; 70%: Green text
+- 70-85%: Yellow text
+- &gt; 85%: Red text (bold)
+
+### AC-4: Table Interactions ✅
+**Given** I am viewing the workers table
+**When** I interact with the table
+**Then** I can:
+- Sort by any column (click column header)
+- Filter by status (dropdown: All, Active, Idle, Unresponsive)
+- Search by hostname (text input, debounced 300ms)
+- Click "View Logs" → Opens logs modal (Story 19)
+- Click "Restart" → Opens confirmation dialog (Story 20)
+
+### AC-5: Auto-Refresh &amp; Manual Refresh ✅
+**Given** I am on the workers page
+**When** auto-refresh is enabled
+**Then**:
+- Data refreshes every 30 seconds
+- Last refreshed timestamp updates
+- Maintain scroll position and sort/filter state
+
+### AC-6: Loading &amp; Error States ✅
+**Given** API call in progress
+**When** data loading
+**Then** I see skeleton loaders for cards and table
+
+**And** on API error:
+- Error toast with retry button
+- Empty table with error message
+- Metrics cards show "—" (unavailable)
+
+### AC-7: Accessibility &amp; Responsive Design ✅
+**Given** I use keyboard navigation
+**Then** tab order, ARIA labels, focus indicators all work properly
+
+**And** responsive breakpoints:
+- Mobile (≤767px): Stacked layout
+- Tablet (768-1023px): 2-column metrics
+- Desktop (≥1024px): Full 4-column layout
+
+### AC-8: Integration with Backend API ✅
+**Given** backend API from Story 17 exists
+**When** page loads
+**Then**:
+- Calls `GET /api/workers` with admin JWT token
+- Uses React Query with staleTime 30s, refetchInterval 30s
+- Handles errors: 401 (redirect login), 403 (redirect dashboard), 503 (retry)
+</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="System Architecture" section="Next.js UI Migration" snippet="ADR-009 documents decision to use Streamlit for Epic 6 admin UI. Next.js migration epic adds modern React-based admin UI with Apple Liquid Glass design system."/>
+      <doc path="nextjs-ui/README.md" title="Next.js UI Project README" section="Tech Stack &amp; Project Structure" snippet="Next.js 14.2.15 App Router with TypeScript, Tailwind CSS, shadcn/ui components, TanStack Query v5, React Hook Form + Zod, Playwright E2E testing."/>
+      <doc path="docs/sprint-artifacts/nextjs-story-17-workers-api-backend.context.xml" title="Story 17: Workers API Backend Context" section="Complete Context" snippet="Backend API endpoints (/api/v1/workers) with WorkerStatus DTO (hostname, status, uptime_seconds, active_tasks, cpu_percent, memory_percent, throughput_per_minute). Admin-only RBAC enforced."/>
+      <doc path="nextjs-ui/app/dashboard/workers/page.tsx" title="Existing Workers Page Stub" section="Current Implementation" snippet="Basic workers page with card layout, manual refresh, restart/logs buttons. Needs enhancement: metrics cards, table view, sorting, filtering, auto-refresh, responsive design."/>
+    </docs>
+    <code>
+      <artifact path="nextjs-ui/app/dashboard/workers/page.tsx" kind="page" symbol="WorkersPage" lines="1-170" reason="Existing workers page stub. Replace with full implementation per AC-1 through AC-8: metrics cards, table layout, sorting, filtering, auto-refresh."/>
+      <artifact path="nextjs-ui/lib/api/workers.ts" kind="API client" symbol="workersApi" lines="1-42" reason="Workers API client with listWorkers(), getWorkerLogs(), restartWorker() methods. Already matches backend DTOs. Reuse in useWorkers() hook."/>
+      <artifact path="nextjs-ui/app/dashboard/llm-costs/page.tsx" kind="page example" symbol="LLMCostsDashboard" lines="1-80" reason="Reference for metrics cards layout, TanStack Query auto-refresh patterns (refetchInterval, staleTime), loading/error states, RBAC enforcement."/>
+      <artifact path="nextjs-ui/components/costs/CostMetricsCards.tsx" kind="component example" symbol="CostMetricsCards" lines="1-100" reason="Reusable metrics card layout with 4-column grid, skeleton loaders, responsive breakpoints. Pattern to follow for WorkerMetricsCards."/>
+      <artifact path="src/api/workers.py" kind="backend route" symbol="list_workers" lines="32-57" reason="Backend endpoint GET /api/v1/workers returning List[WorkerStatus]. Confirms RBAC @require_admin_role decorator applied."/>
+      <artifact path="src/schemas/worker.py" kind="Pydantic schema" symbol="WorkerStatus" lines="15-26" reason="Backend DTO definition. Frontend TypeScript types must match: hostname, status, uptime_seconds, active_tasks, completed_tasks, cpu_percent, memory_percent, throughput_per_minute."/>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.15"/>
+        <package name="react" version="^18"/>
+        <package name="react-dom" version="^18"/>
+        <package name="typescript" version="^5"/>
+        <package name="@tanstack/react-query" version="^5.62.11"/>
+        <package name="tailwindcss" version="^3.4.1"/>
+        <package name="lucide-react" version="^0.344.0"/>
+        <package name="sonner" version="^1.4.0"/>
+        <package name="zod" version="^3.22.4"/>
+        <package name="react-hook-form" version="^7.51.0"/>
+        <package name="@hookform/resolvers" version="^3.3.4"/>
+        <package name="date-fns" version="^2.30.0"/>
+        <package name="recharts" version="^2.12.0"/>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- C1: Use shadcn/ui components (Table, Badge, Button, Select, Skeleton) for UI consistency
+- C2: TanStack Query v5 for data fetching (refetchInterval 30s, staleTime 30s per AC-5)
+- C3: Apple Liquid Glass design system (glass-card class, consistent with other pages)
+- C4: File size ≤500 lines → Split into components: page.tsx, WorkerMetricsCards, WorkersTable
+- C5: TypeScript strict mode enabled
+- C6: WCAG 2.1 AA accessibility (keyboard nav, ARIA labels, focus indicators per AC-7)
+- C7: Response time <2s for page interactive (AC-8)
+- C8: Auto-refresh 30s interval with configurable toggle (AC-5)
+- C9: RBAC enforcement: Admin-only access, redirect non-admins to /dashboard (AC-1)
+- C10: Match backend DTOs exactly (WorkerStatusDTO from src/schemas/worker.py)
+- C11: Responsive breakpoints: mobile ≤767px, tablet 768-1023px, desktop ≥1024px (AC-7)
+- C12: No new backend endpoints needed → Reuse existing GET /api/v1/workers from Story 17
+  </constraints>
+  <interfaces>
+    <interface name="GET /api/v1/workers" kind="REST endpoint" signature="GET /api/v1/workers → WorkerStatus[]" path="src/api/workers.py"/>
+    <interface name="workersApi.listWorkers" kind="API client method" signature="listWorkers() → Promise&lt;WorkerStatus[]&gt;" path="nextjs-ui/lib/api/workers.ts"/>
+    <interface name="useWorkers hook" kind="React Query hook" signature="useWorkers() → UseQueryResult&lt;WorkerStatus[]&gt;" path="nextjs-ui/lib/hooks/useWorkers.ts (to be created)"/>
+    <interface name="formatUptime helper" kind="utility function" signature="formatUptime(seconds: number) → string" path="nextjs-ui/lib/utils/workers.ts (to be created)"/>
+    <interface name="getCPUMemoryColor helper" kind="utility function" signature="getCPUMemoryColor(percent: number) → string" path="nextjs-ui/lib/utils/workers.ts"/>
+    <interface name="abbreviateNumber helper" kind="utility function" signature="abbreviateNumber(num: number) → string" path="nextjs-ui/lib/utils/formatters.ts (to be created)"/>
+  </interfaces>
+  <tests>
+    <standards>
+- Use Vitest + React Testing Library for unit/component tests (project standard)
+- Use Playwright for E2E tests (already configured in nextjs-ui/playwright.config.ts)
+- Target ≥80% code coverage for new components (per README.md)
+- Follow AAA pattern: Arrange, Act, Assert
+- Mock TanStack Query with createWrapper pattern
+- Mock API responses using MSW (already set up in nextjs-ui/mocks/)
+- Test responsive layouts at 3 breakpoints (mobile/tablet/desktop)
+- Test keyboard navigation (Tab order, Enter, Esc)
+- Test ARIA labels and accessibility
+    </standards>
+    <locations>
+- nextjs-ui/__tests__/components/workers/WorkerMetricsCards.test.tsx - Metrics card component tests
+- nextjs-ui/__tests__/components/workers/WorkersTable.test.tsx - Table component tests
+- nextjs-ui/__tests__/lib/utils/workers.test.ts - Utility function tests (formatUptime, getCPUMemoryColor)
+- nextjs-ui/__tests__/lib/utils/formatters.test.ts - Number formatting tests (abbreviateNumber)
+- nextjs-ui/__tests__/lib/hooks/useWorkers.test.ts - React Query hook tests
+- nextjs-ui/e2e/workers-page.spec.ts - E2E test for full workflow (sort, filter, refresh)
+    </locations>
+    <ideas>
+AC-1: Page Layout &amp; Navigation
+- test_page_title_and_header: Verify "Worker Monitoring" title, auto-refresh toggle, last refreshed timestamp
+- test_rbac_redirect_non_admin: Non-admin user redirected to /dashboard with error toast
+- test_responsive_metrics_layout: 4 cards desktop, 2 cards tablet, 1 card mobile
+
+AC-2: Summary Metrics Cards
+- test_active_workers_calculation: Count workers with status !== "unresponsive"
+- test_total_active_tasks_sum: Sum active_tasks across all workers
+- test_completed_tasks_abbreviation: 1234 → "1.2K", 45300 → "45.3K"
+- test_avg_throughput_calculation: Mean of throughput_per_minute
+
+AC-3: Workers Table
+- test_table_columns_render: All 8 columns present (Hostname, Status, Uptime, Active Tasks, CPU %, Memory %, Throughput, Actions)
+- test_status_badge_colors: active=green, idle=gray, unresponsive=red
+- test_cpu_memory_color_coding: &lt;70% green, 70-85% yellow, &gt;85% red
+- test_uptime_formatter: 45s → "&lt; 1m", 3600s → "1h", 90000s → "1d 1h"
+- test_empty_state: No workers → Show "No workers found" message
+
+AC-4: Table Interactions
+- test_column_sorting: Click header toggles asc/desc sort
+- test_status_filter: Filter dropdown with All/Active/Idle/Unresponsive
+- test_hostname_search: Debounced 300ms text search
+- test_view_logs_button: Opens WorkerLogsModal (stub for Story 19)
+- test_restart_button: Opens confirmation dialog (stub for Story 20)
+
+AC-5: Auto-Refresh
+- test_auto_refresh_toggle: ON by default, data refetches every 30s
+- test_manual_refresh: Button triggers immediate refetch
+- test_scroll_position_maintained: Auto-refresh doesn't reset scroll
+- test_filter_state_preserved: Auto-refresh maintains sort/filter
+
+AC-6: Loading &amp; Error States
+- test_skeleton_loaders: Metrics cards + table rows show shimmer during load
+- test_error_state_with_retry: API error shows toast + retry button
+- test_401_redirect_to_login: Unauthorized redirects to /login
+- test_403_forbidden_redirect: Forbidden redirects to /dashboard with toast
+
+AC-7: Accessibility
+- test_keyboard_navigation_tab_order: Metrics → Filter → Search → Table → Actions
+- test_aria_labels_icon_buttons: All icon-only buttons have aria-label
+- test_focus_indicators: Visible outline on focused elements
+
+AC-8: Integration
+- test_api_call_with_jwt_token: Authorization header present
+- test_react_query_config: staleTime 30s, refetchInterval 30s
+- test_error_handling_503: Service unavailable shows error state with retry
+    </ideas>
+  </tests>
+</story-context>

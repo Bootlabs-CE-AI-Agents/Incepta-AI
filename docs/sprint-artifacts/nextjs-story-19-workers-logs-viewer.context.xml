@@ -1,0 +1,349 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>nextjs-story-19-workers-logs-viewer</storyId>
+    <title>Workers Page - Logs Viewer Modal</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-19-workers-logs-viewer.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>admin</asA>
+    <iWant>to view worker logs in a modal</iWant>
+    <soThat>I can troubleshoot issues without leaving the workers page</soThat>
+    <tasks>
+      ### Frontend Implementation (9 tasks)
+      - [ ] **Task 1**: Create `WorkerLogsModal.tsx` component with shadcn/ui Dialog
+      - [ ] **Task 2**: Create `useWorkerLogs()` hook with React Query
+      - [ ] **Task 3**: Implement log level color coding (`logParser.ts`)
+      - [ ] **Task 4**: Add debounced search input (300ms delay)
+      - [ ] **Task 5**: Implement auto-scroll toggle with session storage
+      - [ ] **Task 6**: Add refresh button with loading state
+      - [ ] **Task 7**: Implement download logs functionality (`downloadLogs.ts`)
+      - [ ] **Task 8**: Integrate virtualized list (`react-window`)
+      - [ ] **Task 9**: Add keyboard shortcuts (ESC, Ctrl+F, Ctrl+R, Ctrl+D)
+
+      ### Testing (4 tasks)
+      - [ ] **Task 10**: Write unit tests for `logParser.ts` (level detection, color mapping)
+      - [ ] **Task 11**: Write unit tests for `downloadLogs.ts` (filename generation, content format)
+      - [ ] **Task 12**: Write component tests for `WorkerLogsModal` (search, filter, toggle)
+      - [ ] **Task 13**: Test error handling (404, 503, network errors)
+
+      ### Integration (2 tasks)
+      - [ ] **Task 14**: Update `workers/page.tsx` to add "View Logs" button to table actions
+      - [ ] **Task 15**: Test modal open/close flow and focus management
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    ### AC-1: View Logs Modal Opens ✅
+    **Given** I am viewing the workers list (Story 18)
+    **When** I click "View Logs" action button for a worker
+    **Then** a modal opens showing:
+    - Worker hostname in modal header
+    - Last 100 log lines (newest first, reverse chronological)
+    - Timestamp for each log line (formatted: `HH:mm:ss`)
+    - Log level color coding: ERROR (text-red-600), WARN (text-yellow-600), INFO (text-blue-600), DEBUG (text-gray-500)
+    - Auto-scroll to bottom toggle (checkbox, default OFF)
+    - Refresh button (fetches latest logs)
+    - Download logs button (saves as `.txt` file)
+    **And** modal styling: dark theme (bg-gray-900), monospace font, full-width (90vw/95vw), max height 80vh, ESC key closes
+
+    ### AC-2: Log Level Color Coding Works ✅
+    **Given** the logs viewer modal is open
+    **When** log entries are displayed
+    **Then** each line's color matches its log level via regex `/\b(ERROR|WARN|INFO|DEBUG)\b/i`
+    **And** line numbers displayed in left gutter (text-gray-600)
+
+    ### AC-3: Search/Filter Logs ✅
+    **Given** the logs viewer modal is open
+    **When** I type in the search input
+    **Then** logs filtered in real-time (case-insensitive, debounced 300ms), highlights matches in yellow, shows count "Showing X of Y lines"
+
+    ### AC-4: Auto-Scroll Toggle ✅
+    **Given** the logs viewer modal is open
+    **When** I enable "Auto-scroll to bottom" toggle
+    **Then** scrolls to bottom immediately and continuously during auto-refresh, persists in session storage per worker
+
+    ### AC-5: Refresh Logs ✅
+    **Given** the logs viewer modal is open
+    **When** I click "Refresh" button
+    **Then** shows loading spinner, fetches latest 100 lines, replaces current logs, updates timestamp
+    **And** keyboard shortcut: Ctrl+R/Cmd+R triggers refresh
+
+    ### AC-6: Download Logs as .txt ✅
+    **Given** the logs viewer modal is open
+    **When** I click "Download" button
+    **Then** creates `.txt` file: `worker-{hostname}-logs-{timestamp}.txt` with format `[TIMESTAMP] [LEVEL] MESSAGE`, uses Blob + URL.createObjectURL
+
+    ### AC-7: Virtualized List Performance ✅
+    **Given** 100+ log lines displayed
+    **When** I scroll through logs
+    **Then** uses virtualization (`react-window` or `@tanstack/react-virtual`), renders visible rows + buffer (10 above/below), smooth 60 FPS scrolling
+
+    ### AC-8: Modal Keyboard Navigation ✅
+    **Given** the logs viewer modal is open
+    **When** I use keyboard shortcuts
+    **Then** ESC closes, Ctrl+F focuses search, Ctrl+R refreshes, Ctrl+D downloads, Tab navigates, focus trapped in modal
+
+    ### AC-9: Error Handling ✅
+    **Given** the logs viewer modal is open
+    **When** API errors occur
+    **Then** appropriate error states: 404 (worker not found toast), 503 (API unavailable + retry), network error (connection error + retry)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/nextjs-ui/development-guide.md</path>
+        <title>Next.js UI Development Guide</title>
+        <section>Tech Stack & Testing Patterns</section>
+        <snippet>Core framework: Next.js 14.2.15, React 18.3.1, TypeScript 5.6.3 strict mode. UI: Tailwind CSS, shadcn/ui, Headless UI, Lucide Icons. Data: TanStack Query v5, React Hook Form, Zod. Testing: Jest 30.2, React Testing Library 16.3, Playwright 1.56.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics-nextjs-feature-parity-completion.md</path>
+        <title>Next.js UI Feature Parity & Completion Epic</title>
+        <section>Epic 2: Worker Monitoring System</section>
+        <snippet>Epic 2 delivers worker monitoring with health metrics, logs viewer, restart controls. Story 2.3 (this story): Logs viewer modal with real-time streaming, search/filter, download, virtualization for performance.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>nextjs-ui/components/workers/WorkerLogsModal.tsx</path>
+        <kind>component</kind>
+        <symbol>WorkerLogsModal</symbol>
+        <lines>1-348</lines>
+        <reason>EXISTING implementation with log level filtering, search, auto-refresh (5s/10s/30s), download, auto-scroll. Uses Headless UI Dialog. Need to verify alignment with AC requirements (may need modifications).</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/workers/WorkerLogsModal.test.tsx</path>
+        <kind>test</kind>
+        <symbol>WorkerLogsModal tests</symbol>
+        <lines>all</lines>
+        <reason>Existing test file for WorkerLogsModal component - review for coverage gaps</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/app/dashboard/workers/page.tsx</path>
+        <kind>page</kind>
+        <symbol>WorkersPage</symbol>
+        <lines>76-79</lines>
+        <reason>Stub for handleViewLogs - currently shows toast "Story 19 not yet implemented" (line 76-79). Need to integrate WorkerLogsModal here.</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/hooks/useWorkers.ts</path>
+        <kind>hook</kind>
+        <symbol>useWorkerLogs</symbol>
+        <lines>52-60</lines>
+        <reason>Existing hook for fetching worker logs via API. Uses TanStack Query with staleTime 10s, retry 2. Accepts hostname, lines count, enabled flag.</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/api/workers.ts</path>
+        <kind>service</kind>
+        <symbol>workersApi.getWorkerLogs</symbol>
+        <lines>32-37</lines>
+        <reason>Backend API client for GET /api/v1/workers/{hostname}/logs?lines=N. Returns WorkerLogsResponse with hostname and logs array.</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/workers/WorkersTable.tsx</path>
+        <kind>component</kind>
+        <symbol>WorkersTable</symbol>
+        <lines>all</lines>
+        <reason>Workers table component - check existing "View Logs" button implementation and props interface</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/workers/WorkerMetricsCards.tsx</path>
+        <kind>component</kind>
+        <symbol>WorkerMetricsCards</symbol>
+        <lines>all</lines>
+        <reason>Metrics cards component for context on workers page structure</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="@headlessui/react" version="^2.2.9">Modal Dialog component (used in existing WorkerLogsModal)</package>
+        <package name="@tanstack/react-query" version="^5.62.2">Server state management for logs fetching</package>
+        <package name="lucide-react" version="^0.462.0">Icons (Download, Search, RefreshCw, X, AlertCircle, etc.)</package>
+        <package name="react-window" version="NOT INSTALLED - REQUIRED">Virtualized list for performance (AC-7). Alternative: @tanstack/react-virtual</package>
+        <package name="@testing-library/react" version="^16.3.0">Component testing</package>
+        <package name="@testing-library/jest-dom" version="^6.9.1">Jest DOM matchers</package>
+        <package name="jest" version="^30.2.0">Unit testing framework</package>
+        <package name="next" version="14.2.15">Next.js framework</package>
+        <package name="react" version="^18.3.1">React library</package>
+        <package name="sonner" version="^2.0.7">Toast notifications</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    ### From Architecture
+    1. **C1**: Use shadcn/ui components for modal (Dialog, Input, Button, Checkbox) - NOTE: Existing implementation uses Headless UI Dialog instead of shadcn/ui
+    2. **C2**: TypeScript strict mode enabled (tsconfig.json)
+    3. **C3**: Monospace font for logs (`font-mono`)
+    4. **C4**: Dark theme for logs viewer (`bg-gray-900` or `bg-gray-950`)
+    5. **C5**: Virtualization required for performance with 100+ log lines (AC-7) - **NOT YET IMPLEMENTED**
+    6. **C6**: Keyboard accessibility (focus trap, ESC to close, shortcuts)
+    7. **C7**: RBAC enforcement - Admin-only access (inherited from workers page)
+    8. **C8**: TanStack Query v5 patterns (staleTime, refetchInterval, retry)
+    9. **C9**: File size limit ≤500 lines per file (WorkerLogsModal.tsx is 348 lines - compliant)
+    10. **C10**: Test coverage ≥80% minimum, 95%+ target
+
+    ### From Epic Documentation
+    - API endpoint: `GET /api/v1/workers/{hostname}/logs?lines=N` (implemented in Story 17)
+    - Log level detection via regex `/\b(ERROR|WARN|INFO|DEBUG)\b/i`
+    - Dark theme for readability (reduces eye strain)
+    - Monospace font for log text (improves structured log readability)
+    - Focus management and keyboard shortcuts (accessibility requirement)
+
+    ### From Design System (Apple Liquid Glass)
+    - Modal max-width: `max-w-6xl` (90vw on mobile)
+    - Modal height: `h-[80vh]` or `max-h-[85vh]`
+    - Consistent spacing (4px/8px grid)
+    - Color palette from `tailwind.config.ts`
+    - Glassmorphic blur effects (`backdrop-blur-sm`)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>workersApi.getWorkerLogs</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/workers/{hostname}/logs?lines=100</signature>
+      <path>nextjs-ui/lib/api/workers.ts:32-37</path>
+      <details>
+        Response: WorkerLogsResponse { hostname: string, logs: string[] }
+        Query params: lines (number, default 100)
+        Error codes: 404 (worker not found), 503 (service unavailable)
+      </details>
+    </interface>
+
+    <interface>
+      <name>useWorkerLogs hook</name>
+      <kind>React Query hook</kind>
+      <signature>useWorkerLogs(hostname: string | null, lines: number = 100, enabled: boolean = false): UseQueryResult&lt;WorkerLogsResponse, Error&gt;</signature>
+      <path>nextjs-ui/lib/hooks/useWorkers.ts:52-60</path>
+      <details>
+        Returns: UseQueryResult with { data: WorkerLogsResponse, isLoading, isError, error, refetch, isFetching }
+        Config: staleTime 10s, retry 2, enabled only when modal opens
+      </details>
+    </interface>
+
+    <interface>
+      <name>WorkerLogsModal props</name>
+      <kind>Component interface</kind>
+      <signature>{ hostname: string; isOpen: boolean; onClose: () => void; }</signature>
+      <path>nextjs-ui/components/workers/WorkerLogsModal.tsx:35-39</path>
+      <details>
+        hostname: Worker hostname to fetch logs for
+        isOpen: Modal visibility state (controlled component)
+        onClose: Callback function to close modal
+      </details>
+    </interface>
+
+    <interface>
+      <name>handleViewLogs callback</name>
+      <kind>Function signature</kind>
+      <signature>(hostname: string) => void</signature>
+      <path>nextjs-ui/app/dashboard/workers/page.tsx:76-79</path>
+      <details>
+        Currently stub implementation showing toast. Need to replace with modal state management:
+        - Set selectedWorkerHostname state
+        - Set isLogsModalOpen = true
+      </details>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing standards from development-guide.md:
+      - **Framework**: Jest 30.2 + React Testing Library 16.3
+      - **Coverage Target**: 80% minimum, 95%+ preferred
+      - **File Location**: `nextjs-ui/__tests__/` mirroring source structure
+      - **Patterns**:
+        - Unit tests for utils (`logParser.ts`, `downloadLogs.ts`)
+        - Component tests for UI (`WorkerLogsModal.test.tsx`)
+        - Integration tests for user flows (modal open → search → download → close)
+        - Mock API calls with MSW (Mock Service Worker)
+      - **Accessibility**: Test keyboard navigation, focus management, ARIA attributes
+      - **Best Practices**:
+        - Arrange-Act-Assert pattern
+        - Test user behavior, not implementation details
+        - Use `screen.getByRole()` over `getByTestId()`
+        - Clean up after each test (unmount components, clear mocks)
+    </standards>
+
+    <locations>
+      - `nextjs-ui/__tests__/lib/utils/logParser.test.ts` (NEW - Task 10)
+      - `nextjs-ui/__tests__/lib/utils/downloadLogs.test.ts` (NEW - Task 11)
+      - `nextjs-ui/__tests__/components/workers/WorkerLogsModal.test.tsx` (EXISTS - verify coverage, Task 12)
+      - `nextjs-ui/__tests__/integration/workers-logs-workflow.test.tsx` (OPTIONAL - E2E test with Playwright)
+    </locations>
+
+    <ideas>
+      **AC-1 (Modal Opens):**
+      - Test modal renders with correct hostname in header
+      - Test initial fetch of 100 log lines
+      - Test modal styling (dark theme, monospace font)
+      - Test ESC key closes modal
+      - Test close button (X) closes modal
+
+      **AC-2 (Color Coding):**
+      - Unit test `logParser.ts`: parseLogLevel("ERROR: failed") returns { level: "ERROR", color: "text-red-600" }
+      - Unit test each log level (ERROR, WARN, INFO, DEBUG, UNKNOWN)
+      - Component test: log lines rendered with correct color classes
+      - Test line numbers displayed in left gutter
+
+      **AC-3 (Search/Filter):**
+      - Test search input filters logs (case-insensitive)
+      - Test debouncing (300ms delay) - use fake timers
+      - Test "Showing X of Y lines" count updates
+      - Test clear button (X) resets filter
+      - Test empty state: "No logs match your search"
+
+      **AC-4 (Auto-Scroll):**
+      - Test toggle scrolls to bottom when enabled
+      - Test scroll position preserved when disabled
+      - Test session storage persistence (per worker)
+      - Mock `scrollIntoView()` for testing
+
+      **AC-5 (Refresh):**
+      - Test manual refresh button refetches logs
+      - Test loading spinner shows during fetch
+      - Test "Last refreshed" timestamp updates
+      - Test keyboard shortcut Ctrl+R triggers refresh
+      - Mock preventDefault to avoid browser reload
+
+      **AC-6 (Download):**
+      - Unit test `downloadLogs.ts`: filename format `worker-{hostname}-logs-{timestamp}.txt`
+      - Unit test content format: `[TIMESTAMP] [LEVEL] MESSAGE`
+      - Test Blob creation and URL.createObjectURL
+      - Test URL.revokeObjectURL cleanup
+      - Mock `document.createElement('a')` and click()
+
+      **AC-7 (Virtualization):**
+      - Test only visible rows rendered (check DOM node count)
+      - Test scroll performance (no lag with 1000+ logs)
+      - Test dynamic row height if multi-line logs
+      - **NOTE**: This requires `react-window` or `@tanstack/react-virtual` to be installed and integrated
+
+      **AC-8 (Keyboard Navigation):**
+      - Test ESC closes modal
+      - Test Ctrl+F focuses search input
+      - Test Ctrl+R triggers refresh
+      - Test Ctrl+D triggers download
+      - Test Tab cycles through interactive elements
+      - Test focus trap (cannot tab to background)
+      - Test initial focus on search input
+      - Test focus restored to "View Logs" button on close
+
+      **AC-9 (Error Handling):**
+      - Test 404 error: toast "Worker not found", disable refresh button
+      - Test 503 error: toast "API unavailable", show retry button
+      - Test network error: toast "Network error", show retry button
+      - Test retry button re-attempts fetch
+      - Mock API errors using MSW
+    </ideas>
+  </tests>
+</story-context>

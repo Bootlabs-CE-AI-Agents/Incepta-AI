@@ -355,6 +355,39 @@ class UserService:
 
         return None
 
+    async def has_admin_role(
+        self,
+        user_id: UUID,
+        db: AsyncSession,
+    ) -> bool:
+        """
+        Check if user has admin role in ANY tenant.
+
+        This is used for infrastructure endpoints that require admin access
+        but are not tenant-scoped (e.g., worker monitoring, system health).
+
+        Args:
+            user_id: User UUID
+            db: Database session
+
+        Returns:
+            True if user has admin role in at least one tenant, False otherwise
+
+        Story: nextjs-story-17-workers-api-backend (AC-5: RBAC Enforcement)
+        """
+        stmt = (
+            select(UserTenantRole)
+            .where(UserTenantRole.user_id == user_id)
+            .where(
+                (UserTenantRole.role == RoleEnum.SUPER_ADMIN)
+                | (UserTenantRole.role == RoleEnum.TENANT_ADMIN)
+            )
+        )
+        result = await db.execute(stmt)
+        admin_role = result.scalar_one_or_none()
+
+        return admin_role is not None
+
     async def assign_role(
         self,
         user_id: UUID,

@@ -1,0 +1,184 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>nextjs-story-17-workers-api-backend</storyId>
+    <title>Workers API - Backend Endpoints</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-22</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/nextjs-story-17-workers-api-backend.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>backend developer</asA>
+    <iWant>REST API endpoints for worker monitoring</iWant>
+    <soThat>the Next.js frontend can display Celery worker health, logs, and metrics without requiring direct Celery or Kubernetes access</soThat>
+    <tasks>
+### Backend Implementation (8 tasks)
+- Task 1: Create `src/api/workers.py` FastAPI router with 4 endpoint stubs
+- Task 2: Define Pydantic DTOs in `src/schemas/worker.py` (6 schemas)
+- Task 3: Create `src/services/worker_service.py` with Celery inspect integration
+- Task 4: Implement `GET /api/workers` endpoint (list workers)
+- Task 5: Implement `GET /api/workers/{hostname}/logs` (fetch K8s logs)
+- Task 6: Implement `POST /api/workers/{hostname}/restart` (K8s rollout restart)
+- Task 7: Implement `GET /api/workers/{hostname}/metrics` (Prometheus queries)
+- Task 8: Add `@require_role("admin")` RBAC decorator to all endpoints
+
+### Testing (5 tasks)
+- Task 9: Write unit tests for `WorkerService` class (mock Celery, K8s, Prometheus)
+- Task 10: Write integration tests for all 4 endpoints (`test_worker_api.py`)
+- Task 11: Test error handling (401, 403, 404, 503 scenarios)
+- Task 12: Test with real Celery workers in local Docker Compose environment
+- Task 13: Verify OpenAPI docs generated correctly at `/docs`
+
+### Configuration & Dependencies (3 tasks)
+- Task 14: Add `kubernetes>=28.0.0` to `pyproject.toml` dependencies
+- Task 15: Add Kubernetes config loading to `src/config.py` (settings.k8s_namespace, settings.prometheus_url)
+- Task 16: Update `src/main.py` to include workers router (`app.include_router(workers.router)`)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+AC-1: GET /api/workers - List All Workers
+- Returns array of WorkerStatusDTO objects with hostname, status (active/idle/unresponsive), uptime, active_tasks, completed_tasks, CPU/memory metrics, throughput
+- Response time < 2 seconds
+- Error handling: 401 (not authenticated), 403 (non-admin), 503 (Redis/Celery unavailable)
+
+AC-2: GET /api/workers/{hostname}/logs - Fetch Worker Logs
+- Returns array of log entries with timestamp, level, message, task_id
+- Query parameters: lines (max 1000, default 100), since (ISO 8601)
+- Fetches from Kubernetes pod logs API
+- Error handling: 404 (worker not found), 400 (invalid params), 503 (K8s unavailable)
+
+AC-3: POST /api/workers/{hostname}/restart - Restart Worker
+- Triggers Kubernetes rollout restart for worker pod
+- Logs action to audit_log table with user_id, action, resource, timestamp
+- Returns HTTP 202 Accepted with restart_initiated_at timestamp
+- Error handling: 404 (worker not found), 403 (non-admin), 500 (K8s command fails)
+
+AC-4: GET /api/workers/{hostname}/metrics - Fetch Detailed Metrics
+- Returns WorkerMetricsDTO with current metrics (CPU, memory, network), 7-day throughput history (hourly), uptime, Celery/Python versions
+- Data sources: Prometheus (current metrics + history), Celery inspect (metadata)
+- Error handling: 404 (worker not found), 503 (Prometheus unavailable), graceful degradation for partial data
+
+AC-5: RBAC Enforcement - Admin Only
+- All 4 endpoints require "admin" role via `@require_role("admin")` decorator
+- HTTP 403 Forbidden for non-admin users
+
+AC-6: Tenant Isolation Not Required
+- Worker monitoring is global admin function
+- No X-Tenant-ID header required
+- All workers visible to all admins
+
+AC-7: OpenAPI Documentation Generated
+- All 4 endpoints visible at `/docs` under "Workers" tag
+- Request/response schemas documented via Pydantic models
+
+AC-8: Integration Tests Pass
+- test_list_workers_success, test_list_workers_unauthorized
+- test_get_logs_success, test_get_logs_invalid_lines
+- test_restart_worker_success, test_restart_worker_not_found
+- test_get_metrics_success, test_get_metrics_prometheus_down
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/implementation-guides/story-17-workers-api.md" title="Story 17 Implementation Guide" section="Complete Implementation" snippet="Comprehensive step-by-step guide for implementing Worker API with Celery inspect integration, FastAPI routes, Pydantic schemas, unit tests, and OpenAPI docs. Includes troubleshooting and production deployment steps."/>
+      <doc path="docs/nextjs-ui-migration-tech-spec-v2.md" title="Next.js UI Migration Tech Spec v2" section="Workers Monitoring Sprint" snippet="Technical specification for Next.js UI migration covering authentication, RBAC, API versioning (/api/v1/), design system (Liquid Glass), and Sprint 2 Workers monitoring requirements."/>
+      <doc path="docs/architecture.md" title="System Architecture" section="Celery & Infrastructure" snippet="Overall system architecture including Celery workers, RabbitMQ, Redis, Kubernetes deployment, Prometheus monitoring, and FastAPI backend patterns."/>
+      <doc path="docs/runbooks/worker-failures.md" title="Worker Failure Runbook" section="Operational Procedures" snippet="Runbook for handling Celery worker failures, restart procedures, troubleshooting common issues, and monitoring best practices."/>
+      <doc path="docs/stories/6-7-add-worker-health-and-resource-monitoring.md" title="Story 6-7: Worker Health Monitoring (Streamlit)" section="Existing Implementation" snippet="Streamlit-based worker monitoring implementation with Celery inspect API, Prometheus metrics, CPU/memory tracking, and K8s integration."/>
+    </docs>
+    <code>
+      <artifact path="src/api/workers.py" kind="FastAPI router" symbol="router" lines="1-750" reason="EXISTING IMPLEMENTATION: FastAPI router with GET /api/workers, GET /api/workers/{id}/logs, POST /api/workers/{id}/restart endpoints. Review for conformance to AC-1 through AC-8."/>
+      <artifact path="src/services/worker_service.py" kind="service layer" symbol="WorkerService" lines="1-522" reason="EXISTING IMPLEMENTATION: Business logic for Celery inspect API integration, worker status aggregation, log retrieval (stub), and restart coordination. Contains list_workers(), get_worker_logs(), restart_worker() methods."/>
+      <artifact path="src/schemas/worker.py" kind="Pydantic schemas" symbol="WorkerStatus, WorkersListResponse, WorkerLog, WorkerLogsResponse, WorkerRestartRequest, WorkerRestartResponse" lines="1-272" reason="EXISTING IMPLEMENTATION: Pydantic DTOs for request/response validation and OpenAPI schema generation. Review schema structure against AC requirements."/>
+      <artifact path="src/admin/utils/worker_helper.py" kind="Streamlit helper" symbol="worker_helper" lines="1-300" reason="REUSABLE LOGIC: Streamlit UI helper with Celery inspect integration and worker status determination. Extract business logic to worker_service.py for REST API reuse."/>
+      <artifact path="src/workers/celery_app.py" kind="Celery app" symbol="celery_app" lines="1-100" reason="Celery application instance and configuration. Import this in worker_service.py for inspect API access."/>
+      <artifact path="src/api/dependencies.py" kind="auth dependency" symbol="require_role" lines="1-50" reason="RBAC decorator for enforcing admin-only access (AC-5). Apply to all worker endpoints."/>
+      <artifact path="src/database/models.py" kind="database models" symbol="AuditLog" lines="1-500" reason="Audit logging model for tracking worker restart actions (AC-3). Import for audit trail in restart endpoint."/>
+    </code>
+    <dependencies>
+      <python>
+        <package name="fastapi" version=">=0.104.0"/>
+        <package name="celery" version=">=5.3.0"/>
+        <package name="pydantic" version=">=2.0.0"/>
+        <package name="kubernetes" version=">=28.0.0"/>
+        <package name="httpx" version=">=0.24.0"/>
+        <package name="pytest" version=">=7.4.0"/>
+        <package name="pytest-asyncio" version=">=0.21.0"/>
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- C1: File size limit 500 lines → workers.py (≤150 lines), worker_service.py (≤300 lines), worker.py schemas (≤100 lines)
+- C2: Use existing auth system → @require_role("admin") decorator from src/api/dependencies.py
+- C3: No tenant isolation for infrastructure endpoints → Worker monitoring is global admin function
+- C4: Prometheus as metrics source → Query existing Prometheus deployment for CPU/memory metrics
+- C5: Kubernetes Python library → kubernetes>=28.0.0 for pod log fetching and restart
+- C6: HTTPX for Prometheus queries → Async HTTP client for /api/v1/query and /api/v1/query_range
+- C7: FastAPI OpenAPI auto-documentation → Pydantic schemas generate docs at /docs
+- C8: Audit logging required for restart action → Log to audit_log table with user_id, action, resource, timestamp
+- C9: Response time <2s for list endpoint → Use caching if needed, optimize Celery inspect calls
+- C10: Graceful degradation if Prometheus unavailable → Return cached data or partial metrics, don't fail entirely
+  </constraints>
+  <interfaces>
+    <interface name="GET /api/workers" kind="REST endpoint" signature="GET /api/workers → WorkersListResponse" path="src/api/workers.py"/>
+    <interface name="GET /api/workers/{hostname}/logs" kind="REST endpoint" signature="GET /api/workers/{hostname}/logs?lines=int&since=datetime → WorkerLogsResponse" path="src/api/workers.py"/>
+    <interface name="POST /api/workers/{hostname}/restart" kind="REST endpoint" signature="POST /api/workers/{hostname}/restart {graceful: bool, timeout_seconds: int} → WorkerRestartResponse" path="src/api/workers.py"/>
+    <interface name="GET /api/workers/{hostname}/metrics" kind="REST endpoint" signature="GET /api/workers/{hostname}/metrics → WorkerMetricsDTO" path="src/api/workers.py"/>
+    <interface name="Celery inspect API" kind="Celery control" signature="celery_app.control.inspect() → Inspect" path="src/workers/celery_app.py"/>
+    <interface name="WorkerService.list_workers" kind="service method" signature="async list_workers() → WorkersListResponse" path="src/services/worker_service.py"/>
+    <interface name="WorkerService.get_worker_logs" kind="service method" signature="async get_worker_logs(worker_id, lines, offset, level, start_time, end_time) → WorkerLogsResponse" path="src/services/worker_service.py"/>
+    <interface name="WorkerService.restart_worker" kind="service method" signature="async restart_worker(worker_id, graceful, timeout_seconds) → WorkerRestartResponse" path="src/services/worker_service.py"/>
+  </interfaces>
+  <tests>
+    <standards>
+- Use pytest + pytest-asyncio for async test support
+- Mock Celery inspect API responses using unittest.mock
+- Mock Kubernetes API client for pod logs and restart operations
+- Mock Prometheus query responses for metrics endpoints
+- Target ≥80% code coverage for service layer and API routes
+- Use FastAPI TestClient for API endpoint testing
+- Follow AAA pattern: Arrange, Act, Assert
+- Include success cases, error cases (404, 401, 403, 503), and edge cases
+    </standards>
+    <locations>
+- tests/unit/test_worker_service.py - Service layer unit tests
+- tests/unit/test_worker_api.py - API endpoint unit tests
+- tests/integration/test_worker_integration.py - End-to-end integration tests with live Celery workers
+    </locations>
+    <ideas>
+AC-1: List Workers
+- test_list_workers_success: Returns worker list with status, metrics, uptime
+- test_list_workers_no_workers: Handles empty worker list (inspect returns None)
+- test_list_workers_unauthorized: Returns 403 for non-admin users
+- test_list_workers_service_unavailable: Returns 503 when Celery/Redis unavailable
+
+AC-2: Get Worker Logs
+- test_get_logs_success: Returns log entries with pagination (limit, offset)
+- test_get_logs_filtered_by_level: Filters by log level (DEBUG, INFO, ERROR)
+- test_get_logs_filtered_by_time: Filters by start_time and end_time
+- test_get_logs_worker_not_found: Returns 404 for invalid worker hostname
+- test_get_logs_invalid_params: Returns 400 when lines > 1000
+
+AC-3: Restart Worker
+- test_restart_worker_success: Returns 202 with restart_initiated_at timestamp
+- test_restart_worker_graceful: Waits for active tasks to complete
+- test_restart_worker_force: Kills active tasks immediately
+- test_restart_worker_audit_logged: Verifies entry in audit_log table
+- test_restart_worker_not_found: Returns 404 for invalid worker
+- test_restart_worker_kubernetes_failure: Returns 500 when K8s API fails
+
+AC-4: Get Metrics
+- test_get_metrics_success: Returns CPU, memory, throughput from Prometheus
+- test_get_metrics_prometheus_unavailable: Returns 503 or gracefully degrades
+- test_get_metrics_historical_data: Returns 7-day hourly throughput history
+
+AC-8: Integration Tests
+- test_e2e_list_restart_workflow: List workers → Restart → Verify restarted
+- test_e2e_real_celery_workers: Test with live Docker Compose workers
+    </ideas>
+  </tests>
+</story-context>

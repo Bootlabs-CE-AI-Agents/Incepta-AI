@@ -1,0 +1,334 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>nextjs-story-20</storyId>
+    <title>Workers Page - Restart Worker Confirmation</title>
+    <status>draft</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-20-workers-restart-confirmation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an admin</asA>
+    <iWant>to restart a worker with confirmation</iWant>
+    <soThat>I can recover stuck workers without accidentally disrupting operations</soThat>
+    <tasks>
+### Frontend Implementation (7 tasks)
+
+- **Task 1**: Create `WorkerRestartButton.tsx` component with disabled states
+- **Task 2**: Create `WorkerRestartDialog.tsx` component with worker details
+- **Task 3**: Add `restartWorker()` function to `lib/api/workers.ts`
+- **Task 4**: Add `useRestartWorker()` mutation hook to `useWorkers.ts`
+- **Task 5**: Implement optimistic UI update (status → "restarting")
+- **Task 6**: Add keyboard shortcuts (ESC, Enter, Tab) to dialog
+- **Task 7**: Add mobile responsive styling (stacked buttons, full-width)
+
+### Testing (4 tasks)
+
+- **Task 8**: Write unit tests for `useRestartWorker` mutation
+- **Task 9**: Write component tests for `WorkerRestartButton` (enabled/disabled states)
+- **Task 10**: Write component tests for `WorkerRestartDialog` (warning/info messages)
+- **Task 11**: Test error handling (404, 403, 409, 503, network errors)
+
+### Integration (2 tasks)
+
+- **Task 12**: Update `workers/page.tsx` to add restart button to table actions
+- **Task 13**: Test complete restart flow: button click → dialog → confirm → toast → table update
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+### AC-1: Restart Action Button Appears ✅
+- Restart button with circular arrow icon in Actions column
+- Secondary button variant (outline style)
+- Enabled for active/idle/stuck workers
+- Disabled for offline/restarting/terminating workers with tooltip
+
+### AC-2: Confirmation Dialog Opens ✅
+- Modal with worker details (hostname, status, current task, uptime)
+- Warning message if processing task
+- Info message if idle
+- Cancel and Confirm Restart buttons
+
+### AC-3: Restart Request Sends to API ✅
+- POST /api/workers/{hostname}/restart
+- Loading spinner during request
+- Success: close dialog, show toast, optimistic update to "restarting"
+- Error: show toast, keep dialog open, show retry button
+
+### AC-4: Optimistic UI Updates ✅
+- Worker status badge changes to "restarting"
+- Restart button disabled
+- Auto-refresh after 10 seconds
+- Timeout warning after 60 seconds
+
+### AC-5: Error Handling ✅
+- 404: Worker not found
+- 409: Already restarting
+- 403: Insufficient permissions
+- 503: API unavailable
+- Network error: Retry up to 3 times
+
+### AC-6: Bulk Restart (Optional Enhancement) ❌ DESCOPED
+
+### AC-7: Keyboard Accessibility ✅
+- ESC to close dialog
+- Enter to confirm restart
+- Tab/Shift+Tab to cycle focus
+- Focus trap within dialog
+
+### AC-8: Mobile Responsive Design ✅
+- Icon-only button on mobile
+- Full-width dialog
+- Stacked buttons vertically
+- Touch-friendly sizes (min 44px)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/epics-nextjs-feature-parity-completion.md" title="Next.js UI Feature Parity Epic" section="Epic 2: Worker Monitoring System">
+        Story 2.3 defines the restart worker confirmation flow: two-step confirmation with worker details (hostname, status, current task, uptime), warning messages for active tasks, optimistic UI updates, and error handling patterns.
+      </doc>
+      <doc path="docs/sprint-artifacts/nextjs-story-17-workers-api-backend.md" title="Workers API Backend Story" section="API Endpoints">
+        Backend story completed - POST /api/v1/workers/{hostname}/restart endpoint exists and returns WorkerRestartResponse with success boolean and message string.
+      </doc>
+      <doc path="docs/sprint-artifacts/nextjs-story-18-workers-page-list.md" title="Workers Page List Story" section="WorkersTable Component">
+        Workers table structure exists with Actions column. Table uses WorkerStatus type with hostname, status (active/idle/unresponsive), uptime_seconds, active_tasks, completed_tasks, CPU%, memory%, throughput.
+      </doc>
+      <doc path="docs/sprint-artifacts/nextjs-story-19-workers-logs-viewer.md" title="Workers Logs Viewer Story" section="WorkerLogsModal Pattern">
+        Modal pattern established using Headless UI Dialog with glassmorphic background, keyboard navigation (ESC to close), and mobile responsive sizing. Demonstrates modal best practices for worker management.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="nextjs-ui/lib/api/workers.ts" kind="api-client" symbol="workersApi" lines="26-43" reason="Contains restartWorker function (line 39-42) that makes POST request to /api/v1/workers/{hostname}/restart. Story must use this existing API client function.">
+      </artifact>
+      <artifact path="nextjs-ui/lib/hooks/useWorkers.ts" kind="hook" symbol="useRestartWorker" lines="68-85" reason="Existing mutation hook for worker restart. Handles invalidation of workers list, success/error toasts. Story must extend or modify this hook for optimistic updates per AC-4.">
+      </artifact>
+      <artifact path="nextjs-ui/lib/api/workers.ts" kind="types" symbol="WorkerStatus" lines="5-14" reason="TypeScript interface for worker data. Fields: hostname, status (active/idle/unresponsive), uptime_seconds, active_tasks, completed_tasks, cpu_percent, memory_percent, throughput_per_minute. Dialog must display these fields.">
+      </artifact>
+      <artifact path="nextjs-ui/lib/api/workers.ts" kind="types" symbol="WorkerRestartResponse" lines="21-24" reason="API response interface with success (boolean) and message (string). Used by restartWorker function.">
+      </artifact>
+      <artifact path="nextjs-ui/components/ui/Modal.tsx" kind="component" symbol="Modal" lines="0-49" reason="Existing modal component using Headless UI Dialog. Provides size variants (sm, md, lg, xl), backdrop close prevention, close button, title/description for accessibility. Must reuse for consistency.">
+      </artifact>
+      <artifact path="nextjs-ui/components/ui/Button.tsx" kind="component" symbol="Button" reason="UI library button component with variant props (default, destructive, outline, ghost). Restart dialog needs destructive variant for confirm button, outline for cancel.">
+      </artifact>
+      <artifact path="nextjs-ui/components/ui/Badge.tsx" kind="component" symbol="Badge" reason="Status badge component for worker status display in dialog. Must use consistent color coding with workers table.">
+      </artifact>
+      <artifact path="nextjs-ui/components/ui/Tooltip.tsx" kind="component" symbol="Tooltip" reason="Tooltip component for restart button hover states and disabled state explanations.">
+      </artifact>
+      <artifact path="nextjs-ui/components/workers/WorkersTable.tsx" kind="component" symbol="WorkersTable" reason="Workers table component where restart button will be added to Actions column. Must integrate restart button alongside existing 'View Logs' button.">
+      </artifact>
+      <artifact path="nextjs-ui/components/workers/WorkerLogsModal.tsx" kind="component" symbol="WorkerLogsModal" reason="Reference implementation for worker-related modal. Demonstrates modal patterns, keyboard shortcuts (ESC), mobile responsiveness, and worker data display patterns.">
+      </artifact>
+      <artifact path="nextjs-ui/lib/utils/workers.ts" kind="utilities" reason="Worker utility functions (if exists). Check for formatUptime helper needed for dialog uptime display. If doesn't exist, must create.">
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <dependency name="@tanstack/react-query" version="^5.62.2" reason="Data fetching with mutations, optimistic updates, cache invalidation">
+        </dependency>
+        <dependency name="@headlessui/react" version="^2.2.9" reason="Accessible dialog/modal components with focus management">
+        </dependency>
+        <dependency name="lucide-react" version="^0.462.0" reason="Icon library - RefreshCw icon for restart button">
+        </dependency>
+        <dependency name="sonner" version="^2.0.7" reason="Toast notifications for success/error messages">
+        </dependency>
+        <dependency name="next" version="14.2.15" reason="Next.js App Router framework">
+        </dependency>
+        <dependency name="react" version="^18.3.1" reason="React 18 for UI components">
+        </dependency>
+        <dependency name="axios" version="^1.7.9" reason="HTTP client used by apiClient">
+        </dependency>
+        <dependency name="clsx" version="^2.1.1" reason="Conditional CSS class management">
+        </dependency>
+        <dependency name="@testing-library/react" version="^16.3.0" reason="Component testing">
+        </dependency>
+        <dependency name="@testing-library/user-event" version="^14.6.1" reason="User interaction testing">
+        </dependency>
+        <dependency name="jest" version="^30.2.0" reason="Test runner">
+        </dependency>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C1" source="Story AC-1" type="ui-pattern">
+      Use shadcn/ui-compatible components (Modal, Button, Badge, Tooltip) with Headless UI Dialog for modal implementation. Must match existing UI library patterns in nextjs-ui/components/ui/.
+    </constraint>
+    <constraint id="C2" source="Story AC-2, AC-3" type="api-integration">
+      Must use existing workersApi.restartWorker() function from nextjs-ui/lib/api/workers.ts. Do not create new API client functions. Endpoint: POST /api/v1/workers/{hostname}/restart.
+    </constraint>
+    <constraint id="C3" source="Story AC-4, Epic guidance" type="state-management">
+      Implement optimistic UI updates using TanStack Query's queryClient.setQueryData(). Update worker status to 'restarting' immediately on confirm, then auto-refresh after 10 seconds with queryClient.invalidateQueries().
+    </constraint>
+    <constraint id="C4" source="Story AC-7, Accessibility" type="accessibility">
+      Modal must implement keyboard navigation: ESC to close, Enter to confirm, Tab/Shift+Tab for focus cycle. Use Headless UI's built-in focus trap. First focus on Cancel button (safe default).
+    </constraint>
+    <constraint id="C5" source="Story AC-8, Design System" type="responsive">
+      Mobile (<768px): Icon-only restart button, full-width dialog (max-w-full), vertically stacked buttons (Confirm on top, Cancel below), min-height 44px for touch targets.
+    </constraint>
+    <constraint id="C6" source="Story AC-5, Error Handling" type="error-handling">
+      Handle specific HTTP error codes: 404 (not found), 403 (forbidden), 409 (conflict), 503 (unavailable), network errors. Show appropriate toasts, retry up to 3 times for 503/network errors.
+    </constraint>
+    <constraint id="C7" source="package.json, Tech Stack" type="typescript">
+      TypeScript strict mode enabled. All components must have proper type definitions. Use WorkerStatus, WorkerRestartResponse types from lib/api/workers.ts.
+    </constraint>
+    <constraint id="C8" source="Epic 2, Workers Pattern" type="consistency">
+      Follow established workers UI patterns from Story 18 (WorkersTable) and Story 19 (WorkerLogsModal). Color-coded status badges must match table: active=green, idle=yellow, stuck/unresponsive=red.
+    </constraint>
+    <constraint id="C9" source="Story AC-1, Button States" type="conditional-rendering">
+      Disable restart button for workers with status offline, restarting, or terminating. Show tooltip explanation for disabled state: "Worker cannot be restarted in current state".
+    </constraint>
+    <constraint id="C10" source="Testing Requirements" type="testing">
+      Minimum 80% test coverage for hooks (useRestartWorker). Component tests must cover enabled/disabled states, warning/info messages, keyboard navigation, error scenarios (404/403/409/503/network).
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="WorkerStatus" kind="TypeScript interface" path="nextjs-ui/lib/api/workers.ts">
+      <signature>
+interface WorkerStatus {
+  hostname: string;
+  status: 'active' | 'idle' | 'unresponsive';
+  uptime_seconds: number;
+  active_tasks: number;
+  completed_tasks: number;
+  cpu_percent: number;
+  memory_percent: number;
+  throughput_per_minute: number;
+}
+      </signature>
+    </interface>
+    <interface name="WorkerRestartResponse" kind="TypeScript interface" path="nextjs-ui/lib/api/workers.ts">
+      <signature>
+interface WorkerRestartResponse {
+  success: boolean;
+  message: string;
+}
+      </signature>
+    </interface>
+    <interface name="POST /api/v1/workers/{hostname}/restart" kind="REST endpoint" path="src/api/workers.py">
+      <signature>
+POST /api/v1/workers/{hostname}/restart
+Headers: Authorization: Bearer {token} (if auth enabled)
+Body: Empty (hostname in URL path)
+Response: WorkerRestartResponse { success: boolean, message: string }
+Status Codes: 200 (success), 404 (not found), 403 (forbidden), 409 (conflict), 503 (unavailable)
+Timeout: 10 seconds
+      </signature>
+    </interface>
+    <interface name="workersApi.restartWorker" kind="API client function" path="nextjs-ui/lib/api/workers.ts">
+      <signature>
+restartWorker: async (hostname: string): Promise&lt;WorkerRestartResponse&gt; => {
+  const response = await apiClient.post&lt;WorkerRestartResponse&gt;(`/api/v1/workers/${hostname}/restart`);
+  return response.data;
+}
+      </signature>
+    </interface>
+    <interface name="useRestartWorker" kind="React Query mutation hook" path="nextjs-ui/lib/hooks/useWorkers.ts">
+      <signature>
+export const useRestartWorker = () => {
+  const queryClient = useQueryClient();
+  return useMutation&lt;WorkerRestartResponse, Error, string&gt;({
+    mutationFn: workersApi.restartWorker,
+    onSuccess: (data, hostname) => {
+      queryClient.invalidateQueries({ queryKey: workerKeys.lists() });
+      toast.success(`Worker ${hostname} restart initiated`);
+    },
+    onError: (error, hostname) => {
+      toast.error(`Failed to restart worker ${hostname}`);
+    },
+  });
+};
+      </signature>
+    </interface>
+    <interface name="Modal" kind="React component" path="nextjs-ui/components/ui/Modal.tsx">
+      <signature>
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  description?: string;
+  children: ReactNode;
+  footer?: ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl';  // Use 'md' for restart dialog
+  preventBackdropClose?: boolean;
+  className?: string;
+  showCloseButton?: boolean;
+}
+      </signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Testing framework: Jest 30.2.0 + React Testing Library 16.3.0. All tests in nextjs-ui/__tests__/ directory mirroring src structure. Component tests use @testing-library/react render() and userEvent for interactions. Hook tests use renderHook() from @testing-library/react. Async tests use waitFor() and findBy* queries. Mock API responses with MSW or jest.mock(). Target: ≥80% coverage for hooks, comprehensive component tests for all acceptance criteria.
+    </standards>
+    <locations>
+      <location>nextjs-ui/__tests__/components/workers/WorkerRestartButton.test.tsx</location>
+      <location>nextjs-ui/__tests__/components/workers/WorkerRestartDialog.test.tsx</location>
+      <location>nextjs-ui/__tests__/lib/hooks/useRestartWorker.test.ts</location>
+      <location>nextjs-ui/__tests__/lib/api/workers.test.ts (if needed for restartWorker function coverage)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-1" test="WorkerRestartButton component tests">
+        Test 1: Button renders with RefreshCw icon and "Restart" text on desktop
+        Test 2: Button is disabled when worker status is 'offline' | 'restarting' | 'terminating'
+        Test 3: Button is enabled when worker status is 'active' | 'idle' | 'unresponsive'
+        Test 4: Disabled button shows tooltip "Worker cannot be restarted in current state"
+        Test 5: Enabled button shows tooltip "Restart worker"
+        Test 6: Mobile (<768px) renders icon only, no text label
+      </idea>
+      <idea ac="AC-2" test="WorkerRestartDialog component tests">
+        Test 1: Dialog displays worker hostname, status badge, current task, uptime
+        Test 2: Shows warning message when worker status is 'active' or 'stuck' (processing task)
+        Test 3: Shows info message when worker status is 'idle'
+        Test 4: Status badge color matches worker status (green/yellow/red)
+        Test 5: Cancel button closes dialog without API call
+        Test 6: ESC key closes dialog
+      </idea>
+      <idea ac="AC-3" test="Restart request and success flow">
+        Test 1: Clicking "Confirm Restart" shows "Restarting..." loading state
+        Test 2: Success (200) closes dialog, shows success toast, updates worker status
+        Test 3: Success toast message: "Worker {hostname} is restarting. This may take 10-30 seconds."
+        Test 4: Worker status optimistically updated to 'restarting' in table
+      </idea>
+      <idea ac="AC-4" test="Optimistic UI updates">
+        Test 1: queryClient.setQueryData updates worker status to 'restarting' immediately
+        Test 2: Restart button becomes disabled after successful restart
+        Test 3: queryClient.invalidateQueries called after 10 seconds
+        Test 4: Disabled button tooltip changes to "Worker is restarting, please wait"
+      </idea>
+      <idea ac="AC-5" test="Error handling scenarios">
+        Test 1: 404 error shows toast "Worker {hostname} not found", closes dialog
+        Test 2: 403 error shows toast "You do not have permission to restart workers", closes dialog
+        Test 3: 409 error shows toast "Worker {hostname} is already restarting", closes dialog
+        Test 4: 503 error shows toast "Failed to restart worker. API service unavailable", keeps dialog open, shows Retry button
+        Test 5: Network error shows toast "Network error. Check your connection", keeps dialog open, shows Retry button
+        Test 6: Retry button re-attempts POST request (max 3 retries)
+        Test 7: After 3 retries, show "Maximum retry attempts reached" message
+      </idea>
+      <idea ac="AC-7" test="Keyboard accessibility">
+        Test 1: Tab key cycles focus from Cancel to Confirm button
+        Test 2: Shift+Tab cycles focus from Confirm to Cancel button
+        Test 3: Enter key on Confirm button triggers restart
+        Test 4: ESC key closes dialog
+        Test 5: Focus returns to restart button after dialog closes
+        Test 6: First focus is on Cancel button when dialog opens
+      </idea>
+      <idea ac="AC-8" test="Mobile responsive design">
+        Test 1: Dialog uses full-width on mobile (<768px)
+        Test 2: Buttons stack vertically (Confirm on top, Cancel below)
+        Test 3: Button min-height is 44px for touch targets
+        Test 4: Restart button shows icon only on mobile
+      </idea>
+      <idea ac="Integration" test="End-to-end restart flow">
+        Test 1: Click restart button → dialog opens → worker details visible
+        Test 2: Confirm → API called → dialog closes → toast shown → table updated
+        Test 3: Status filter doesn't break after restart
+        Test 4: Auto-refresh after 10s syncs with backend state
+      </idea>
+    </ideas>
+  </tests>
+</story-context>

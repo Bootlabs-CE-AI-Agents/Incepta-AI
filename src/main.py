@@ -14,7 +14,7 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
 
-from src.api import health, webhooks, feedback, plugins, agents, prompts, budget, llm_providers, llm_models, fallback_chains, byok, agent_testing, memory, llm_costs, agent_performance, tenant_spend, executions, openapi_tools, mcp_servers, agent_execution, unified_tools, metrics, tenants, dashboard, queue, audit
+from src.api import health, webhooks, feedback, plugins, agents, prompts, budget, llm_providers, llm_models, fallback_chains, byok, agent_testing, memory, llm_costs, agent_performance, tenant_spend, executions, openapi_tools, mcp_servers, agent_execution, unified_tools, metrics, tenants, dashboard, queue, audit, workers
 from src.api import auth, users  # Story 1C: Authentication endpoints
 from src.api.admin import tenants as admin_tenants
 from src.api.exception_handlers import setup_exception_handlers  # Story 1C
@@ -110,6 +110,7 @@ app.include_router(unified_tools.router)  # Story 11.1.5: Unified tool discovery
 app.include_router(metrics.router)  # Metrics API endpoints for dashboard monitoring
 app.include_router(tenants.router)  # Public tenants API endpoints (session-authenticated)
 app.include_router(audit.router)  # Audit log API endpoints (auth and general CRUD logs)
+app.include_router(workers.router)  # Story 17: Worker monitoring API (admin-only, no tenant isolation)
 
 # Mount Prometheus metrics endpoint at /metrics
 # Returns metrics in Prometheus text format (text/plain; version=0.0.4)

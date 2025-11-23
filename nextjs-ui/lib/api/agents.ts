@@ -19,17 +19,28 @@ import type {
 export interface Agent {
   id: string;
   name: string;
-  type: 'conversational' | 'tool_based' | 'langgraph' | 'custom';
+  type?: 'conversational' | 'tool_based' | 'langgraph' | 'custom';
   description?: string;
   system_prompt: string;
   llm_config: LLMConfig;
   tool_ids: string[];
-  is_active: boolean;
+  status: 'draft' | 'active' | 'suspended' | 'inactive';
+  is_active?: boolean; // Deprecated: use status instead
   cognitive_architecture: 'react' | 'single_step' | 'plan_and_solve';
   tools_count?: number;
   last_run?: string;
   created_at: string;
   updated_at: string;
+  webhook_url?: string;
+  hmac_secret_masked?: string;
+  tenant_id?: string;
+  created_by?: string;
+  triggers?: Array<{
+    id: string;
+    trigger_type: string;
+    webhook_url: string;
+  }>;
+  mcp_tool_assignments?: unknown[];
 }
 
 /**
@@ -110,13 +121,22 @@ export const testAgent = async (
 
 /**
  * Assign tools to agent
+ * Uses the standard update endpoint with tool_ids field
  */
 export const assignTools = async (
   id: string,
   toolIds: string[]
 ): Promise<Agent> => {
-  const response = await apiClient.put<Agent>(`/api/v1/agents/${id}/tools`, {
+  const response = await apiClient.put<Agent>(`/api/v1/agents/${id}`, {
     tool_ids: toolIds,
   });
+  return response.data;
+};
+
+/**
+ * Activate agent (transition from DRAFT to ACTIVE status)
+ */
+export const activateAgent = async (id: string): Promise<Agent> => {
+  const response = await apiClient.post<Agent>(`/api/v1/agents/${id}/activate`);
   return response.data;
 };

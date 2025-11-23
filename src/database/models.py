@@ -47,6 +47,8 @@ class TenantConfig(Base):
         id: UUID primary key (globally unique)
         tenant_id: Unique tenant identifier (string)
         name: Human-readable tenant name
+        description: Optional description of the tenant's purpose
+        logo: URL or base64-encoded image for tenant logo
         servicedesk_url: ServiceDesk Plus instance URL
         servicedesk_api_key_encrypted: Encrypted ServiceDesk API key
         webhook_signing_secret_encrypted: Encrypted webhook secret for validation
@@ -77,6 +79,16 @@ class TenantConfig(Base):
         String(255),
         nullable=False,
         doc="Human-readable tenant name",
+    )
+    description: str = Column(
+        Text,
+        nullable=True,
+        doc="Optional description of the tenant's purpose",
+    )
+    logo: str = Column(
+        Text,
+        nullable=True,
+        doc="URL or base64-encoded image for tenant logo",
     )
     servicedesk_url: str = Column(
         String(500),

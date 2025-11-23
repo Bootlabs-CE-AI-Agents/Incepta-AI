@@ -34,6 +34,8 @@ class TenantConfigCreate(BaseModel):
 
     tenant_id: Optional[str] = Field(default="", pattern=r"^[a-z0-9\-]*$", max_length=100)
     name: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = Field(default=None)
+    logo: Optional[str] = Field(default=None)
     tool_type: str = Field(default="servicedesk_plus")
 
     # ServiceDesk Plus fields (required if tool_type='servicedesk_plus')
@@ -86,6 +88,8 @@ class TenantConfigUpdate(BaseModel):
     """
 
     name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    logo: Optional[str] = None
     tool_type: Optional[str] = None
 
     # ServiceDesk Plus fields
@@ -100,6 +104,22 @@ class TenantConfigUpdate(BaseModel):
     webhook_signing_secret: Optional[str] = Field(None, min_length=1)
     enhancement_preferences: Optional[dict] = None
 
+    @field_validator('jira_url', 'servicedesk_url', mode='before')
+    @classmethod
+    def empty_str_to_none_url(cls, v):
+        """Convert empty strings to None for URL fields."""
+        if v == '' or v is None:
+            return None
+        return v
+
+    @field_validator('jira_api_token', 'jira_project_key', 'servicedesk_api_key', 'webhook_signing_secret', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        """Convert empty strings to None for optional string fields with min_length."""
+        if v == '' or v is None:
+            return None
+        return v
+
 
 class TenantConfigResponse(BaseModel):
     """Response model for GET endpoints.
@@ -111,6 +131,8 @@ class TenantConfigResponse(BaseModel):
     id: UUID
     tenant_id: str
     name: str
+    description: Optional[str] = None
+    logo: Optional[str] = None
     tool_type: str
 
     # ServiceDesk Plus fields
@@ -145,6 +167,8 @@ class TenantConfigInternal(BaseModel):
     id: UUID
     tenant_id: str
     name: str
+    description: Optional[str] = None
+    logo: Optional[str] = None
 
     # ServiceDesk Plus fields (optional for Jira tenants)
     servicedesk_url: Optional[str] = None
@@ -156,7 +180,7 @@ class TenantConfigInternal(BaseModel):
     jira_project_key: Optional[str] = None
 
     # Common fields
-    webhook_signing_secret: str  # Decrypted
+    webhook_signing_secret: Optional[str] = None  # Decrypted
     enhancement_preferences: EnhancementPreferences
     created_at: datetime
     updated_at: datetime

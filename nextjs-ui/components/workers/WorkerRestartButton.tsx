@@ -55,7 +55,7 @@ export function WorkerRestartButton({ worker, onClick, className = '' }: WorkerR
   return (
     <div className="relative group">
       <Button
-        variant="outline"
+        variant="secondary"
         size="sm"
         onClick={onClick}
         disabled={isDisabled}

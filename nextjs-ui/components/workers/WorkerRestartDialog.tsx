@@ -154,7 +154,7 @@ export function WorkerRestartDialog({ worker, isOpen, onClose, onConfirm }: Work
 
   // AC-2: Prepare worker details for display
   const statusBadgeClass = getStatusBadgeClass(statusStr);
-  const currentTask = (worker as any).current_task_id || 'None';
+  const currentTask = (worker as { current_task_id?: string }).current_task_id || 'None';
   const uptime = formatUptime(worker.uptime_seconds);
 
   return (
@@ -218,7 +218,7 @@ export function WorkerRestartDialog({ worker, isOpen, onClose, onConfirm }: Work
       <div className="mt-6 flex flex-col-reverse sm:flex-row gap-3 justify-end">
         {/* AC-8: Stack buttons vertically on mobile (Cancel below Confirm when using flex-col-reverse) */}
         <Button
-          variant="outline"
+          variant="ghost"
           onClick={handleClose}
           disabled={isRestarting}
           className="w-full sm:w-auto min-h-[44px]" // AC-8: Touch-friendly size
@@ -229,7 +229,7 @@ export function WorkerRestartDialog({ worker, isOpen, onClose, onConfirm }: Work
         {/* Show retry button if error occurred and retries remain (AC-5) */}
         {retryCount > 0 && retryCount < MAX_RETRIES && !isRestarting ? (
           <Button
-            variant="default"
+            variant="primary"
             onClick={handleRetry}
             className="w-full sm:w-auto min-h-[44px]"
           >
@@ -237,7 +237,7 @@ export function WorkerRestartDialog({ worker, isOpen, onClose, onConfirm }: Work
           </Button>
         ) : (
           <Button
-            variant="destructive" // AC-2: Danger variant (red) for destructive action
+            variant="danger" // AC-2: Danger variant (red) for destructive action
             onClick={handleConfirm}
             disabled={isRestarting}
             className="w-full sm:w-auto min-h-[44px]" // AC-8: Touch-friendly size

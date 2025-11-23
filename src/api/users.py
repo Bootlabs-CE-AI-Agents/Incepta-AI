@@ -175,10 +175,7 @@ async def get_user_role_for_tenant(
         db: Database session
 
     Returns:
-        RoleAssignment with tenant_id and role
-
-    Raises:
-        404: User has no role assignment for this tenant
+        RoleAssignment with tenant_id and role (defaults to 'viewer' if no role exists)
 
     Security:
         Requires valid JWT access token
@@ -196,11 +193,10 @@ async def get_user_role_for_tenant(
     result = await db.execute(stmt)
     user_role = result.scalar_one_or_none()
 
+    # If no role exists, return default 'viewer' role instead of 404
+    # This allows the UI to load while maintaining least-privilege principle
     if not user_role:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User has no role assignment for tenant {tenant_id}"
-        )
+        return RoleAssignment(tenant_id=str(tenant_id), role=RoleEnum.VIEWER)
 
     return RoleAssignment(tenant_id=user_role.tenant_id, role=user_role.role)
 

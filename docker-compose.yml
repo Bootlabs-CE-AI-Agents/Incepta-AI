@@ -11,8 +11,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-ai_agents}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init.sh:/docker-entrypoint-initdb.d/init-litellm-db.sh:ro
     ports:
       - "5433:5432"
+    networks:
+      - ai-agents-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiagents}"]
       interval: 10s
@@ -29,6 +32,8 @@ services:
       - redis_data:/data
     ports:
       - "6379:6379"
+    networks:
+      - ai-agents-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -59,6 +64,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8000:8000"
+    networks:
+      - ai-agents-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
@@ -86,6 +93,8 @@ services:
     volumes:
       - ./src:/app/src
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - ai-agents-network
     healthcheck:
       test: ["CMD-SHELL", "celery -A src.workers.celery_app inspect ping -d celery@$$HOSTNAME"]
       interval: 30s
@@ -111,6 +120,8 @@ services:
       - AGENT_CACHE_TTL=300
     ports:
       - "3001:3000"
+    networks:
+      - ai-agents-network
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:3000/health', timeout=2)"]
       interval: 10s
@@ -159,6 +170,8 @@ services:
       - ./data/prometheus:/prometheus
     ports:
       - "9091:9090"
+    networks:
+      - ai-agents-network
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 10s
@@ -188,6 +201,8 @@ services:
       - ./data/alertmanager:/alertmanager
     ports:
       - "9093:9093"
+    networks:
+      - ai-agents-network
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
@@ -223,6 +238,8 @@ services:
       - grafana_data:/var/lib/grafana
     ports:
       - "3002:3000"
+    networks:
+      - ai-agents-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
@@ -251,6 +268,8 @@ services:
       # Jaeger agent (used for old client libraries)
       - "6831:6831/udp"
       - "6832:6832/udp"
+    networks:
+      - ai-agents-network
     healthcheck:
       test: ["CMD", "wget", "--spider", "http://localhost:16686/"]
       interval: 10s
@@ -278,6 +297,8 @@ services:
       - NEXTAUTH_URL=http://localhost:3000
     ports:
       - "3000:3000"
+    networks:
+      - ai-agents-network
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
@@ -299,6 +320,8 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "80:80"
+    networks:
+      - ai-agents-network
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 10s
@@ -333,6 +356,8 @@ services:
       - ./.streamlit:/home/appuser/.streamlit
     ports:
       - "8501:8501"
+    networks:
+      - ai-agents-network
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
       interval: 30s
@@ -352,7 +377,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://aiagents:password@postgres:5432/ai_agents
+      DATABASE_URL: ${LITELLM_DATABASE_URL:-postgresql://aiagents:password@postgres:5432/litellm_db}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
       LITELLM_SALT_KEY: ${LITELLM_SALT_KEY}
       STORE_MODEL_IN_DB: ${STORE_MODEL_IN_DB}
@@ -367,6 +392,8 @@ services:
       - ./config/litellm-config.yaml:/app/config.yaml:ro
     ports:
       - "4000:4000"
+    networks:
+      - ai-agents-network
     command: ["--config", "/app/config.yaml", "--detailed_debug"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/').read()"]
@@ -378,7 +405,22 @@ services:
 
 volumes:
   postgres_data:
+    external: true
+    name: aiops_postgres_data
   redis_data:
+    name: ai-agents-redis-data
+    driver: local
   prometheus_data:
+    name: ai-agents-prometheus-data
+    driver: local
   grafana_data:
+    name: ai-agents-grafana-data
+    driver: local
   alertmanager_data:
+    name: ai-agents-alertmanager-data
+    driver: local
+
+networks:
+  ai-agents-network:
+    name: ai-agents-network
+    driver: bridge

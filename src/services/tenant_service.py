@@ -83,6 +83,8 @@ class TenantService:
             "id": db_config.id,
             "tenant_id": db_config.tenant_id,
             "name": db_config.name,
+            "description": db_config.description,
+            "logo": db_config.logo,
             "tool_type": db_config.tool_type,
             "webhook_signing_secret": decrypted_webhook_secret,
             "enhancement_preferences": db_config.enhancement_preferences,
@@ -143,6 +145,8 @@ class TenantService:
         db_config_data = {
             "tenant_id": config.tenant_id,
             "name": config.name,
+            "description": config.description,
+            "logo": config.logo,
             "tool_type": config.tool_type,
             "webhook_signing_secret_encrypted": encrypted_webhook_secret,
             "enhancement_preferences": (
@@ -272,26 +276,59 @@ class TenantService:
         if "name" in update_data:
             db_config.name = update_data["name"]
 
+        if "description" in update_data:
+            db_config.description = update_data["description"]
+
+        if "logo" in update_data:
+            db_config.logo = update_data["logo"]
+
+        if "tool_type" in update_data:
+            db_config.tool_type = update_data["tool_type"]
+
         if "servicedesk_url" in update_data:
             db_config.servicedesk_url = str(update_data["servicedesk_url"])
 
         if "servicedesk_api_key" in update_data:
-            try:
-                db_config.servicedesk_api_key_encrypted = encrypt(
-                    update_data["servicedesk_api_key"]
-                )
-            except EncryptionError as e:
-                logger.error(f"Failed to encrypt new API key: {str(e)}")
-                raise
+            if update_data["servicedesk_api_key"] is not None:
+                try:
+                    db_config.servicedesk_api_key_encrypted = encrypt(
+                        update_data["servicedesk_api_key"]
+                    )
+                except EncryptionError as e:
+                    logger.error(f"Failed to encrypt new API key: {str(e)}")
+                    raise
+            else:
+                db_config.servicedesk_api_key_encrypted = None
+
+        if "jira_url" in update_data:
+            db_config.jira_url = str(update_data["jira_url"]) if update_data["jira_url"] else None
+
+        if "jira_api_token" in update_data:
+            if update_data["jira_api_token"] is not None:
+                try:
+                    db_config.jira_api_token_encrypted = encrypt(
+                        update_data["jira_api_token"]
+                    )
+                except EncryptionError as e:
+                    logger.error(f"Failed to encrypt new Jira API token: {str(e)}")
+                    raise
+            else:
+                db_config.jira_api_token_encrypted = None
+
+        if "jira_project_key" in update_data:
+            db_config.jira_project_key = update_data["jira_project_key"]
 
         if "webhook_signing_secret" in update_data:
-            try:
-                db_config.webhook_signing_secret_encrypted = encrypt(
-                    update_data["webhook_signing_secret"]
-                )
-            except EncryptionError as e:
-                logger.error(f"Failed to encrypt new webhook secret: {str(e)}")
-                raise
+            if update_data["webhook_signing_secret"] is not None:
+                try:
+                    db_config.webhook_signing_secret_encrypted = encrypt(
+                        update_data["webhook_signing_secret"]
+                    )
+                except EncryptionError as e:
+                    logger.error(f"Failed to encrypt new webhook secret: {str(e)}")
+                    raise
+            else:
+                db_config.webhook_signing_secret_encrypted = None
 
         if "enhancement_preferences" in update_data:
             prefs = update_data["enhancement_preferences"]
@@ -301,6 +338,7 @@ class TenantService:
 
         # Commit changes
         await self.db.flush()
+        await self.db.refresh(db_config)  # Refresh to load updated_at timestamp
         logger.info(f"Updated tenant config for {tenant_id}")
 
         # Invalidate cache
@@ -313,8 +351,9 @@ class TenantService:
 
         # Decrypt and return updated config
         try:
-            decrypted_api_key = decrypt(db_config.servicedesk_api_key_encrypted)
-            decrypted_webhook_secret = decrypt(db_config.webhook_signing_secret_encrypted)
+            decrypted_api_key = decrypt(db_config.servicedesk_api_key_encrypted) if db_config.servicedesk_api_key_encrypted else None
+            decrypted_webhook_secret = decrypt(db_config.webhook_signing_secret_encrypted) if db_config.webhook_signing_secret_encrypted else None
+            decrypted_jira_token = decrypt(db_config.jira_api_token_encrypted) if db_config.jira_api_token_encrypted else None
         except EncryptionError as e:
             logger.error(f"Failed to decrypt updated credentials for {tenant_id}: {str(e)}")
             raise
@@ -323,10 +362,17 @@ class TenantService:
             id=db_config.id,
             tenant_id=db_config.tenant_id,
             name=db_config.name,
+            description=db_config.description,
+            logo=db_config.logo,
+            tool_type=db_config.tool_type,
             servicedesk_url=db_config.servicedesk_url,
             servicedesk_api_key=decrypted_api_key,
+            jira_url=db_config.jira_url,
+            jira_api_token=decrypted_jira_token,
+            jira_project_key=db_config.jira_project_key,
             webhook_signing_secret=decrypted_webhook_secret,
             enhancement_preferences=db_config.enhancement_preferences,
+            is_active=db_config.is_active,
             created_at=db_config.created_at,
             updated_at=db_config.updated_at,
         )

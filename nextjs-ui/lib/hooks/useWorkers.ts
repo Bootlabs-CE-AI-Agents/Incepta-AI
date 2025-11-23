@@ -80,7 +80,7 @@ export const useRestartWorker = () => {
         if (!oldData) return oldData;
         return oldData.map((worker) =>
           worker.hostname === hostname
-            ? { ...worker, status: 'restarting' as WorkerStatusEnum } // TypeScript limitation - 'restarting' not in enum
+            ? { ...worker, status: 'restarting' as WorkerStatus['status'] } // TypeScript limitation - 'restarting' not in enum
             : worker
         );
       });

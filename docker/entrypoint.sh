@@ -11,5 +11,8 @@ done
 echo "PostgreSQL is up - running migrations..."
 alembic upgrade head
 
+echo "Seeding database with initial data..."
+python3 scripts/seed_db.py || echo "Warning: Database seeding failed or skipped"
+
 echo "Starting FastAPI application..."
 exec uvicorn src.main:app --host 0.0.0.0 --port 8000 "$@"

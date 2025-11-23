@@ -15,6 +15,7 @@ import {
   deleteAgent,
   testAgent,
   assignTools,
+  activateAgent,
 } from '../api/agents';
 import type { AgentUpdateData, AgentTestInput } from '../validations';
 
@@ -144,6 +145,27 @@ export const useAssignTools = () => {
     },
     onError: (error) => {
       toast.error('Failed to assign tools', {
+        description: error instanceof Error ? error.message : 'An error occurred',
+      });
+    },
+  });
+};
+
+/**
+ * Activate agent (transition from DRAFT to ACTIVE)
+ */
+export const useActivateAgent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: activateAgent,
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: agentKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: agentKeys.lists() });
+      toast.success('Agent activated successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to activate agent', {
         description: error instanceof Error ? error.message : 'An error occurred',
       });
     },

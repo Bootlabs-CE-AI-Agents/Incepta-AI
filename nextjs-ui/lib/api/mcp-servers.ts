@@ -126,7 +126,7 @@ export const updateMCPServer = async (
   id: string,
   data: MCPServerUpdateData
 ): Promise<MCPServer> => {
-  const response = await apiClient.put<MCPServer>(
+  const response = await apiClient.patch<MCPServer>(
     `/api/v1/mcp-servers/${id}`,
     data
   );

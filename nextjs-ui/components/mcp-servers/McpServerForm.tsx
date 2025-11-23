@@ -33,25 +33,50 @@ export function McpServerForm({
   isSubmitting = false,
   submitLabel = 'Create Server',
 }: McpServerFormProps) {
+  // Transform defaultValues to convert env object to array format
+  const transformedDefaultValues = React.useMemo(() => {
+    if (!defaultValues) {
+      return {
+        name: '',
+        transport_type: 'http_sse' as const,
+        description: '',
+        health_check_enabled: true,
+        is_active: true,
+        // HTTP/SSE fields
+        url: '',
+        timeout: 30000,
+        headers: {},
+        // stdio fields
+        command: '',
+        args: [],
+        env: [],
+        cwd: '',
+      };
+    }
+
+    // Debug logging
+    console.log('[McpServerForm] defaultValues.env:', defaultValues.env);
+    console.log('[McpServerForm] is env an array?', Array.isArray(defaultValues.env));
+
+    // Convert env from object to array format if it's an object
+    const transformedEnv = defaultValues.env
+      ? Array.isArray(defaultValues.env)
+        ? defaultValues.env  // Already an array
+        : Object.entries(defaultValues.env).map(([key, value]) => ({ key, value }))  // Convert object to array
+      : [];
+
+    console.log('[McpServerForm] transformedEnv:', transformedEnv);
+
+    return {
+      ...defaultValues,
+      env: transformedEnv,
+    } as Partial<MCPServerCreateData>;
+  }, [defaultValues]);
+
   const form = useForm<MCPServerCreateData>({
     // @ts-expect-error - Zod type inference issue with default values
     resolver: zodResolver(mcpServerCreateSchema),
-    defaultValues: defaultValues || {
-      name: '',
-      transport_type: 'http_sse',
-      description: '',
-      health_check_enabled: true,
-      is_active: true,
-      // HTTP/SSE fields
-      url: '',
-      timeout: 30000,
-      headers: {},
-      // stdio fields
-      command: '',
-      args: [],
-      env: [],
-      cwd: '',
-    },
+    defaultValues: transformedDefaultValues,
   });
 
   const transportType = form.watch('transport_type');

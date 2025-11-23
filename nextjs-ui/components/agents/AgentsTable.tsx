@@ -76,8 +76,8 @@ export function AgentsTable({
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant={getTypeColor(agent.type)}>
-                  {agent.type.replace('_', ' ')}
+                <Badge variant={getTypeColor(agent.type || 'conversational')}>
+                  {(agent.type || 'conversational').replace('_', ' ')}
                 </Badge>
               </TableCell>
               <TableCell>

@@ -7,9 +7,9 @@ import { AgentForm } from '@/components/agents/AgentForm';
 import { ToolAssignment } from '@/components/agents/ToolAssignment';
 import { TestSandbox } from '@/components/agents/TestSandbox';
 import { Button, Loading, Badge, ConfirmDialog, Tabs } from '@/components/ui';
-import { useAgent, useUpdateAgent, useDeleteAgent, useAssignTools } from '@/lib/hooks/useAgents';
+import { useAgent, useUpdateAgent, useDeleteAgent, useAssignTools, useActivateAgent } from '@/lib/hooks/useAgents';
 import { AgentUpdateData } from '@/lib/validations/agents';
-import { ArrowLeft, Trash2, Settings, Wrench, TestTube } from 'lucide-react';
+import { ArrowLeft, Trash2, Settings, Wrench, TestTube, Copy, Check, Power } from 'lucide-react';
 
 /**
  * Agent Detail Page
@@ -33,8 +33,11 @@ export default function AgentDetailPage() {
   const updateAgentMutation = useUpdateAgent();
   const deleteAgentMutation = useDeleteAgent();
   const assignToolsMutation = useAssignTools();
+  const activateAgentMutation = useActivateAgent();
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [copiedWebhook, setCopiedWebhook] = useState(false);
+  const [copiedSecret, setCopiedSecret] = useState(false);
 
   // Mock tools data - in real app, fetch from API
   const mockTools = [
@@ -73,6 +76,21 @@ export default function AgentDetailPage() {
 
   const handleAssignTools = (toolIds: string[]) => {
     assignToolsMutation.mutate({ id: agentId, toolIds });
+  };
+
+  const handleActivate = () => {
+    activateAgentMutation.mutate(agentId);
+  };
+
+  const copyToClipboard = async (text: string, type: 'webhook' | 'secret') => {
+    await navigator.clipboard.writeText(text);
+    if (type === 'webhook') {
+      setCopiedWebhook(true);
+      setTimeout(() => setCopiedWebhook(false), 2000);
+    } else {
+      setCopiedSecret(true);
+      setTimeout(() => setCopiedSecret(false), 2000);
+    }
   };
 
   if (isLoading) {
@@ -135,11 +153,90 @@ export default function AgentDetailPage() {
                 </p>
               )}
             </div>
-            <Badge variant={agent.is_active ? 'success' : 'default'}>
-              {agent.is_active ? 'Active' : 'Inactive'}
-            </Badge>
+            <div className="flex items-center gap-3">
+              {agent.status === 'draft' && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleActivate}
+                  disabled={activateAgentMutation.isPending}
+                >
+                  <Power className="w-4 h-4 mr-2" />
+                  {activateAgentMutation.isPending ? 'Activating...' : 'Activate Agent'}
+                </Button>
+              )}
+              <Badge variant={
+                agent.status === 'active' ? 'success' :
+                agent.status === 'draft' ? 'warning' :
+                agent.status === 'suspended' ? 'warning' :
+                'default'
+              }>
+                {agent.status === 'active' ? 'Active' :
+                 agent.status === 'draft' ? 'Draft' :
+                 agent.status === 'suspended' ? 'Suspended' :
+                 'Inactive'}
+              </Badge>
+            </div>
           </div>
         </div>
+
+        {/* Webhook Information */}
+        {agent.webhook_url && (
+          <div className="glass-card p-6">
+            <h3 className="text-lg font-semibold text-text-primary mb-4">
+              Webhook Configuration
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">
+                  Webhook URL
+                </label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 px-3 py-2 bg-background-secondary rounded-lg text-sm font-mono text-text-primary">
+                    {agent.webhook_url}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(agent.webhook_url!, 'webhook')}
+                  >
+                    {copiedWebhook ? (
+                      <Check className="w-4 h-4 text-success" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+              {agent.hmac_secret_masked && (
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    HMAC Secret (Masked)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 px-3 py-2 bg-background-secondary rounded-lg text-sm font-mono text-text-primary">
+                      {agent.hmac_secret_masked}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(agent.hmac_secret_masked!, 'secret')}
+                    >
+                      {copiedSecret ? (
+                        <Check className="w-4 h-4 text-success" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-text-secondary mt-2">
+                    Use the &quot;Show Secret&quot; endpoint to retrieve the full HMAC secret for webhook signature validation.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Tabbed Content */}
         <Tabs

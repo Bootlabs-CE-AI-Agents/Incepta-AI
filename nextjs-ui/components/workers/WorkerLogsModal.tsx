@@ -175,7 +175,7 @@ export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalPr
   const errorType = useMemo(() => {
     if (!isError || !error) return null;
 
-    const err = error as any;
+    const err = error as { response?: { status?: number }; message?: string; code?: string };
     if (err.response?.status === 404) return '404';
     if (err.response?.status === 503) return '503';
     if (err.message?.includes('Network') || err.code === 'ERR_NETWORK') return 'network';
@@ -239,7 +239,7 @@ export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalPr
             <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
             <p className="text-red-500 font-semibold mb-2">Failed to load logs</p>
             <p className="text-muted-foreground text-sm mb-4">
-              {(error as any)?.message || 'An unexpected error occurred'}
+              {(error as { message?: string })?.message || 'An unexpected error occurred'}
             </p>
             <Button onClick={() => refetch()} variant="secondary" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />

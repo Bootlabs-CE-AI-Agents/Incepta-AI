@@ -89,16 +89,24 @@ export function TenantForm({
   const isFormSubmitting = form.formState.isSubmitting || isLoading;
 
   // Helper to check if logo URL is valid and complete for preview
+  // Updated to validate image file extensions
   const isValidLogoUrl = (url: string | undefined): boolean => {
     if (!url || url.trim().length === 0) return false;
 
     // Check for data URI (base64 images)
     if (url.startsWith('data:image/')) return true;
 
-    // Check for complete HTTP(S) URL
+    // Check for complete HTTP(S) URL pointing to an image file
     try {
       const parsed = new URL(url);
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return false;
+      }
+
+      // Check if URL ends with a valid image extension
+      const pathname = parsed.pathname.toLowerCase();
+      const validExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico'];
+      return validExtensions.some(ext => pathname.endsWith(ext));
     } catch {
       return false;
     }
@@ -165,7 +173,7 @@ export function TenantForm({
               label="Logo URL"
               placeholder="https://example.com/logo.png or data:image/png;base64,..."
               error={fieldState.error?.message}
-              helpText="URL or base64-encoded image (PNG, JPEG, GIF, WebP)"
+              helpText="Direct URL to image file (must end in .png, .jpg, .gif, .webp, etc.) or base64-encoded image"
             />
           )}
         />

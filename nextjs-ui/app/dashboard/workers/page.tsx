@@ -65,8 +65,8 @@ export default function WorkersPage() {
       return;
     }
 
-    // Check if user has admin role
-    const isAdmin = session.user?.role === 'admin' || session.user?.role === 'superadmin';
+    // Check if user has admin role (super_admin or tenant_admin from backend)
+    const isAdmin = session.user?.role === 'super_admin' || session.user?.role === 'tenant_admin';
 
     if (!isAdmin) {
       toast.error('Access denied. Admin access required.');

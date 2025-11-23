@@ -44,7 +44,7 @@ router = APIRouter(
 class RoleAssignment(BaseModel):
     """User role assignment for a tenant."""
 
-    tenant_id: UUID
+    tenant_id: str  # VARCHAR tenant_id (e.g., "default", "production"), not UUID
     role: RoleEnum
 
     model_config = {"from_attributes": True}
@@ -162,7 +162,7 @@ async def get_current_user_profile(
     response_description="User's role for the requested tenant",
 )
 async def get_user_role_for_tenant(
-    tenant_id: UUID,
+    tenant_id: str,
     current_user: Annotated[User, Depends(get_current_active_user)],
     db: AsyncSession = Depends(get_async_session),
 ) -> RoleAssignment:
@@ -170,7 +170,7 @@ async def get_user_role_for_tenant(
     Get authenticated user's role for a specific tenant.
 
     Args:
-        tenant_id: UUID of the tenant to check role for
+        tenant_id: Tenant ID (VARCHAR) to check role for (e.g., "default", "production")
         current_user: User from JWT token
         db: Database session
 
@@ -181,14 +181,14 @@ async def get_user_role_for_tenant(
         Requires valid JWT access token
 
     Example:
-        GET /api/users/me/role?tenant_id=123e4567-e89b-12d3-a456-426614174000
+        GET /api/users/me/role?tenant_id=default
         Headers: Authorization: Bearer <access_token>
     """
     # Fetch user's role for the specified tenant
-    # Note: tenant_id is VARCHAR in database, convert UUID to string
+    # tenant_id is VARCHAR in database
     stmt = select(UserTenantRole).where(
         UserTenantRole.user_id == current_user.id,
-        UserTenantRole.tenant_id == str(tenant_id)
+        UserTenantRole.tenant_id == tenant_id
     )
     result = await db.execute(stmt)
     user_role = result.scalar_one_or_none()
@@ -196,7 +196,7 @@ async def get_user_role_for_tenant(
     # If no role exists, return default 'viewer' role instead of 404
     # This allows the UI to load while maintaining least-privilege principle
     if not user_role:
-        return RoleAssignment(tenant_id=str(tenant_id), role=RoleEnum.VIEWER)
+        return RoleAssignment(tenant_id=tenant_id, role=RoleEnum.VIEWER)
 
     return RoleAssignment(tenant_id=user_role.tenant_id, role=user_role.role)
 

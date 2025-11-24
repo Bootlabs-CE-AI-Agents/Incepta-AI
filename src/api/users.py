@@ -23,11 +23,26 @@ from src.api.dependencies import (
     get_auth_service,
     get_current_active_user,
     get_user_service,
+    require_admin_role,
 )
 from src.database.models import AuthAuditLog, User, UserTenantRole, RoleEnum
 from src.database.session import get_async_session
-from src.services.auth_service import AuthService, hash_password, verify_password, validate_password_strength
+from src.services.auth_service import (
+    AuthService,
+    hash_password,
+    verify_password,
+    validate_password_strength,
+)
 from src.services.user_service import UserService
+from src.schemas.user import (
+    PaginatedUsersResponse,
+    UserCreateRequest,
+    UserUpdateRequest,
+    UserDetailDTO,
+    UserRoleDTO,
+    PasswordResetResponse,
+    UserListQueryParams,
+)
 
 # Create router with /api/v1/users prefix
 router = APIRouter(
@@ -140,9 +155,7 @@ async def get_current_user_profile(
     roles = result.scalars().all()
 
     # Build response with roles
-    role_assignments = [
-        RoleAssignment(tenant_id=role.tenant_id, role=role.role) for role in roles
-    ]
+    role_assignments = [RoleAssignment(tenant_id=role.tenant_id, role=role.role) for role in roles]
 
     return UserDetailResponse(
         id=current_user.id,
@@ -187,8 +200,7 @@ async def get_user_role_for_tenant(
     # Fetch user's role for the specified tenant
     # tenant_id is VARCHAR in database
     stmt = select(UserTenantRole).where(
-        UserTenantRole.user_id == current_user.id,
-        UserTenantRole.tenant_id == tenant_id
+        UserTenantRole.user_id == current_user.id, UserTenantRole.tenant_id == tenant_id
     )
     result = await db.execute(stmt)
     user_role = result.scalar_one_or_none()
@@ -252,9 +264,7 @@ async def change_password(
     # Validate new password strength
     is_valid, error_msg = validate_password_strength(request_data.new_password)
     if not is_valid:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=error_msg
-        )
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=error_msg)
 
     # Check password history (prevent reuse of last 5 passwords)
     password_history = current_user.password_history or []
@@ -309,3 +319,342 @@ async def change_password(
 
     # 204 No Content (no response body)
     return None
+
+
+# ==============================================================================
+# NEW ENDPOINTS: Story nextjs-story-22-users-api-crud
+# ==============================================================================
+
+
+@router.get(
+    "",
+    response_model=PaginatedUsersResponse,
+    summary="List users with pagination and filtering",
+    response_description="Paginated list of users",
+)
+async def list_users(
+    params: Annotated[UserListQueryParams, Depends()],
+    current_user: Annotated[User, Depends(require_admin_role)],
+    db: AsyncSession = Depends(get_async_session),
+    user_service: UserService = Depends(get_user_service),
+) -> PaginatedUsersResponse:
+    """
+    List users with pagination and filtering (AC-1).
+
+    Supports:
+    - Pagination (limit, offset)
+    - Filtering by tenant_id, is_active, role
+    - Tenant scoping (super_admin sees all, tenant_admin sees their tenant only)
+
+    Args:
+        params: Query parameters (tenant_id, is_active, role, limit, offset)
+        current_user: Admin user from JWT token
+        db: Database session
+        user_service: User service instance
+
+    Returns:
+        PaginatedUsersResponse with users and total count
+
+    Security:
+        - Requires admin role (super_admin or tenant_admin)
+        - Tenant scoping applied based on user's role
+
+    Story: nextjs-story-22-users-api-crud (AC-1)
+    """
+    # Call service method with tenant scoping
+    users, total = await user_service.list_users(
+        tenant_id=params.tenant_id,
+        is_active=params.is_active,
+        role=params.role,
+        limit=params.limit,
+        offset=params.offset,
+        current_user=current_user,
+        db=db,
+    )
+
+    # Convert User models to UserDetailDTO with roles
+    user_dtos = []
+    for user in users:
+        # Fetch roles for each user
+        stmt = select(UserTenantRole).where(UserTenantRole.user_id == user.id)
+        result = await db.execute(stmt)
+        roles = result.scalars().all()
+
+        # Convert to UserRoleDTO
+        role_dtos = [UserRoleDTO(role=r.role, tenant_id=UUID(r.tenant_id)) for r in roles]
+
+        # Create UserDetailDTO
+        user_dto = UserDetailDTO(
+            id=user.id,
+            email=user.email,
+            is_active=user.is_active,
+            default_tenant_id=user.default_tenant_id,
+            roles=role_dtos,
+            last_login_at=user.last_login_at,
+            created_at=user.created_at,
+            updated_at=user.updated_at,
+        )
+        user_dtos.append(user_dto)
+
+    return PaginatedUsersResponse(
+        items=user_dtos,
+        total=total,
+        limit=params.limit,
+        offset=params.offset,
+    )
+
+
+@router.post(
+    "",
+    response_model=UserDetailDTO,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create new user with initial role",
+    response_description="Created user details",
+)
+async def create_user(
+    request_data: UserCreateRequest,
+    current_user: Annotated[User, Depends(require_admin_role)],
+    db: AsyncSession = Depends(get_async_session),
+    user_service: UserService = Depends(get_user_service),
+) -> UserDetailDTO:
+    """
+    Create new user with initial role assignment (AC-2).
+
+    Steps:
+    1. Validate password strength (5 rules)
+    2. Create user account
+    3. Assign initial role
+    4. Log to AuditLog
+    5. Queue welcome email (if send_welcome_email=True)
+
+    Args:
+        request_data: UserCreateRequest with email, password, default_tenant_id, initial_role
+        current_user: Admin user performing the creation
+        db: Database session
+        user_service: User service instance
+
+    Returns:
+        UserDetailDTO with created user details
+
+    Raises:
+        422: Password validation fails or email exists
+
+    Security:
+        - Requires admin role
+        - Password validated with 5 security rules
+        - Email normalized to lowercase
+
+    Story: nextjs-story-22-users-api-crud (AC-2)
+    """
+    # Create user with role
+    user = await user_service.create_user_with_role(
+        email=request_data.email,
+        password=request_data.password,
+        default_tenant_id=request_data.default_tenant_id,
+        initial_role=request_data.initial_role,
+        send_welcome_email=request_data.send_welcome_email,
+        current_user=current_user,
+        db=db,
+    )
+
+    # Fetch roles for response
+    stmt = select(UserTenantRole).where(UserTenantRole.user_id == user.id)
+    result = await db.execute(stmt)
+    roles = result.scalars().all()
+
+    # Convert to UserRoleDTO
+    role_dtos = [UserRoleDTO(role=r.role, tenant_id=UUID(r.tenant_id)) for r in roles]
+
+    return UserDetailDTO(
+        id=user.id,
+        email=user.email,
+        is_active=user.is_active,
+        default_tenant_id=user.default_tenant_id,
+        roles=role_dtos,
+        last_login_at=user.last_login_at,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+    )
+
+
+@router.put(
+    "/{user_id}",
+    response_model=UserDetailDTO,
+    summary="Update user profile",
+    response_description="Updated user details",
+)
+async def update_user(
+    user_id: UUID,
+    request_data: UserUpdateRequest,
+    current_user: Annotated[User, Depends(require_admin_role)],
+    db: AsyncSession = Depends(get_async_session),
+    user_service: UserService = Depends(get_user_service),
+) -> UserDetailDTO:
+    """
+    Update user profile with audit logging (AC-3).
+
+    Steps:
+    1. Verify user exists
+    2. Check if disabling last super_admin (prevent)
+    3. Update user fields
+    4. Log to AuditLog with changed_fields
+
+    Args:
+        user_id: User UUID to update
+        request_data: UserUpdateRequest with optional email, is_active, default_tenant_id
+        current_user: Admin user performing the update
+        db: Database session
+        user_service: User service instance
+
+    Returns:
+        UserDetailDTO with updated user details
+
+    Raises:
+        404: User not found
+        400: Cannot disable last super_admin
+
+    Security:
+        - Requires admin role
+        - Cannot disable last super_admin
+        - Email uniqueness enforced
+
+    Story: nextjs-story-22-users-api-crud (AC-3)
+    """
+    # Update user with audit logging
+    user = await user_service.update_user_with_audit(
+        user_id=user_id,
+        email=request_data.email,
+        is_active=request_data.is_active,
+        default_tenant_id=request_data.default_tenant_id,
+        current_user=current_user,
+        db=db,
+    )
+
+    # Fetch roles for response
+    stmt = select(UserTenantRole).where(UserTenantRole.user_id == user.id)
+    result = await db.execute(stmt)
+    roles = result.scalars().all()
+
+    # Convert to UserRoleDTO
+    role_dtos = [UserRoleDTO(role=r.role, tenant_id=UUID(r.tenant_id)) for r in roles]
+
+    return UserDetailDTO(
+        id=user.id,
+        email=user.email,
+        is_active=user.is_active,
+        default_tenant_id=user.default_tenant_id,
+        roles=role_dtos,
+        last_login_at=user.last_login_at,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+    )
+
+
+@router.delete(
+    "/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Soft delete user",
+    response_description="User successfully deleted",
+)
+async def delete_user(
+    user_id: UUID,
+    current_user: Annotated[User, Depends(require_admin_role)],
+    db: AsyncSession = Depends(get_async_session),
+    user_service: UserService = Depends(get_user_service),
+) -> None:
+    """
+    Soft delete user account (AC-4).
+
+    Steps:
+    1. Verify user exists
+    2. Check if last super_admin (prevent deletion)
+    3. Set is_active = False (soft delete)
+    4. Remove all role assignments
+    5. Revoke JWT tokens (via updated_at timestamp)
+    6. Log to AuditLog
+
+    Args:
+        user_id: User UUID to delete
+        current_user: Admin user performing the deletion
+        db: Database session
+        user_service: User service instance
+
+    Returns:
+        204 No Content
+
+    Raises:
+        404: User not found
+        400: Cannot delete last super_admin
+
+    Security:
+        - Requires admin role
+        - Soft delete preserves audit trail
+        - Token revocation invalidates existing sessions
+
+    Story: nextjs-story-22-users-api-crud (AC-4)
+    """
+    # Soft delete user
+    await user_service.delete_user(
+        user_id=user_id,
+        current_user=current_user,
+        db=db,
+    )
+
+    return None
+
+
+@router.post(
+    "/{user_id}/reset-password",
+    response_model=PasswordResetResponse,
+    summary="Admin password reset",
+    response_description="Temporary password generated",
+)
+async def reset_password_admin(
+    user_id: UUID,
+    current_user: Annotated[User, Depends(require_admin_role)],
+    db: AsyncSession = Depends(get_async_session),
+    user_service: UserService = Depends(get_user_service),
+) -> PasswordResetResponse:
+    """
+    Admin-initiated password reset with temporary password (AC-5).
+
+    Steps:
+    1. Verify user exists
+    2. Generate secure 16-char temporary password
+    3. Hash and set as user's password
+    4. Set force_password_change = True
+    5. Revoke JWT tokens (updated_at)
+    6. Log to AuditLog and AuthAuditLog
+    7. Queue password reset email
+
+    Args:
+        user_id: User UUID to reset
+        current_user: Admin user performing the reset
+        db: Database session
+        user_service: User service instance
+
+    Returns:
+        PasswordResetResponse with temporary password (shown only once)
+
+    Raises:
+        404: User not found
+
+    Security:
+        - Requires admin role
+        - Temp password: 16 chars with uppercase, lowercase, digits, special chars
+        - force_password_change flag enforced on next login
+        - JWT revocation invalidates existing sessions
+
+    Story: nextjs-story-22-users-api-crud (AC-5)
+    """
+    # Reset password
+    temp_password = await user_service.reset_password_admin(
+        user_id=user_id,
+        current_user=current_user,
+        db=db,
+    )
+
+    return PasswordResetResponse(
+        temporary_password=temp_password,
+        message="Temporary password generated. User will be required to change password on next login.",
+    )

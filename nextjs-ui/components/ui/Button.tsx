@@ -6,6 +6,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
   isLoading?: boolean;
+  loadingText?: string;
 }
 
 /**
@@ -24,6 +25,7 @@ export function Button({
   variant = "primary",
   size = "md",
   isLoading = false,
+  loadingText,
   className,
   disabled,
   ...props
@@ -62,7 +64,7 @@ export function Button({
       {isLoading ? (
         <>
           <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          <span>Loading...</span>
+          <span>{loadingText || children}</span>
         </>
       ) : (
         children

@@ -8,7 +8,7 @@ use standard session authentication and return data based on user permissions.
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 from typing import List
 
 from src.database.session import get_async_session
@@ -382,4 +382,86 @@ async def update_tenant(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update tenant: {str(e)}",
+        )
+
+
+
+@router.delete("/{tenant_identifier}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_tenant(
+    tenant_identifier: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_async_session),
+) -> None:
+    """
+    Delete tenant configuration by ID (UUID) or tenant_id (slug).
+
+    This endpoint uses get_async_session instead of get_tenant_db to allow
+    admins to delete any tenant without tenant context restrictions.
+
+    Args:
+        tenant_identifier: Tenant UUID or tenant_id slug
+        current_user: Authenticated user from session
+        db: Database session (without tenant context for admin operation)
+
+    Raises:
+        HTTPException(404): If tenant not found
+        HTTPException(500): If deletion fails
+    """
+    try:
+        # Resolve tenant_identifier to tenant_id (slug)
+        # The TenantService.delete_tenant expects tenant_id (slug), not UUID
+        from uuid import UUID as UUIDType
+        try:
+            # If it's a valid UUID, query by id to get tenant_id
+            uuid_obj = UUIDType(tenant_identifier)
+            stmt = select(TenantConfig).where(TenantConfig.id == uuid_obj)
+        except ValueError:
+            # If not a UUID, query by tenant_id (slug)
+            stmt = select(TenantConfig).where(TenantConfig.tenant_id == tenant_identifier)
+
+        result = await db.execute(stmt)
+        tenant = result.scalar_one_or_none()
+
+        if not tenant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tenant '{tenant_identifier}' not found",
+            )
+
+        # Use the tenant_id (slug) for service layer operations
+        tenant_id_slug = tenant.tenant_id
+
+        # Set tenant context for RLS policy to allow deletion
+        await db.execute(text(f"SET app.current_tenant_id = '{tenant_id_slug}'"))
+
+        # Get Redis client for tenant service
+        redis_client = await get_redis_client()
+
+        # Initialize tenant service
+        tenant_service = TenantService(db, redis_client)
+
+        # Delete tenant using service layer (handles cascade deletion of related records)
+        await tenant_service.delete_tenant(tenant_id_slug)
+
+        # Commit the transaction
+        await db.commit()
+
+        logger.info(
+            f"User {current_user.email} deleted tenant {tenant_id_slug}",
+            extra={"user_id": current_user.id, "tenant_id": tenant_id_slug}
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Rollback on any error
+        await db.rollback()
+
+        logger.error(
+            f"Failed to delete tenant {tenant_identifier}: {str(e)}",
+            extra={"user_id": current_user.id, "tenant_id": tenant_identifier, "error": str(e)}
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete tenant: {str(e)}",
         )

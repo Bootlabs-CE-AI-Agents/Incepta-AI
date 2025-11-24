@@ -9,11 +9,12 @@
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCreatePrompt } from '@/lib/hooks/usePrompts';
+import { useAutoSaveDraft } from '@/lib/hooks/useAutoSaveDraft';
 import { PromptEditor } from '@/components/prompts/PromptEditor';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -40,9 +41,17 @@ export default function NewPromptPage() {
   const createMutation = useCreatePrompt();
 
   const [templateText, setTemplateText] = useState(DEFAULT_TEMPLATE);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
 
   const userRole = session?.user?.role || 'viewer';
   const canCreate = ['tenant_admin', 'developer'].includes(userRole);
+
+  // Auto-save draft every 30 seconds (AC-6)
+  const { isSaving, lastSaved, clearDraft, loadDraft } = useAutoSaveDraft({
+    promptId: null, // New prompts use null
+    content: templateText,
+    enabled: canCreate, // Only auto-save if user has permission
+  });
 
   const {
     register,
@@ -63,6 +72,14 @@ export default function NewPromptPage() {
     setValue('template_text', templateText);
   }, [templateText, setValue]);
 
+  // Check for existing draft on mount (AC-6)
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft && draft.content && draft.content !== DEFAULT_TEMPLATE) {
+      setShowDraftBanner(true);
+    }
+  }, [loadDraft]);
+
   // Redirect if no permission
   useEffect(() => {
     if (session && !canCreate) {
@@ -72,7 +89,34 @@ export default function NewPromptPage() {
 
   const onSubmit = async (data: CreatePromptForm) => {
     const result = await createMutation.mutateAsync(data);
+    clearDraft(); // Clear draft after successful save (AC-6)
     router.push(`/dashboard/prompts/${result.id}`);
+  };
+
+  const handleRestoreDraft = () => {
+    const draft = loadDraft();
+    if (draft && draft.content) {
+      setTemplateText(draft.content);
+      setShowDraftBanner(false);
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    setShowDraftBanner(false);
+  };
+
+  const formatLastSaved = (date: Date): string => {
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffSeconds < 10) return 'just now';
+    if (diffSeconds < 60) return `${diffSeconds} seconds ago`;
+    if (diffSeconds < 3600) {
+      const minutes = Math.floor(diffSeconds / 60);
+      return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+    }
+    return date.toLocaleTimeString();
   };
 
   if (!canCreate) {
@@ -91,6 +135,35 @@ export default function NewPromptPage() {
     <DashboardLayout>
       <div className="h-screen flex flex-col">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
+        {/* Draft Restoration Banner (AC-6) */}
+        {showDraftBanner && (
+          <div className="mb-4 bg-blue-50 border border-blue-200 rounded-md p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-blue-800 text-sm">
+                📝 A saved draft was found for this prompt.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleRestoreDraft}
+              >
+                Restore Draft
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleDiscardDraft}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -105,9 +178,21 @@ export default function NewPromptPage() {
             </Button>
             <h1 className="text-2xl font-bold text-gray-900">Create Prompt</h1>
           </div>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Creating...' : 'Create Prompt'}
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* Auto-save indicator (AC-6) */}
+            {lastSaved && (
+              <span className="text-xs text-gray-500">
+                {isSaving ? (
+                  '💾 Saving draft...'
+                ) : (
+                  `✓ Draft saved ${formatLastSaved(lastSaved)}`
+                )}
+              </span>
+            )}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create Prompt'}
+            </Button>
+          </div>
         </div>
 
         {/* Metadata Fields */}

@@ -1,0 +1,322 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>22</storyId>
+    <title>Users API - Full CRUD Endpoints</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-22-users-api-crud.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>backend developer</asA>
+    <iWant>complete user management API endpoints</iWant>
+    <soThat>admins can manage users via the Next.js UI</soThat>
+    <tasks>
+- [ ] Task 1: Extend Pydantic schemas in `src/schemas/user.py` (8 subtasks)
+- [ ] Task 2: Extend `src/services/user_service.py` with new service methods (8 subtasks)
+- [ ] Task 3: Create API endpoints in `src/api/users.py` (8 subtasks)
+- [ ] Task 4: Implement audit logging integration (4 subtasks)
+- [ ] Task 5: Implement email notifications (4 subtasks)
+- [ ] Task 6: Database schema updates if needed (3 subtasks for force_password_change)
+- [ ] Task 7: Add tenant scoping middleware/helper (3 subtasks)
+- [ ] Task 8: Write unit tests for `user_service.py` methods (6 subtasks)
+- [ ] Task 9: Write integration tests for API endpoints (10 subtasks)
+- [ ] Task 10: Update OpenAPI schema and test with Swagger UI (3 subtasks)
+- [ ] Task 11: Test with multiple tenants and roles (4 subtasks)
+- [ ] Task 12: Code quality checks (4 subtasks)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+### AC-1: GET /api/users Endpoint - List Users with Pagination
+- Paginated list with tenant_id, is_active, role filters
+- Query params: tenant_id, is_active, role, limit (default 20, max 100), offset
+- Response includes user details with roles array
+- RBAC: super_admin sees all, tenant_admin scoped to their tenant
+
+### AC-2: POST /api/users Endpoint - Create New User
+- Validates email (RFC 5322), password strength (8+ chars, 1 upper, 1 lower, 1 number, 1 special)
+- Validates default_tenant_id exists, initial_role is valid RoleEnum
+- Returns 201 Created with user details
+- Side effects: bcrypt hash, initial role assigned, AuthAuditLog entry, welcome email sent
+
+### AC-3: PUT /api/users/{id} Endpoint - Update User
+- Updates email, is_active, default_tenant_id (all optional)
+- Validates cannot disable last active super_admin
+- Validates cannot update self if disabling
+- Authorization: super_admin updates any, tenant_admin only their tenant users
+- Side effects: AuditLog entry with changed_fields
+
+### AC-4: DELETE /api/users/{id} Endpoint - Soft Delete User
+- Soft delete (is_active = false), not hard delete
+- Cannot delete self or last active super_admin
+- Side effects: revoke JWT refresh tokens, remove all role assignments, AuditLog entry
+- Returns 204 No Content
+
+### AC-5: POST /api/users/{id}/reset-password Endpoint - Admin Password Reset
+- Generates secure 16-char temp password
+- Sets force_password_change = true
+- Revokes all refresh tokens
+- Returns temporary password (shown once), sends email
+- AuthAuditLog entry created
+
+### AC-6: Tenant Isolation Enforced
+- super_admin: no automatic scoping
+- tenant_admin: scoped to users with roles in their tenant (user_tenant_roles.tenant_id filter)
+- Applies to all endpoints
+
+### AC-7: Audit Logging for All Operations
+- AuditLog table: create, update, delete operations
+- AuthAuditLog table: user_created, admin_password_reset events
+- Captures: entity_type, entity_id, action, changed_fields, performed_by, tenant_id, timestamp, ip_address, user_agent
+
+### AC-8: Input Validation and Error Responses
+- 400 Bad Request with Pydantic validation errors
+- Password rules: min 8, 1 uppercase, 1 lowercase, 1 number, 1 special (!@#$%^&*), no whitespace
+- Email: RFC 5322 format, case-insensitive uniqueness, lowercase normalized
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>AI Agents - Decision Architecture</title>
+        <section>Technology Stack Details</section>
+        <snippet>FastAPI 0.104+, Pydantic 2.x, SQLAlchemy 2.0+, PostgreSQL 17, Pytest + pytest-asyncio. Backend follows async patterns with type hints, Black + Ruff for code quality.</snippet>
+      </doc>
+      <doc>
+        <path>docs/database-schema.md</path>
+        <title>Database Schema Documentation</title>
+        <section>Table: tenant_configs</section>
+        <snippet>Multi-tenant isolation via row-level security. Tenant table has columns: id (UUID), tenant_id (unique VARCHAR), name, tool_type, webhook_signing_secret_encrypted, is_active, created_at, updated_at.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-21-workers-performance-chart.md</path>
+        <title>Story nextjs-story.21: Workers Performance Charts</title>
+        <section>Dev Notes - Learnings from Previous Story</section>
+        <snippet>Backend patterns from Story 21: API endpoints in src/api/, service layer in src/services/, Pydantic schemas in src/schemas/. Quality Score: 9.8/10. WARNING: Test coverage was gap (Task 8 unit tests not created). This story MUST have comprehensive test coverage.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>src/database/models.py</path>
+        <kind>models</kind>
+        <symbol>User</symbol>
+        <lines></lines>
+        <reason>User model with fields: id (UUID), email (unique), password_hash, is_active, default_tenant_id, last_login, created_at, updated_at. Relationships: default_tenant, tenant_roles (UserTenantRole), audit_logs. Need to check if force_password_change column exists.</reason>
+      </file>
+      <file>
+        <path>src/database/models.py</path>
+        <kind>models</kind>
+        <symbol>UserTenantRole</symbol>
+        <lines></lines>
+        <reason>Many-to-many user-tenant-role assignments. Fields: id, user_id (FK), tenant_id (FK), role (RoleEnum), created_at. Cascade delete with User.</reason>
+      </file>
+      <file>
+        <path>src/database/models.py</path>
+        <kind>models</kind>
+        <symbol>AuditLog</symbol>
+        <lines></lines>
+        <reason>Audit log for create/update/delete operations. Fields: id, entity_type, entity_id, action, changed_fields (JSONB), performed_by (FK), tenant_id (FK), timestamp, ip_address, user_agent.</reason>
+      </file>
+      <file>
+        <path>src/database/models.py</path>
+        <kind>models</kind>
+        <symbol>AuthAuditLog</symbol>
+        <lines></lines>
+        <reason>Auth audit log for user_created, admin_password_reset events. Fields: id, event, user_id (FK), timestamp, ip_address, metadata (JSONB).</reason>
+      </file>
+      <file>
+        <path>src/services/user_service.py</path>
+        <kind>service</kind>
+        <symbol>user_service</symbol>
+        <lines></lines>
+        <reason>Existing user service to extend with: list_users, create_user, update_user, delete_user, reset_password_admin methods. Follow async patterns from existing code.</reason>
+      </file>
+      <file>
+        <path>src/services/auth_service.py</path>
+        <kind>service</kind>
+        <symbol>auth_service</symbol>
+        <lines></lines>
+        <reason>REUSE for password hashing (bcrypt), JWT token management, token revocation. Existing patterns for secure password handling.</reason>
+      </file>
+      <file>
+        <path>src/api/users.py</path>
+        <kind>api</kind>
+        <symbol>users_router</symbol>
+        <lines></lines>
+        <reason>Existing users API file to extend with 5 new endpoints: GET /api/users, POST /api/users, PUT /api/users/{id}, DELETE /api/users/{id}, POST /api/users/{id}/reset-password.</reason>
+      </file>
+      <file>
+        <path>tests/unit/test_user_service.py</path>
+        <kind>test</kind>
+        <symbol>test_user_service</symbol>
+        <lines></lines>
+        <reason>Existing unit tests to extend. Need to add 6 subtasks worth of tests for new service methods (list_users, create_user, update_user, delete_user, reset_password_admin, tenant scoping).</reason>
+      </file>
+      <file>
+        <path>tests/unit/test_user_model.py</path>
+        <kind>test</kind>
+        <symbol>test_user_model</symbol>
+        <lines></lines>
+        <reason>Existing User model tests. May need updates if force_password_change column added.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <python>
+        <package name="fastapi" version="0.104+">ASGI web framework for API endpoints</package>
+        <package name="pydantic" version="2.x">Data validation for request/response schemas</package>
+        <package name="sqlalchemy" version="2.0+">Async ORM for database operations</package>
+        <package name="alembic" version="latest">Database migrations if force_password_change column needed</package>
+        <package name="bcrypt" version="latest">Password hashing (via passlib)</package>
+        <package name="pytest" version="latest">Testing framework</package>
+        <package name="pytest-asyncio" version="latest">Async test support</package>
+        <package name="httpx" version="latest">HTTP client for integration tests</package>
+        <package name="celery" version="5.x">Async email tasks (welcome, password reset)</package>
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+1. **RBAC Enforcement**: All endpoints require `@require_role("super_admin", "tenant_admin")` decorator
+2. **Tenant Isolation**: super_admin = no filtering, tenant_admin = filter by user_tenant_roles.tenant_id
+3. **Password Security**: Use bcrypt hashing, validate strength (min 8, 1 upper, 1 lower, 1 number, 1 special), never log plaintext
+4. **Audit Logging**: Every modification → AuditLog entry, auth events → AuthAuditLog entry, capture changed_fields JSON, IP address, user agent
+5. **Error Handling**: 400 (validation), 403 (permissions/scoping), 404 (not found), 409 (email conflict). Use FastAPI exception handlers.
+6. **Service Layer Pattern**: API routes thin (HTTP concerns), service layer thick (business logic, DB ops, audit logging)
+7. **Testing Standards**: Unit tests (mock DB), integration tests (test DB), 80%+ coverage target, MUST test RBAC enforcement
+8. **File Size**: All files ≤500 lines. Split if needed per Project Constraint C1.
+9. **Code Quality**: Black formatter, Mypy strict type checking, Bandit security scan
+10. **Soft Delete Only**: DELETE endpoint sets is_active=false, NOT hard delete from database
+11. **Last Super Admin Protection**: Cannot disable or delete last active super_admin in system
+12. **Email Async**: Use Celery tasks for welcome email and password reset email (non-blocking)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>GET /api/users</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/users?tenant_id={uuid}&is_active={bool}&role={string}&limit={int}&offset={int}</signature>
+      <path>src/api/users.py</path>
+    </interface>
+    <interface>
+      <name>POST /api/users</name>
+      <kind>REST endpoint</kind>
+      <signature>POST /api/users (body: email, password, default_tenant_id, initial_role, send_welcome_email)</signature>
+      <path>src/api/users.py</path>
+    </interface>
+    <interface>
+      <name>PUT /api/users/{id}</name>
+      <kind>REST endpoint</kind>
+      <signature>PUT /api/users/{id} (body: email?, is_active?, default_tenant_id?)</signature>
+      <path>src/api/users.py</path>
+    </interface>
+    <interface>
+      <name>DELETE /api/users/{id}</name>
+      <kind>REST endpoint</kind>
+      <signature>DELETE /api/users/{id}</signature>
+      <path>src/api/users.py</path>
+    </interface>
+    <interface>
+      <name>POST /api/users/{id}/reset-password</name>
+      <kind>REST endpoint</kind>
+      <signature>POST /api/users/{id}/reset-password</signature>
+      <path>src/api/users.py</path>
+    </interface>
+    <interface>
+      <name>UserListQueryParams</name>
+      <kind>Pydantic schema</kind>
+      <signature>class UserListQueryParams(BaseModel): tenant_id, is_active, role, limit, offset</signature>
+      <path>src/schemas/user.py</path>
+    </interface>
+    <interface>
+      <name>UserCreateRequest</name>
+      <kind>Pydantic schema</kind>
+      <signature>class UserCreateRequest(BaseModel): email, password, default_tenant_id, initial_role, send_welcome_email</signature>
+      <path>src/schemas/user.py</path>
+    </interface>
+    <interface>
+      <name>UserUpdateRequest</name>
+      <kind>Pydantic schema</kind>
+      <signature>class UserUpdateRequest(BaseModel): email?, is_active?, default_tenant_id?</signature>
+      <path>src/schemas/user.py</path>
+    </interface>
+    <interface>
+      <name>UserDetailDTO</name>
+      <kind>Pydantic schema</kind>
+      <signature>class UserDetailDTO(BaseModel): id, email, is_active, default_tenant_id, default_tenant_name, roles[], last_login, created_at, updated_at</signature>
+      <path>src/schemas/user.py</path>
+    </interface>
+    <interface>
+      <name>PaginatedUsersResponse</name>
+      <kind>Pydantic schema</kind>
+      <signature>class PaginatedUsersResponse(BaseModel): items, total, limit, offset</signature>
+      <path>src/schemas/user.py</path>
+    </interface>
+    <interface>
+      <name>PasswordResetResponse</name>
+      <kind>Pydantic schema</kind>
+      <signature>class PasswordResetResponse(BaseModel): temporary_password, message</signature>
+      <path>src/schemas/user.py</path>
+    </interface>
+    <interface>
+      <name>list_users</name>
+      <kind>Service method</kind>
+      <signature>async def list_users(tenant_id, is_active, role, limit, offset, current_user) -> tuple[list[User], int]</signature>
+      <path>src/services/user_service.py</path>
+    </interface>
+    <interface>
+      <name>create_user</name>
+      <kind>Service method</kind>
+      <signature>async def create_user(email, password, default_tenant_id, initial_role, send_welcome) -> User</signature>
+      <path>src/services/user_service.py</path>
+    </interface>
+    <interface>
+      <name>update_user</name>
+      <kind>Service method</kind>
+      <signature>async def update_user(user_id, email, is_active, default_tenant_id, current_user) -> User</signature>
+      <path>src/services/user_service.py</path>
+    </interface>
+    <interface>
+      <name>delete_user</name>
+      <kind>Service method</kind>
+      <signature>async def delete_user(user_id, current_user) -> None</signature>
+      <path>src/services/user_service.py</path>
+    </interface>
+    <interface>
+      <name>reset_password_admin</name>
+      <kind>Service method</kind>
+      <signature>async def reset_password_admin(user_id, current_user) -> str</signature>
+      <path>src/services/user_service.py</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Follow existing Pytest + pytest-asyncio patterns from tests/unit/ and tests/integration/.
+Use AsyncMock for database mocking in unit tests.
+Use test database with transactions for integration tests.
+All async test functions must use @pytest.mark.asyncio decorator.
+Black formatting, type hints, comprehensive docstrings required.
+Target 80%+ coverage on new code.
+CRITICAL: Test RBAC enforcement (super_admin vs tenant_admin access) for each endpoint.
+</standards>
+    <locations>
+tests/unit/test_user_service.py - Unit tests for service layer methods
+tests/integration/test_user_api.py - Integration tests for API endpoints (CREATE THIS FILE)
+    </locations>
+    <ideas>
+- **AC-1 Tests**: list_users with different roles (super_admin sees all, tenant_admin scoped), pagination, filters (tenant_id, is_active, role)
+- **AC-2 Tests**: create_user validates email uniqueness, password strength (all 5 rules), assigns initial role, sends welcome email, returns 201
+- **AC-2 Error Tests**: Invalid email format (400), weak password (400), duplicate email (409), invalid tenant_id (404)
+- **AC-3 Tests**: update_user prevents disabling last super_admin (400), logs audit entry with changed_fields, tenant_admin cannot update outside their tenant (403)
+- **AC-4 Tests**: delete_user soft deletes (is_active=false), prevents self-deletion (400), prevents deleting last super_admin (400), revokes JWT tokens, removes role assignments
+- **AC-5 Tests**: reset_password_admin generates secure password, sets force_password_change=true, revokes tokens, sends email, creates AuthAuditLog entry
+- **AC-6 Tests**: Tenant scoping logic - super_admin can access all users, tenant_admin only sees users in their tenant, tenant_admin cannot access other tenants' users (403)
+- **AC-7 Tests**: Audit log entries created for all operations (create, update, delete, password_reset), IP address and user agent captured
+- **AC-8 Tests**: Password validation rejects weak passwords (missing uppercase/lowercase/number/special, < 8 chars, whitespace), email validation rejects invalid formats
+    </ideas>
+  </tests>
+</story-context>

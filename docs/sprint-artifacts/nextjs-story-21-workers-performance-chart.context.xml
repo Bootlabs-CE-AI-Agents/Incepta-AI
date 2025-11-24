@@ -1,0 +1,229 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>nextjs-story-21-workers-performance-chart</storyId>
+    <title>Workers Page - Performance Metrics Chart</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-21-workers-performance-chart.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an admin</asA>
+    <iWant>to see CPU and memory trends for a worker</iWant>
+    <soThat>I can identify resource issues over time and proactively address performance degradation</soThat>
+    <tasks>
+- Task 1: Create `WorkerMetricsChart` component (AC-2, AC-3)
+- Task 2: Create `useWorkerMetrics()` hook (AC-5)
+- Task 3: Implement expandable row functionality in `WorkersTable` (AC-1, AC-6, AC-7)
+- Task 4: Create `WorkerConfigDetails` component (AC-4)
+- Task 5: Implement loading and error states (AC-1)
+- Task 6: Add TypeScript types for metrics API (AC-5)
+- Task 7: Implement responsive layout (AC-8)
+- Task 8: Write unit tests
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+AC-1: Worker Row Expands to Show Metrics
+AC-2: Dual-Axis Line Chart Shows CPU% and Memory%
+AC-3: Throughput Mini-Chart Shows Tasks/Min Over Time
+AC-4: Detailed Worker Configuration Displayed
+AC-5: Metrics Fetched from Backend API
+AC-6: Expandable Rows Work Correctly with Filters/Search
+AC-7: Collapse Button Works
+AC-8: Responsive Layout on Mobile
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/nextjs-ui-migration-tech-spec-v2.md</path>
+        <title>Next.js UI Technical Specification v2</title>
+        <section>Architecture & Design System</section>
+        <snippet>Next.js 14 App Router with Tailwind CSS, shadcn/ui components, Apple Liquid Glass design system, React Query (TanStack Query v5) for state management, Auth.js authentication</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-18-workers-page-list.md</path>
+        <title>Workers Page - Overview & List</title>
+        <section>Implementation Patterns</section>
+        <snippet>Established patterns: WorkersTable component with sorting/filtering, WorkerMetricsCards for summary, useWorkers hook with React Query, 30s auto-refresh, RBAC enforcement</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-20-workers-restart-confirmation.md</path>
+        <title>Workers Restart Confirmation</title>
+        <section>Dialog Patterns</section>
+        <snippet>Headless UI v2.2.9 for modals, optimistic UI updates, two-step confirmation pattern, comprehensive error handling (404/403/409/503)</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>nextjs-ui/components/workers/WorkersTable.tsx</path>
+        <kind>React Component</kind>
+        <symbol>WorkersTable</symbol>
+        <lines>1-100</lines>
+        <reason>Existing table component that needs expandable row functionality added for performance charts</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/workers/WorkerMetricsCards.tsx</path>
+        <kind>React Component</kind>
+        <symbol>WorkerMetricsCards</symbol>
+        <lines>N/A</lines>
+        <reason>Existing metrics cards pattern for summary display</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/hooks/useWorkers.ts</path>
+        <kind>Custom React Hook</kind>
+        <symbol>useWorkers</symbol>
+        <lines>N/A</lines>
+        <reason>Existing hook for worker data fetching, will create similar useWorkerMetrics hook</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/api/workers.ts</path>
+        <kind>API Client</kind>
+        <symbol>getWorkers, restartWorker</symbol>
+        <lines>N/A</lines>
+        <reason>Existing API client module, will add getWorkerMetrics() function</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/utils/workers.ts</path>
+        <kind>Utility Functions</kind>
+        <symbol>formatUptime, getCPUMemoryColor</symbol>
+        <lines>N/A</lines>
+        <reason>Existing utility functions for worker data formatting</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <nextjs>
+        <package name="next" version="15.2.4" />
+        <package name="react" version="18.3.1" />
+        <package name="react-dom" version="18.3.1" />
+      </nextjs>
+      <ui>
+        <package name="@headlessui/react" version="2.2.9" reason="Dialog and UI primitives" />
+        <package name="@tanstack/react-query" version="5.62.2" reason="Server state management" />
+        <package name="recharts" version="2.15.5" reason="Charts library for performance metrics" />
+        <package name="lucide-react" version="0.469.0" reason="Icons" />
+        <package name="framer-motion" version="11.11.17" reason="Animations for expandable rows" />
+      </ui>
+      <utilities>
+        <package name="date-fns" version="3.6.0" reason="Date formatting for chart axes" />
+        <package name="clsx" version="2.1.1" reason="Conditional CSS classes" />
+      </utilities>
+      <testing>
+        <package name="jest" version="29.7.0" />
+        <package name="@testing-library/react" version="16.0.1" />
+        <package name="@testing-library/jest-dom" version="6.6.3" />
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Next.js 14 App Router pattern (NOT Pages Router)
+    - All components must use 'use client' directive for interactive features
+    - TypeScript strict mode enabled
+    - File size limit: Components ≤ 500 lines (split if larger)
+    - Tailwind CSS + shadcn/ui components only (no custom CSS modules)
+    - Apple Liquid Glass design system: backdrop-blur-md, bg-white/10, glassmorphism effects
+    - Recharts library for all charts (already used in Stories 9-16)
+    - React Query v5 patterns: staleTime, refetchInterval, retry config
+    - RBAC: Admin-only access, redirect unauthorized users
+    - Responsive design: Mobile (≤767px), Tablet (768-1023px), Desktop (≥1024px)
+    - Accessibility: WCAG 2.1 AA, keyboard navigation, ARIA labels
+    - Error handling: 404/403/500 HTTP errors with retry logic
+    - Animation: 300ms transitions, respect prefers-reduced-motion
+    - Testing: Jest + React Testing Library, 80%+ coverage target
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>GET /api/workers/{hostname}/metrics</name>
+      <kind>REST API Endpoint</kind>
+      <signature>GET /api/workers/ai-agents-worker-abc123/metrics
+Headers: Authorization: Bearer {jwt}, X-Tenant-ID: {tenant_id}
+Response 200 OK:
+{
+  "cpu_history": [{"timestamp": "2025-11-16T10:00:00Z", "cpu_percent": 45.2}, ...],
+  "memory_history": [{"timestamp": "2025-11-16T10:00:00Z", "memory_percent": 68.7}, ...],
+  "throughput_history": [{"timestamp": "2025-11-16T10:00:00Z", "tasks_per_minute": 12.5}, ...],
+  "worker_config": {
+    "os_name": "Ubuntu 22.04",
+    "python_version": "3.11.5",
+    "celery_version": "5.3.4",
+    "queues": ["default", "priority"],
+    "max_tasks_per_child": 1000,
+    "concurrency": 4,
+    "pool_type": "prefork"
+  }
+}
+Error Responses: 404 Not Found, 403 Forbidden, 500 Internal Server Error</signature>
+      <path>Backend endpoint created in Story 17, extended with /metrics route</path>
+    </interface>
+
+    <interface>
+      <name>WorkerMetricsDTO</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface WorkerMetricsDTO {
+  cpu_history: Array<{ timestamp: string; cpu_percent: number }>;
+  memory_history: Array<{ timestamp: string; memory_percent: number }>;
+  throughput_history: Array<{ timestamp: string; tasks_per_minute: number }>;
+  worker_config: WorkerConfigDTO;
+}
+
+interface WorkerConfigDTO {
+  os_name: string;
+  python_version: string;
+  celery_version: string;
+  queues: string[];
+  max_tasks_per_child: number | null;
+  concurrency: number;
+  pool_type: string;
+}</signature>
+      <path>nextjs-ui/types/workers.ts (new types to add)</path>
+    </interface>
+
+    <interface>
+      <name>useWorkerMetrics Hook</name>
+      <kind>React Query Custom Hook</kind>
+      <signature>function useWorkerMetrics(hostname: string) {
+  return useQuery({
+    queryKey: ['worker-metrics', hostname],
+    queryFn: () => getWorkerMetrics(hostname),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!hostname,
+  });
+}</signature>
+      <path>nextjs-ui/lib/hooks/useWorkers.ts (extend existing hook module)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Testing with Jest + React Testing Library following Next.js 14 patterns. Unit tests for components, hooks, and utilities. Integration tests for API interactions. Target 80%+ coverage. Mock React Query with createWrapper. Mock API responses with MSW (Mock Service Worker). Test user interactions with fireEvent and userEvent. Test accessibility with jest-axe. Snapshot tests for UI consistency.</standards>
+
+    <locations>
+      - nextjs-ui/__tests__/components/workers/ (component tests)
+      - nextjs-ui/__tests__/hooks/ (hook tests)
+      - nextjs-ui/__tests__/utils/ (utility tests)
+      - nextjs-ui/__tests__/api/ (API client tests)
+    </locations>
+
+    <ideas>
+      - AC-1: Test expandable row state management (expand/collapse, single row at a time)
+      - AC-2: Test dual-axis chart renders with correct data, legend toggle works
+      - AC-3: Test throughput chart color coding (green/yellow/red thresholds)
+      - AC-4: Test worker config displays all fields, handles missing fields (N/A)
+      - AC-5: Test useWorkerMetrics hook with loading, success, error states
+      - AC-5: Test API client getWorkerMetrics() function with mock fetch
+      - AC-6: Test expansion resets on filter change if worker hidden
+      - AC-6: Test expansion preserved during table sorting
+      - AC-7: Test collapse button closes expanded section
+      - AC-8: Test responsive breakpoints (mobile/tablet/desktop layouts)
+      - Edge Cases: Test empty data, partial data, data gaps in charts
+      - Edge Cases: Test worker created recently (< 7 days data)
+      - Performance: Test chart renders efficiently with 168 data points (7 days hourly)
+    </ideas>
+  </tests>
+</story-context>

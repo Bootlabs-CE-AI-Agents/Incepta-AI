@@ -277,7 +277,7 @@ class BudgetOverride(Base):
     )
     tenant_id: str = Column(
         String(100),
-        ForeignKey("tenant_configs.tenant_id"),
+        ForeignKey("tenant_configs.tenant_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
         doc="Tenant ID (foreign key to tenant_configs)",
@@ -339,7 +339,7 @@ class BudgetAlertHistory(Base):
     )
     tenant_id: str = Column(
         String(100),
-        ForeignKey("tenant_configs.tenant_id"),
+        ForeignKey("tenant_configs.tenant_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
         doc="Tenant ID (foreign key to tenant_configs)",
@@ -802,6 +802,18 @@ class User(Base):
         default=True,
         server_default="true",
         doc="Account active status (False for soft-deleted accounts)",
+    )
+    force_password_change: bool = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+        doc="Require password change on next login (for admin password resets)",
+    )
+    last_login_at: datetime = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Timestamp of last successful login (UTC, updated on auth)",
     )
     created_at: datetime = Column(
         DateTime(timezone=True),
@@ -1770,7 +1782,7 @@ class AgentTestExecution(Base):
     )
     tenant_id: str = Column(
         String(100),
-        ForeignKey("tenant_configs.id", ondelete="CASCADE"),
+        ForeignKey("tenant_configs.tenant_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
         doc="Tenant for isolation",

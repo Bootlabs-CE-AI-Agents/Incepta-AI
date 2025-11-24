@@ -35,13 +35,28 @@ export function usePrompt(id: string) {
 }
 
 /**
- * Fetch version history for a prompt
+ * Fetch version history for a prompt with pagination and filters
  */
-export function usePromptVersions(id: string) {
+export function usePromptVersions(
+  id: string,
+  params?: promptsApi.VersionsQueryParams
+) {
   return useQuery({
-    queryKey: ['prompts', id, 'versions'],
-    queryFn: () => promptsApi.getPromptVersions(id),
+    queryKey: ['prompts', id, 'versions', params],
+    queryFn: () => promptsApi.getPromptVersions(id, params),
     enabled: !!id,
+    staleTime: 30000, // 30 seconds
+  });
+}
+
+/**
+ * Fetch single version details
+ */
+export function usePromptVersion(id: string, versionId: string) {
+  return useQuery({
+    queryKey: ['prompts', id, 'versions', versionId],
+    queryFn: () => promptsApi.getPromptVersion(id, versionId),
+    enabled: !!id && !!versionId,
   });
 }
 
@@ -148,15 +163,15 @@ export function useRevertPromptVersion() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, version }: { id: string; version: number }) =>
-      promptsApi.revertPromptVersion(id, version),
+    mutationFn: ({ id, versionId }: { id: string; versionId: string }) =>
+      promptsApi.revertPromptVersion(id, versionId),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['prompts'] });
       queryClient.invalidateQueries({ queryKey: ['prompts', variables.id] });
       queryClient.invalidateQueries({
         queryKey: ['prompts', variables.id, 'versions'],
       });
-      toast.success(`Reverted to version ${variables.version}`);
+      toast.success('Reverted to previous version');
     },
     onError: (error: Error) => {
       toast.error(`Failed to revert prompt: ${error.message}`);

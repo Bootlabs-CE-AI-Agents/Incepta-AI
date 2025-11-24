@@ -17,7 +17,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { RefreshCw, RotateCcw } from 'lucide-react';
+import { RefreshCw, RotateCcw, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
@@ -49,6 +49,10 @@ export default function WorkersPage() {
   // Restart dialog state (Story 20)
   const [restartDialogOpen, setRestartDialogOpen] = useState(false);
   const [selectedWorkerForRestart, setSelectedWorkerForRestart] = useState<WorkerStatus | null>(null);
+
+  // Performance charts state (Historical performance tracking)
+  const [selectedWorkerForCharts, setSelectedWorkerForCharts] = useState<string>('');
+  const [showCharts, setShowCharts] = useState(false);
 
   // Fetch workers with auto-refresh (AC-5, AC-8)
   const { data: workers, isLoading, isError, error, refetch, dataUpdatedAt, isFetching } = useWorkers(autoRefreshEnabled);
@@ -204,6 +208,70 @@ export default function WorkersPage() {
           onViewLogs={handleViewLogs}
           onRestart={handleRestart}
         />
+
+        {/* Historical Performance Charts Section */}
+        {workers && workers.length > 0 && (
+          <div className="glass-card rounded-xl border border-border/50 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <TrendingUp className="h-6 w-6 text-primary" />
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">Historical Performance</h2>
+                  <p className="text-sm text-muted-foreground">View detailed performance metrics over time</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Worker Selector */}
+                <select
+                  value={selectedWorkerForCharts}
+                  onChange={(e) => {
+                    setSelectedWorkerForCharts(e.target.value);
+                    setShowCharts(!!e.target.value);
+                  }}
+                  className="px-4 py-2 border border-border rounded-md bg-background text-foreground"
+                >
+                  <option value="">Select worker to view charts...</option>
+                  {workers.map((worker) => (
+                    <option key={worker.hostname} value={worker.hostname}>
+                      {worker.hostname} ({worker.status})
+                    </option>
+                  ))}
+                </select>
+
+                {selectedWorkerForCharts && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedWorkerForCharts('');
+                      setShowCharts(false);
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Charts Display - Story 21: Charts now appear in expandable table rows (AC-1) */}
+            {/* TODO: Remove this section after confirming expandable row charts work correctly */}
+            {showCharts && selectedWorkerForCharts && (
+              <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg">
+                <TrendingUp className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">Performance charts are now available in the expandable table rows.</p>
+                <p className="text-xs mt-2">Click on any worker row in the table above to view detailed metrics.</p>
+              </div>
+            )}
+
+            {!showCharts && (
+              <div className="text-center py-12 text-muted-foreground">
+                <TrendingUp className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>Click on any worker row in the table above to view performance charts</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Worker Logs Modal (Story 19) */}
         {logsModalOpen && selectedWorkerHostname && (

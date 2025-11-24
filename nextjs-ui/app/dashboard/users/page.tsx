@@ -19,7 +19,9 @@ import { useDebounce } from '@/lib/hooks/useDebounce';
 import { UsersTable } from '@/components/users/UsersTable';
 import { UserFilters } from '@/components/users/UserFilters';
 import { UserSearchInput } from '@/components/users/UserSearchInput';
+import { RoleAssignmentModal } from '@/components/users/RoleAssignmentModal';
 import type { RoleEnum } from '@/lib/api/users';
+import type { UserDetail } from '@/lib/api/users';
 
 const ITEMS_PER_PAGE = 20; // AC-5: Pagination with 20 items per page
 
@@ -49,6 +51,15 @@ export default function UsersPage() {
   const [tenantFilter, setTenantFilter] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(0);
   const [sorting, setSorting] = useState<SortingState>([]);
+
+  // Role Assignment Modal state (Story 26 AC-1)
+  const [roleModalState, setRoleModalState] = useState<{
+    isOpen: boolean;
+    user: UserDetail | null;
+  }>({
+    isOpen: false,
+    user: null,
+  });
 
   // Debounced search (AC-3: 300ms debounce)
   const debouncedSearch = useDebounce(search, 300);
@@ -188,6 +199,9 @@ export default function UsersPage() {
         onSortingChange={setSorting}
         currentUser={currentUser}
         isSuperAdmin={isSuperAdmin}
+        onManageRoles={(user) =>
+          setRoleModalState({ isOpen: true, user })
+        }
       />
 
       {/* Pagination Controls (AC-5) */}
@@ -251,6 +265,13 @@ export default function UsersPage() {
           )}
         </div>
       )}
+
+      {/* Role Assignment Modal (Story 26 AC-1, AC-2) */}
+      <RoleAssignmentModal
+        isOpen={roleModalState.isOpen}
+        onClose={() => setRoleModalState({ isOpen: false, user: null })}
+        user={roleModalState.user}
+      />
     </div>
   );
 }

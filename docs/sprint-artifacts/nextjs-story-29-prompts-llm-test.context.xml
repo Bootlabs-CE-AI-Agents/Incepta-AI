@@ -1,0 +1,255 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>nextjs-story-29</storyId>
+    <title>Prompts Page - LLM Test Feature</title>
+    <status>drafted</status>
+    <generatedAt>2025-01-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-29-prompts-llm-test.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to test my prompt with a real LLM</iWant>
+    <soThat>I can validate prompt quality and effectiveness before deploying to production</soThat>
+    <tasks>
+      <task id="1">Create Test Tab component and configuration interface (AC-1, AC-7) - 9 subtasks</task>
+      <task id="2">Create LLM test mutation and API integration (AC-2) - 6 subtasks</task>
+      <task id="3">Create result panel component (AC-3) - 9 subtasks</task>
+      <task id="4">Implement test history with session storage (AC-4) - 9 subtasks</task>
+      <task id="5">Implement side-by-side comparison (AC-5) - 8 subtasks</task>
+      <task id="6">Implement error handling (AC-6) - 8 subtasks</task>
+      <task id="7">Integrate Test tab into Prompts page (AC-8) - 8 subtasks</task>
+      <task id="8">Implement responsive layout (AC-9) - 6 subtasks</task>
+      <task id="9">Add keyboard accessibility (AC-10) - 8 subtasks</task>
+      <task id="10">Write unit tests (all ACs) - 10 subtasks</task>
+      <task id="11">Manual QA and edge case testing (all ACs) - 10 subtasks</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="AC-1">
+      <title>Test Tab with Configuration Interface</title>
+      <description>Model selector dropdown, user message textarea, temperature slider (0.0-1.0, default 0.7), max tokens input (1-4000, default 500), Run Test button enabled when user message not empty</description>
+    </ac>
+    <ac id="AC-2">
+      <title>Run Test with Loading State</title>
+      <description>POST /api/v1/llm/test with system_prompt, user_message, model, temperature, max_tokens. Loading state with spinner and "Testing prompt..." message. Re-enable button on completion</description>
+    </ac>
+    <ac id="AC-3">
+      <title>Result Panel with LLM Response</title>
+      <description>Display markdown-formatted LLM response with syntax highlighting, token usage (input/output/total), execution time, cost estimate USD, Copy Response button</description>
+    </ac>
+    <ac id="AC-4">
+      <title>Test History (Session Storage)</title>
+      <description>Store last 5 test runs in sessionStorage (not persisted). Show timestamp (relative), model, user message preview (50 chars), result preview (100 chars), View button to load previous result</description>
+    </ac>
+    <ac id="AC-5">
+      <title>Side-by-Side Comparison</title>
+      <description>Select 2 tests from history, view side-by-side with split panel showing model, temperature, user message, response, tokens, cost. Highlight differences</description>
+    </ac>
+    <ac id="AC-6">
+      <title>Error Handling</title>
+      <description>Handle Network Error, API Error (500), Timeout, Rate Limit (429), Invalid Model. Display error type, message, details, Retry button. Preserve form state on error</description>
+    </ac>
+    <ac id="AC-7">
+      <title>Variable Substitution Preview</title>
+      <description>Detect {{variable}} patterns in system prompt. Show variable substitution section with input fields for sample values. Substitute before sending to LLM. Display "Variables Used" list in result</description>
+    </ac>
+    <ac id="AC-8">
+      <title>Integration with Prompts Page</title>
+      <description>Add "Test" as 4th tab in Prompts page (Editor | Preview | Version History | Test). Update URL to ?tab=test. Preserve editor content when switching tabs. RBAC: developer/admin only</description>
+    </ac>
+    <ac id="AC-9">
+      <title>Responsive Layout</title>
+      <description>Desktop (≥1024px): 2-column grid (config left, result right). Tablet (768-1023px): Stacked layout. Mobile (<768px): Vertical stack, smaller fonts, simplified controls</description>
+    </ac>
+    <ac id="AC-10">
+      <title>Keyboard Accessibility</title>
+      <description>Tab navigation between fields, Enter to submit, Space for checkboxes, Arrow keys for slider, Ctrl+K to copy. ARIA labels on all fields, screen reader announces status, focus indicators</description>
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics-nextjs-feature-parity-completion.md</path>
+        <title>Next.js UI Feature Parity Epic</title>
+        <section>Story 4.3: Prompts Page - LLM Test Feature</section>
+        <snippet>Test prompt with real LLM, model selector, temperature slider, max tokens, result panel with token usage and cost estimate, test history (last 5 runs in session storage), side-by-side comparison</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>AI Agents Architecture</title>
+        <section>Technology Stack - LiteLLM Integration</section>
+        <snippet>LiteLLM 1.0+ for multi-model LLM orchestration. OpenRouter API Gateway for multi-model flexibility, per-tenant configuration, cost optimization</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-27-prompts-rich-editor.md</path>
+        <title>Previous Story - Prompts Rich Editor</title>
+        <section>Dev Notes - Variable Detection Pattern</section>
+        <snippet>Variable detection regex: /{{([^}]+)}}/g. CodeMirror editor integration. Character count validation with warnings (gray <8K, yellow 8-12K, red >12K). Auto-save to localStorage pattern with 30s debounce</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-28-prompts-version-history.md</path>
+        <title>Previous Story - Version History</title>
+        <section>Dev Notes - Tab Integration Pattern</section>
+        <snippet>Headless UI TabGroup component for tab navigation. URL query param pattern: ?tab=versions. State preservation when switching tabs (editor not unmounted). RBAC enforcement at page level</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>nextjs-ui/components/prompts/CodeMirrorEditor.tsx</path>
+        <kind>component</kind>
+        <symbol>CodeMirrorEditor</symbol>
+        <lines>1-200</lines>
+        <reason>Existing editor component from Story 27. Provides line numbers, syntax highlighting, search, Ctrl+S save. Reuse for viewing system prompt content</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/prompts/PromptEditor.tsx</path>
+        <kind>component</kind>
+        <symbol>PromptEditor</symbol>
+        <lines>1-150</lines>
+        <reason>Main prompt editor component from Story 27 with character warnings. Access current prompt content for LLM test</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/prompts/PromptPreview.tsx</path>
+        <kind>component</kind>
+        <symbol>PromptPreview</symbol>
+        <lines>1-250</lines>
+        <reason>Markdown preview with ReactMarkdown and variable substitution toggle. Reuse markdown rendering pattern for LLM response display</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/prompts/VersionHistoryTab.tsx</path>
+        <kind>component</kind>
+        <symbol>VersionHistoryTab</symbol>
+        <lines>1-362</lines>
+        <reason>Tab component pattern from Story 28. Shows pagination (20/page), search (500ms debounce), loading skeleton, error handling with retry</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/hooks/usePrompts.ts</path>
+        <kind>hook</kind>
+        <symbol>usePrompts, usePromptVersions, useRevertPromptVersion</symbol>
+        <lines>1-250</lines>
+        <reason>React Query hooks for prompts data fetching and mutations. Follow same pattern for useLLMTest, useLLMModels hooks</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/hooks/useDebounce.ts</path>
+        <kind>hook</kind>
+        <symbol>useDebounce</symbol>
+        <lines>1-50</lines>
+        <reason>Debounce hook established in Story 23. Reuse for search/filter inputs if needed</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/app/dashboard/prompts/[id]/page.tsx</path>
+        <kind>page</kind>
+        <symbol>PromptPage</symbol>
+        <lines>1-400</lines>
+        <reason>Main prompts page with tab navigation (Editor, Preview, Version History). Add Test tab as 4th tab. RBAC enforcement at page level (developer/admin only)</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <react>^18.x</react>
+        <next>^14.2.x</next>
+        <react-markdown>^9.x (already in package.json)</react-markdown>
+        <react-syntax-highlighter>^15.x (NEW - add for code highlighting in LLM responses)</react-syntax-highlighter>
+        <@tanstack/react-query>^5.62.2 (already installed)</@tanstack/react-query>
+        <@headlessui/react>^2.2.9 (already installed)</@headlessui/react>
+        <@hookform/resolvers>^5.2.2 (already installed)</@hookform/resolvers>
+        <date-fns>^3.6.0 (already installed)</date-fns>
+        <axios>^1.7.9 (already installed)</axios>
+        <clsx>^2.1.1 (already installed)</clsx>
+        <zod>^3.x (already installed via @hookform/resolvers)</zod>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C1">Use existing UI library: shadcn/ui + Headless UI (Dialog, Slider, TabGroup)</constraint>
+    <constraint id="C2">RBAC enforcement: Test tab accessible only to developer and admin roles (check at page level)</constraint>
+    <constraint id="C3">React Query for LLM test mutation: mutation hook pattern with onSuccess, onError callbacks</constraint>
+    <constraint id="C4">React Hook Form for form state: model selector, user message, temperature, max tokens validation</constraint>
+    <constraint id="C5">Responsive design: Tailwind breakpoints md:768px, lg:1024px. Mobile-first approach</constraint>
+    <constraint id="C6">Accessibility: ARIA labels on all form fields, keyboard navigation (Tab, Enter, Arrow keys), screen reader compatible</constraint>
+    <constraint id="C7">TypeScript strict mode: All new files must use strict TypeScript with proper types</constraint>
+    <constraint id="C8">Unit test coverage: 80%+ coverage target. Test hooks (useLLMTest, useTestHistory), components (PromptTestTab, TestResultPanel), utilities (variable substitution)</constraint>
+    <constraint id="C9">Follow Next.js 14 App Router conventions: Server components where possible, client components with 'use client' directive</constraint>
+    <constraint id="C10">Tailwind CSS for styling: Use existing design tokens, responsive utilities, focus: classes for accessibility</constraint>
+    <constraint id="C11">Error handling with toast notifications: Use existing toast library (sonner) for success/error feedback</constraint>
+    <constraint id="C12">Session storage for ephemeral data: Test history stored in sessionStorage (max 5 runs, FIFO queue), not persisted to database</constraint>
+    <constraint id="C13">Variable detection pattern: Reuse regex /{{([^}]+)}}/g from Story 27 for consistent variable handling</constraint>
+    <constraint id="C14">Tab integration pattern: Follow Story 28 pattern - Headless UI TabGroup, URL query param ?tab=test, state preservation</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>GET /api/v1/llm/models</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/llm/models → Array&lt;{ id: string, name: string, provider: string, pricing: { input: number, output: number } }&gt;</signature>
+      <path>Backend API (must be implemented)</path>
+      <notes>List available LLM models with pricing info for cost calculation</notes>
+    </interface>
+    <interface>
+      <name>POST /api/v1/llm/test</name>
+      <kind>REST endpoint</kind>
+      <signature>POST /api/v1/llm/test { system_prompt, user_message, model, temperature, max_tokens } → { response, usage: { input_tokens, output_tokens, total_tokens }, execution_time, cost, model }</signature>
+      <path>Backend API (must be implemented)</path>
+      <notes>Test prompt with LLM. Backend must use LiteLLM for multi-model support. RBAC: developer/admin roles only. Ephemeral (not persisted)</notes>
+    </interface>
+    <interface>
+      <name>useLLMTest()</name>
+      <kind>React Query mutation hook</kind>
+      <signature>useLLMTest() → { mutate: (params: LLMTestParams) => void, isPending: boolean, data: LLMTestResponse, error: Error }</signature>
+      <path>nextjs-ui/lib/hooks/useLLMTest.ts (NEW)</path>
+      <notes>Mutation hook for LLM test. Follow usePrompts pattern. Timeout 60s, retry 3 attempts</notes>
+    </interface>
+    <interface>
+      <name>useTestHistory()</name>
+      <kind>Custom React hook</kind>
+      <signature>useTestHistory() → { history: TestRun[], addTest: (test: TestRun) => void, clearHistory: () => void }</signature>
+      <path>nextjs-ui/lib/hooks/useTestHistory.ts (NEW)</path>
+      <notes>Session storage management. Max 5 runs (FIFO). Handle quota exceeded error</notes>
+    </interface>
+    <interface>
+      <name>useLLMModels()</name>
+      <kind>React Query hook</kind>
+      <signature>useLLMModels() → { data: Model[], isLoading: boolean, error: Error }</signature>
+      <path>nextjs-ui/lib/hooks/useLLMModels.ts (NEW)</path>
+      <notes>Fetch available models. Cache for 5 minutes (staleTime: 5 * 60 * 1000)</notes>
+    </interface>
+    <interface>
+      <name>PromptTestTab</name>
+      <kind>React component</kind>
+      <signature>PromptTestTab({ promptId, currentPromptContent }: { promptId: string, currentPromptContent: string }) → JSX.Element</signature>
+      <path>nextjs-ui/components/prompts/PromptTestTab.tsx (NEW)</path>
+      <notes>Main test tab component. Receives current prompt content from parent page. Manages test configuration, result display, history</notes>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Test Framework: Jest + React Testing Library for unit/component tests. Playwright for E2E tests. Coverage Target: 80%+ for new components. Test Files Location: __tests__/ directory mirroring source structure (__tests__/components/prompts/, __tests__/lib/hooks/). Naming Convention: ComponentName.test.tsx for unit, feature-name.spec.ts for E2E. All tests must use TypeScript with proper types. Mock API calls with React Query testing utilities. Test accessibility with @testing-library/jest-dom matchers (toHaveAttribute, toBeInTheDocument).
+    </standards>
+    <locations>
+      <location>nextjs-ui/__tests__/components/prompts/ - Component tests</location>
+      <location>nextjs-ui/__tests__/lib/hooks/ - Hook tests</location>
+      <location>nextjs-ui/e2e/ - E2E tests with Playwright</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-1">Test PromptTestTab renders with model selector, user message input, temperature slider, max tokens field, Run Test button. Verify button disabled when user message empty</idea>
+      <idea ac="AC-2">Test useLLMTest mutation hook: success case (returns response, usage, cost), loading state (isPending true), error handling (network, API error, timeout)</idea>
+      <idea ac="AC-3">Test TestResultPanel displays markdown response with syntax highlighting, token usage breakdown, execution time, cost estimate, Copy Response button. Test copy to clipboard functionality</idea>
+      <idea ac="AC-4">Test useTestHistory hook: adds test run, maintains max 5 runs (FIFO), retrieves history from sessionStorage, handles quota exceeded error</idea>
+      <idea ac="AC-5">Test TestComparisonView: select 2 tests, display side-by-side, highlight differences (color-coded), close comparison</idea>
+      <idea ac="AC-6">Test TestErrorPanel: displays network error, API error (500), timeout, rate limit (429), invalid model. Test Retry button triggers mutation again with same params</idea>
+      <idea ac="AC-7">Test variable detection regex /{{([^}]+)}}/g, variable input fields generation, substitution before API call, "Variables Used" list in result</idea>
+      <idea ac="AC-8">Test tab integration: Add Test tab to page.tsx, URL updates to ?tab=test, editor content preserved when switching tabs, RBAC redirect non-developer/admin</idea>
+      <idea ac="AC-9">Test responsive layout: Desktop 2-column grid (1024px+), Tablet stacked (768-1023px), Mobile vertical (< 768px). Test with Playwright at exact breakpoints</idea>
+      <idea ac="AC-10">Test keyboard accessibility: Tab navigation, Enter submits, Arrow keys for slider, Ctrl+K copies response. Test ARIA labels with @testing-library/jest-dom</idea>
+      <idea general="Edge cases">Test with no variables in prompt, 10+ variables, very long user message (10K chars), very long LLM response (truncation), session storage across refresh, comparison with identical tests, temperature edge values (0.0, 1.0), max tokens edge (1, 4000)</idea>
+      <idea general="E2E workflow">Full workflow E2E test: Navigate to Prompts → Select prompt → Click Test tab → Configure test (model, message, temp, tokens) → Run test → View result → View history → Compare 2 tests → Copy response → Switch tabs (state preserved)</idea>
+    </ideas>
+  </tests>
+</story-context>

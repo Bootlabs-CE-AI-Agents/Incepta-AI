@@ -323,10 +323,18 @@ def plugin_failure_mode(request):
 @pytest.fixture
 async def async_db_session():
     """
-    Provide an async SQLAlchemy database session for unit tests.
+    Provide an async SQLAlchemy database session for unit tests with proper isolation.
 
-    Creates an async database session for testing async services and database operations.
-    All changes are rolled back after each test to maintain test isolation.
+    Uses nested transactions with savepoints to ensure test isolation even when
+    tests call commit(). Pattern:
+    1. Create connection-level transaction (never committed)
+    2. Create session with savepoint mode
+    3. Event listener reopens savepoint after each commit
+    4. Roll back connection-level transaction at cleanup
+
+    Based on research from:
+    - CORE27: https://www.core27.co/post/transactional-unit-tests-with-pytest-and-async-sqlalchemy
+    - Stack Overflow: https://stackoverflow.com/questions/76952934/test-isolation-in-async-pytest-fixtures-for-sqlalchemy
 
     Yields:
         AsyncSession: Async database session for test operations
@@ -334,39 +342,54 @@ async def async_db_session():
     Note:
         - Uses settings.database_url from config (set in pytest_configure)
         - Automatically rolls back all changes after test completion
+        - Tests can call commit() - changes are isolated via savepoints
         - Creates engine/session within test's event loop to avoid loop conflicts
-        - Suitable for unit tests with LiteLLM SpendLogs and other async queries
     """
     from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import NullPool
+    from sqlalchemy import event
     from src.config import settings
 
-    # Create engine within the test's event loop
+    # Create engine with NullPool for test isolation
     engine = create_async_engine(
         settings.database_url,
         echo=False,
-        pool_pre_ping=True
+        poolclass=NullPool,  # Don't pool connections in tests
     )
 
-    # Create session factory
-    async_session_maker = sessionmaker(
-        engine,
-        class_=AsyncSession,
-        expire_on_commit=False
-    )
+    # Create a connection and begin a transaction (never committed)
+    async with engine.connect() as connection:
+        # Start connection-level transaction (outer transaction)
+        async with connection.begin() as transaction:
+            # Create session bound to this connection
+            # Session will automatically join the connection's transaction
+            session = AsyncSession(
+                bind=connection,
+                expire_on_commit=False,
+            )
 
-    # Create session
-    # Create session without context manager to control transaction
-    session = async_session_maker()
+            # Event listener to reopen savepoint after commit
+            # Note: Must use synchronous handler (no async variant for after_transaction_end)
+            @event.listens_for(session.sync_session, "after_transaction_end")
+            def restart_savepoint(db_session, db_transaction):
+                """Reopen savepoint after test commits."""
+                # Only reopen if this is the outermost savepoint being closed
+                # (nested=True means it's a savepoint, _parent.nested=False means parent is the connection tx)
+                if db_transaction.nested and not db_transaction._parent.nested:
+                    # Reopen the savepoint
+                    db_session.begin_nested()
 
-    try:
-        # Start a transaction
-        await session.begin()
-        yield session
-    finally:
-        # Always rollback to maintain test isolation
-        await session.rollback()
-        await session.close()
+            # Start initial savepoint for test isolation
+            await session.begin_nested()
+
+            try:
+                yield session
+            finally:
+                # Close session (doesn't commit)
+                await session.close()
+
+                # Rollback connection-level transaction (undoes all changes)
+                await transaction.rollback()
 
     # Dispose engine after test
     await engine.dispose()

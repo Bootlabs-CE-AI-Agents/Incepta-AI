@@ -6,9 +6,10 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { usersApi } from '../api/users';
-import type { UserDetail, PaginatedUsersResponse, UsersFilters, UserUpdateRequest, PasswordResetResponse } from '../api/users';
+import type { UserDetail, PaginatedUsersResponse, UsersFilters, UserUpdateRequest, PasswordResetResponse, UserCreateRequest } from '../api/users';
 
 /**
  * Query keys for cache management (AC-10 performance)
@@ -54,7 +55,12 @@ export const useUsers = (filters: UsersFilters = {}) => {
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<UserDetail, Error, { userId: string; updates: UserUpdateRequest }>({
+  return useMutation<
+    UserDetail,
+    Error,
+    { userId: string; updates: UserUpdateRequest },
+    { previousUsers: [import('@tanstack/react-query').QueryKey, PaginatedUsersResponse | undefined][] }
+  >({
     mutationFn: ({ userId, updates }) => usersApi.updateUser(userId, updates),
     // AC-7: Optimistic update for deactivate/activate
     onMutate: async ({ userId, updates }) => {
@@ -78,7 +84,7 @@ export const useUpdateUser = () => {
       return { previousUsers };
     },
     // If the mutation fails, use the snapshot to roll back
-    onError: (err, { userId }, context) => {
+    onError: (err, _variables, context) => {
       if (context?.previousUsers) {
         context.previousUsers.forEach(([queryKey, data]) => {
           if (data) {
@@ -130,6 +136,67 @@ export const useResetPassword = () => {
       toast.error('Failed to reset password', {
         description: err instanceof Error ? err.message : 'An error occurred',
       });
+    },
+  });
+};
+
+/**
+ * Fetch single user by ID (AC-8 edit form data fetch)
+ *
+ * @param userId - User ID
+ * @returns UseQueryResult<UserDetail, Error>
+ *
+ * Configuration:
+ * - enabled: Only fetch if userId is provided
+ * - staleTime: 5 minutes (edit form doesn't change frequently)
+ * - retry: 3 attempts
+ */
+export const useUser = (userId: string | null) => {
+  return useQuery<UserDetail, Error>({
+    queryKey: userKeys.detail(userId || ''),
+    queryFn: () => usersApi.getUser(userId!),
+    enabled: !!userId, // Only fetch if userId is provided
+    staleTime: 5 * 60 * 1000, // 5 minutes (AC-8 cached tenants list)
+    retry: 3,
+  });
+};
+
+/**
+ * Create user mutation (AC-4)
+ *
+ * @returns useMutation<UserDetail, Error, UserCreateRequest>
+ *
+ * Success behavior:
+ * - Navigate to /dashboard/users list page
+ * - Show success toast with email
+ * - Invalidate users list to show new user
+ */
+export const useCreateUser = () => {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation<UserDetail, Error, UserCreateRequest>({
+    mutationFn: usersApi.createUser,
+    onSuccess: (data) => {
+      // AC-4: Success toast
+      toast.success('User created successfully', {
+        description: `Welcome email sent to ${data.email}`,
+      });
+
+      // AC-4: Invalidate users list to refetch with new user
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+
+      // AC-4: Navigate to users list page
+      router.push('/dashboard/users');
+    },
+    onError: (err) => {
+      // AC-4: Error handling done in form component (field-specific errors)
+      // This is fallback for unexpected errors
+      if (!err.message.includes('409') && !err.message.includes('400')) {
+        toast.error('Failed to create user', {
+          description: err instanceof Error ? err.message : 'An error occurred',
+        });
+      }
     },
   });
 };

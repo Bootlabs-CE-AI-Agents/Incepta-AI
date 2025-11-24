@@ -57,7 +57,7 @@ export function formatRoles(roles: UserRoleDetail[]): string {
  * @param isActive - User active status
  * @returns Badge variant object
  */
-export function getStatusBadge(isActive: boolean): { variant: string; className: string; label: string } {
+export function getStatusBadge(isActive: boolean): { variant: 'success' | 'default'; className: string; label: string } {
   if (isActive) {
     return {
       variant: 'success',
@@ -66,7 +66,7 @@ export function getStatusBadge(isActive: boolean): { variant: string; className:
     };
   }
   return {
-    variant: 'secondary',
+    variant: 'default',
     className: 'bg-gray-400 text-white',
     label: 'Inactive',
   };

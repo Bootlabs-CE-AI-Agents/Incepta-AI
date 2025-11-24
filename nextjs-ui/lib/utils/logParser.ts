@@ -110,16 +110,23 @@ export function getLogLevelColor(level: string): string {
  *
  * AC-1 Specification: Timestamp formatted as HH:mm:ss
  *
+ * Industry best practice: Defensive programming with proper error handling
+ * for API data that may have unexpected formats.
+ *
  * @param timestamp - ISO timestamp or formatted string
  * @returns Formatted time string (HH:mm:ss)
  */
-export function formatLogTimestamp(timestamp: string): string {
-  if (!timestamp) return '';
+export function formatLogTimestamp(timestamp: string | null | undefined): string {
+  // Defensive check for null/undefined (best practice for API data)
+  if (!timestamp || typeof timestamp !== 'string') return '';
 
   try {
     // Try parsing as ISO date
     const date = new Date(timestamp);
-    if (!isNaN(date.getTime())) {
+
+    // Validate the date object is valid (best practice)
+    if (date instanceof Date && !isNaN(date.getTime()) && isFinite(date.getTime())) {
+      // Safe to call toLocaleTimeString
       return date.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
@@ -127,15 +134,23 @@ export function formatLogTimestamp(timestamp: string): string {
         hour12: false,
       });
     }
+  } catch (error) {
+    // Log error in development for debugging (best practice)
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Failed to parse timestamp:', timestamp, error);
+    }
+  }
+
+  // Try extracting HH:mm:ss from string (fallback)
+  try {
+    const timeMatch = timestamp.match(/(\d{2}):(\d{2}):(\d{2})/);
+    if (timeMatch) {
+      return `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}`;
+    }
   } catch {
-    // Ignore parse errors
+    // Ignore regex errors
   }
 
-  // Try extracting HH:mm:ss from string
-  const timeMatch = timestamp.match(/(\d{2}):(\d{2}):(\d{2})/);
-  if (timeMatch) {
-    return `${timeMatch[1]}:${timeMatch[2]}:${timeMatch[3]}`;
-  }
-
-  return timestamp; // Return as-is if no match
+  // Final fallback: return empty string for safety (best practice)
+  return '';
 }

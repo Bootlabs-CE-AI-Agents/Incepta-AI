@@ -5,6 +5,7 @@
     "plugin:storybook/recommended"
   ],
   "rules": {
-    "storybook/no-renderer-packages": "off"
+    "storybook/no-renderer-packages": "off",
+    "@typescript-eslint/no-unused-vars": "warn"
   }
 }

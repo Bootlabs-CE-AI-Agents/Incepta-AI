@@ -1,0 +1,561 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Story Context: nextjs-story-27-prompts-rich-editor
+Generated: 2025-11-24
+Story: Prompts Page - Rich Text Editor
+Epic: Epic 4 - Feature Completion & Enhancement (Story 4.1)
+-->
+
+<story-context>
+  <metadata>
+    <story_id>nextjs-story-27</story_id>
+    <story_key>nextjs-story-27-prompts-rich-editor</story_key>
+    <story_title>Prompts Page - Rich Text Editor</story_title>
+    <epic_id>4</epic_id>
+    <epic_title>Feature Completion & Enhancement</epic_title>
+    <story_status>drafted</story_status>
+    <created_date>2025-11-24</created_date>
+    <context_generated_date>2025-11-24</context_generated_date>
+  </metadata>
+
+  <user_story>
+    <as_a>developer or admin</as_a>
+    <i_want>a rich text editor for system prompts with syntax highlighting and variable detection</i_want>
+    <so_that>I can easily compose and preview prompts with proper formatting and validation</so_that>
+  </user_story>
+
+  <acceptance_criteria>
+    <criterion id="AC1">
+      <description>Editor displays with syntax highlighting for {{variables}}</description>
+      <status>partial</status>
+      <notes>CodeMirrorEditor.tsx already has variable highlighting - needs enhancement for full AC</notes>
+    </criterion>
+    <criterion id="AC2">
+      <description>Line numbers displayed in editor</description>
+      <status>missing</status>
+      <notes>CodeMirror supports this via extension - need to add lineNumbers() extension</notes>
+    </criterion>
+    <criterion id="AC3">
+      <description>Character count with warnings: yellow at 8000+, red at 12000+</description>
+      <status>partial</status>
+      <notes>TokenCounter exists but thresholds need adjustment from current 4000 max to 8000/12000</notes>
+    </criterion>
+    <criterion id="AC4">
+      <description>Markdown preview pane with split view toggle</description>
+      <status>missing</status>
+      <notes>PromptPreview.tsx exists but split view functionality needs implementation</notes>
+    </criterion>
+    <criterion id="AC5">
+      <description>Variable substitution preview with sample values</description>
+      <status>partial</status>
+      <notes>Variable Manager exists - needs preview functionality with substitution</notes>
+    </criterion>
+    <criterion id="AC6">
+      <description>Find/Replace functionality</description>
+      <status>missing</status>
+      <notes>Need to add CodeMirror search extension: @codemirror/search</notes>
+    </criterion>
+    <criterion id="AC7">
+      <description>Undo/redo functionality</description>
+      <status>exists</status>
+      <notes>Already implemented in CodeMirrorEditor via history extension</notes>
+    </criterion>
+    <criterion id="AC8">
+      <description>Keyboard shortcut Ctrl+S for save</description>
+      <status>missing</status>
+      <notes>Need to add custom keymap to CodeMirror</notes>
+    </criterion>
+    <criterion id="AC9">
+      <description>Auto-save draft every 30 seconds to localStorage</description>
+      <status>missing</status>
+      <notes>Need to implement useInterval hook + localStorage logic</notes>
+    </criterion>
+    <criterion id="AC10">
+      <description>Restore draft on page return</description>
+      <status>missing</status>
+      <notes>Needs localStorage read on component mount</notes>
+    </criterion>
+  </acceptance_criteria>
+
+  <tasks>
+    <task id="T1" status="pending">
+      <title>Add line numbers to CodeMirror editor</title>
+      <description>Import lineNumbers() extension from @codemirror/view and add to extensions array in CodeMirrorEditor.tsx</description>
+      <estimated_hours>1</estimated_hours>
+      <dependencies></dependencies>
+    </task>
+    <task id="T2" status="pending">
+      <title>Adjust character count thresholds</title>
+      <description>Update tokenCounter.ts to use 8000 (warning) and 12000 (danger) thresholds. Update SystemPromptEditor to display warnings correctly.</description>
+      <estimated_hours>2</estimated_hours>
+      <dependencies></dependencies>
+    </task>
+    <task id="T3" status="pending">
+      <title>Implement markdown preview split view</title>
+      <description>Create split-pane layout in PromptEditor with toggle. Use react-markdown for rendering. Add CSS for split view layout.</description>
+      <estimated_hours>4</estimated_hours>
+      <dependencies></dependencies>
+    </task>
+    <task id="T4" status="pending">
+      <title>Add variable substitution preview</title>
+      <description>Extend PromptPreview to accept variable values and substitute {{var}} patterns. Connect VariableManager example values to preview.</description>
+      <estimated_hours>3</estimated_hours>
+      <dependencies></dependencies>
+    </task>
+    <task id="T5" status="pending">
+      <title>Add Find/Replace to CodeMirror</title>
+      <description>Install @codemirror/search package. Import search(), searchKeymap and add to CodeMirror extensions.</description>
+      <estimated_hours>2</estimated_hours>
+      <dependencies></dependencies>
+    </task>
+    <task id="T6" status="pending">
+      <title>Implement Ctrl+S keyboard shortcut</title>
+      <description>Add custom keymap to CodeMirror that triggers onSave callback on Ctrl+S (Cmd+S on Mac)</description>
+      <estimated_hours>2</estimated_hours>
+      <dependencies></dependencies>
+    </task>
+    <task id="T7" status="pending">
+      <title>Implement auto-save to localStorage</title>
+      <description>Create useAutoSave hook with 30s interval. Save current prompt content to localStorage with key based on prompt_id or 'draft'.</description>
+      <estimated_hours>3</estimated_hours>
+      <dependencies></dependencies>
+    </task>
+    <task id="T8" status="pending">
+      <title>Implement draft restoration on mount</title>
+      <description>On component mount, check localStorage for draft. Show toast asking user if they want to restore draft. Implement restore logic.</description>
+      <estimated_hours>2</estimated_hours>
+      <dependencies>T7</dependencies>
+    </task>
+    <task id="T9" status="pending">
+      <title>Write unit tests for new features</title>
+      <description>Test: line numbers display, character warnings, split view toggle, variable substitution, auto-save, draft restore</description>
+      <estimated_hours>4</estimated_hours>
+      <dependencies>T1,T2,T3,T4,T7,T8</dependencies>
+    </task>
+    <task id="T10" status="pending">
+      <title>Write E2E tests</title>
+      <description>Playwright tests for: full editor workflow, save with Ctrl+S, variable substitution, draft recovery</description>
+      <estimated_hours>3</estimated_hours>
+      <dependencies>T9</dependencies>
+    </task>
+  </tasks>
+
+  <architecture_context>
+    <section name="System Architecture">
+      <reference file="docs/architecture.md" section="Technology Stack">
+        <summary>
+          - Frontend: Next.js 14.2.15, React 18.3.1, TypeScript 5.7
+          - State Management: React Query (TanStack Query)
+          - UI Components: Custom components + shadcn/ui patterns
+          - Editor: CodeMirror 6
+          - Backend: FastAPI + PostgreSQL + asyncpg
+        </summary>
+      </reference>
+      <reference file="docs/architecture.md" section="Frontend Architecture">
+        <summary>
+          Next.js 14 App Router with:
+          - Server Components for data fetching
+          - Client Components ('use client') for interactive UI
+          - API routes in /api/v1/* proxied to FastAPI backend
+          - Component structure: app/dashboard/{page}/page.tsx + components/{feature}/*.tsx
+        </summary>
+      </reference>
+    </section>
+
+    <section name="Epic Context">
+      <reference file="docs/epics-nextjs-feature-parity-completion.md" section="Epic 4 - Story 4.1">
+        <summary>
+          Story 4.1: Prompts Page - Rich Text Editor
+          - Goal: Enhance existing prompts page with full editor capabilities
+          - Fills gap from initial Next.js migration where prompts page was basic
+          - Part of P1 (Should Have) priority epic
+          - Prerequisites: None (enhances existing prompts page)
+          - Technical Notes: Use CodeMirror or Monaco Editor, markdown preview with react-markdown, auto-save to localStorage
+        </summary>
+      </reference>
+    </section>
+  </architecture_context>
+
+  <existing_code>
+    <section name="Existing Prompt Components">
+      <file path="nextjs-ui/components/prompts/SystemPromptEditor.tsx">
+        <summary>Basic textarea editor with variable highlighting overlay and token counting. Already implements: variable detection, token counting, auto-growing textarea, warning levels</summary>
+        <key_features>
+          - estimateTokenCount() integration
+          - extractVariables() for {{var}} detection
+          - Visual variable highlighting with CSS overlay
+          - Token count color coding (green/yellow/red)
+          - Min/max token warnings
+        </key_features>
+        <needs_enhancement>
+          - Replace textarea with CodeMirror component
+          - Adjust token thresholds (8000/12000)
+          - Add line numbers
+          - Add find/replace
+        </needs_enhancement>
+      </file>
+
+      <file path="nextjs-ui/components/prompts/CodeMirrorEditor.tsx">
+        <summary>CodeMirror 6 wrapper with variable placeholder highlighting plugin. Supports markdown mode, oneDark theme, history, line wrapping.</summary>
+        <key_features>
+          - Custom variableHighlighter ViewPlugin
+          - Regex-based {{variable}} detection and decoration
+          - Markdown language support
+          - Dark theme (oneDark)
+          - History + undo/redo
+          - SSR fallback textarea
+        </key_features>
+        <needs_enhancement>
+          - Add line numbers extension
+          - Add search extension for find/replace
+          - Add custom keymap for Ctrl+S
+          - Expose onSave callback prop
+        </needs_enhancement>
+      </file>
+
+      <file path="nextjs-ui/components/prompts/VariableManager.tsx">
+        <summary>Component for managing prompt variables. Auto-detects variables from text, allows add/edit/remove, sets default values, marks required/optional.</summary>
+        <key_features>
+          - extractVariables() integration
+          - createVariablesFromText() for auto-detection
+          - Undeclared variable warnings
+          - Unused variable warnings
+          - Variable metadata: name, description, required, defaultValue, exampleValue
+        </key_features>
+        <needs_enhancement>
+          - Export variable values for substitution preview
+          - Add sample value generator
+        </needs_enhancement>
+      </file>
+
+      <file path="nextjs-ui/components/prompts/PromptPreview.tsx">
+        <summary>Preview component (exists but not yet read in detail)</summary>
+        <needs_enhancement>
+          - Implement markdown rendering with react-markdown
+          - Add variable substitution logic
+          - Create split view layout
+        </needs_enhancement>
+      </file>
+
+      <file path="nextjs-ui/components/prompts/TokenCounter.tsx">
+        <summary>Token counting utility component (exists but not yet read in detail)</summary>
+        <needs_enhancement>
+          - Adjust character limits to 8000/12000
+        </needs_enhancement>
+      </file>
+
+      <file path="nextjs-ui/components/prompts/PromptVersionHistory.tsx">
+        <summary>Version history component (exists - not needed for this story)</summary>
+        <notes>Related to Story 4.2 (Version History), not Story 4.1</notes>
+      </file>
+    </section>
+
+    <section name="Backend API">
+      <file path="src/api/prompts.py">
+        <summary>FastAPI router for prompt management. Supports: list templates, create template, prompt versioning.</summary>
+        <endpoints>
+          - GET /api/v1/prompts - List prompt templates
+          - POST /api/v1/prompts - Create custom template
+          - GET /api/v1/prompts/{id}/versions - Get version history (Story 4.2)
+          - POST /api/v1/prompts/{id}/versions/revert - Revert to version (Story 4.2)
+        </endpoints>
+        <notes>Prompt saving logic already exists. This story focuses on UI enhancements only.</notes>
+      </file>
+    </section>
+  </existing_code>
+
+  <dependencies>
+    <section name="npm Packages">
+      <package name="@codemirror/view" version="^6.38.8" status="installed">
+        Use for: lineNumbers() extension
+      </package>
+      <package name="@codemirror/search" version="NOT_INSTALLED" status="needs_install">
+        Use for: search(), searchKeymap for find/replace functionality
+        Installation: npm install @codemirror/search
+      </package>
+      <package name="@codemirror/lang-markdown" version="^6.5.0" status="installed">
+        Already used in CodeMirrorEditor
+      </package>
+      <package name="react-markdown" version="NOT_CHECKED" status="check_or_install">
+        Use for: Markdown preview rendering
+        Check if installed, install if needed
+      </package>
+      <package name="date-fns" version="^3.6.0" status="installed">
+        Use for: Formatting timestamps in draft recovery
+      </package>
+      <package name="@tanstack/react-query" version="^5.62.2" status="installed">
+        Use for: API data fetching (already integrated)
+      </package>
+    </section>
+
+    <section name="TypeScript Types">
+      <type_definition file="nextjs-ui/types/prompts.ts">
+        <summary>Prompt-related TypeScript interfaces. Should include: TokenCount, EditorSettings, PromptVariable</summary>
+        <needs>
+          - Ensure EditorSettings includes: showLineNumbers, autoSave, autoSaveInterval
+          - Verify PromptVariable includes: exampleValue for substitution
+        </needs>
+      </type_definition>
+    </section>
+  </dependencies>
+
+  <api_interfaces>
+    <endpoint method="GET" path="/api/v1/prompts">
+      <description>List available prompt templates</description>
+      <query_params>
+        <param name="include_builtin" type="boolean" default="true">Include built-in templates</param>
+      </query_params>
+      <response type="list[PromptTemplateResponse]">
+        Array of prompt templates with id, name, description, template_text, etc.
+      </response>
+      <usage>Fetch templates for template library (Story 4.2 feature)</usage>
+    </endpoint>
+
+    <endpoint method="POST" path="/api/v1/prompts">
+      <description>Create new custom prompt template</description>
+      <request_body type="PromptTemplateCreate">
+        {
+          "name": string,
+          "description": string,
+          "template_text": string,
+          "variables": array (optional)
+        }
+      </request_body>
+      <response type="PromptTemplateResponse" status="201">
+        Created template with generated ID
+      </response>
+      <usage>Save new prompts from editor</usage>
+    </endpoint>
+
+    <note>
+      This story focuses on UI enhancements. Backend APIs already exist and are functional.
+      No backend changes required for this story.
+    </note>
+  </api_interfaces>
+
+  <ui_components>
+    <component name="EnhancedPromptEditor" status="to_create">
+      <description>Main editor component combining CodeMirror + preview + variables</description>
+      <props>
+        - value: string
+        - onChange: (value: string) =&gt; void
+        - onSave: () =&gt; void
+        - variables: PromptVariable[]
+        - onVariablesChange: (vars: PromptVariable[]) =&gt; void
+        - showPreview: boolean
+        - autoSave: boolean
+      </props>
+      <composition>
+        - CodeMirrorEditor (left pane)
+        - MarkdownPreview (right pane, toggle)
+        - VariableManager (bottom panel)
+        - TokenCounter (footer)
+        - Auto-save indicator (top-right)
+      </composition>
+    </component>
+
+    <component name="MarkdownPreview" status="needs_enhancement">
+      <description>Renders markdown with variable substitution</description>
+      <props>
+        - content: string (raw markdown with {{variables}})
+        - variables: Record&lt;string, string&gt; (variable values for substitution)
+        - className: string
+      </props>
+      <logic>
+        1. Substitute {{var}} with actual values
+        2. Render markdown using react-markdown
+        3. Apply styling for preview pane
+      </logic>
+    </component>
+
+    <component name="DraftRecoveryDialog" status="to_create">
+      <description>Toast/modal asking user to restore draft from localStorage</description>
+      <props>
+        - draftContent: string
+        - draftTimestamp: Date
+        - onRestore: () =&gt; void
+        - onDiscard: () =&gt; void
+      </props>
+      <behavior>
+        - Shows on component mount if draft exists
+        - Displays "Restore draft from {timestamp}?"
+        - "Restore" button loads draft
+        - "Discard" button clears localStorage
+      </behavior>
+    </component>
+  </ui_components>
+
+  <testing_strategy>
+    <unit_tests framework="Jest + React Testing Library">
+      <test_file path="nextjs-ui/__tests__/components/prompts/EnhancedPromptEditor.test.tsx">
+        <test name="renders with line numbers">
+          Verify CodeMirror shows line numbers
+        </test>
+        <test name="displays character count warnings">
+          Test: &lt; 8000 = green, 8000-12000 = yellow, &gt; 12000 = red
+        </test>
+        <test name="toggles markdown preview">
+          Click toggle button, verify preview pane shows/hides
+        </test>
+        <test name="substitutes variables in preview">
+          Set variable values, verify {{var}} replaced in preview
+        </test>
+        <test name="saves to localStorage on interval">
+          Mock setInterval, verify localStorage.setItem called every 30s
+        </test>
+        <test name="restores draft on mount">
+          Mock localStorage.getItem, verify draft restored
+        </test>
+        <test name="triggers save on Ctrl+S">
+          Simulate Ctrl+S keypress, verify onSave callback called
+        </test>
+      </test_file>
+
+      <test_file path="nextjs-ui/__tests__/lib/utils/promptVariables.test.ts">
+        <test name="extracts variables correctly">
+          Test extractVariables() with various {{var}} patterns
+        </test>
+        <test name="substitutes variables in text">
+          Test substituteVariables() function
+        </test>
+      </test_file>
+    </unit_tests>
+
+    <e2e_tests framework="Playwright">
+      <test_file path="nextjs-ui/e2e/prompts-editor.spec.ts">
+        <test name="full editor workflow">
+          1. Navigate to /dashboard/prompts/new
+          2. Type prompt with {{variables}}
+          3. Verify syntax highlighting
+          4. Toggle preview, verify markdown rendered
+          5. Set variable values, verify substitution
+          6. Press Ctrl+S, verify save triggered
+          7. Verify success toast
+        </test>
+        <test name="draft recovery workflow">
+          1. Start editing prompt
+          2. Wait for auto-save (30s)
+          3. Close tab
+          4. Reopen /dashboard/prompts/new
+          5. Verify draft recovery dialog shows
+          6. Click "Restore"
+          7. Verify content restored
+        </test>
+        <test name="find and replace">
+          1. Open editor with content
+          2. Press Ctrl+F
+          3. Enter search term
+          4. Verify matches highlighted
+          5. Click replace, verify content updated
+        </test>
+      </test_file>
+    </e2e_tests>
+
+    <coverage_requirements>
+      - Unit test coverage: &gt;= 80%
+      - E2E tests: All critical user paths
+      - Edge cases: Empty prompt, very long prompt (&gt; 12000 chars), special characters in variables
+    </coverage_requirements>
+  </testing_strategy>
+
+  <constraints_and_considerations>
+    <constraint type="performance">
+      <description>Auto-save should debounce to avoid excessive localStorage writes</description>
+      <solution>Use 30-second interval with debounce logic</solution>
+    </constraint>
+
+    <constraint type="browser_compatibility">
+      <description>localStorage may not be available in private browsing or some browsers</description>
+      <solution>Wrap localStorage calls in try-catch, gracefully degrade if unavailable</solution>
+    </constraint>
+
+    <constraint type="accessibility">
+      <description>Keyboard shortcuts must not conflict with browser/OS shortcuts</description>
+      <solution>Use Ctrl+S (standard save), avoid conflicts. Test on Windows/Mac/Linux</solution>
+    </constraint>
+
+    <constraint type="ux">
+      <description>Draft recovery dialog should not be intrusive</description>
+      <solution>Use non-blocking toast notification, auto-dismiss after 10 seconds if no action</solution>
+    </constraint>
+
+    <constraint type="data_integrity">
+      <description>User should not lose work if auto-save fails</description>
+      <solution>Keep localStorage draft until successful server save confirmed</solution>
+    </constraint>
+  </constraints_and_considerations>
+
+  <dev_notes>
+    <note priority="high">
+      CodeMirrorEditor.tsx already has variable highlighting working. Build on this foundation rather than replacing it.
+    </note>
+
+    <note priority="high">
+      Use Context7 MCP to fetch latest CodeMirror 6 documentation when implementing new extensions (lineNumbers, search).
+    </note>
+
+    <note priority="medium">
+      Consider using React.lazy() for MarkdownPreview to avoid loading react-markdown unless preview is toggled.
+    </note>
+
+    <note priority="medium">
+      localStorage key format: "prompt_draft_{prompt_id}" or "prompt_draft_new" for new prompts.
+    </note>
+
+    <note priority="low">
+      Future enhancement (Story 4.2): Version history. Keep code extensible for that feature.
+    </note>
+
+    <note priority="info">
+      Existing components (SystemPromptEditor, VariableManager, TokenCounter) can be composed together in a new "EnhancedPromptEditor" wrapper component.
+    </note>
+  </dev_notes>
+
+  <related_stories>
+    <story id="nextjs-story-4-2" status="planned">
+      <title>Prompts Page - Version History</title>
+      <relationship>Builds on this story's editor. Adds version management UI.</relationship>
+    </story>
+
+    <story id="nextjs-story-4-3" status="planned">
+      <title>Prompts Page - LLM Test Feature</title>
+      <relationship>Uses this story's editor. Adds "Test" tab for running prompts against LLM.</relationship>
+    </story>
+  </related_stories>
+
+  <references>
+    <documentation>
+      <doc title="CodeMirror 6 Documentation" url="https://codemirror.net/docs/">
+        Primary reference for implementing lineNumbers, search, and custom keymaps
+      </doc>
+      <doc title="react-markdown" url="https://github.com/remarkjs/react-markdown">
+        For markdown preview rendering
+      </doc>
+      <doc title="Web Storage API (localStorage)" url="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage">
+        For auto-save implementation
+      </doc>
+    </documentation>
+
+    <internal_docs>
+      <doc path="docs/epics-nextjs-feature-parity-completion.md" section="Story 4.1">
+        Story definition and acceptance criteria
+      </doc>
+      <doc path="docs/architecture.md" section="Frontend Architecture">
+        Next.js structure and patterns
+      </doc>
+    </internal_docs>
+  </references>
+
+  <validation_checklist>
+    <item>✅ Story context generated with all required sections</item>
+    <item>✅ Acceptance criteria mapped to existing code</item>
+    <item>✅ Tasks identified with dependencies</item>
+    <item>✅ Architecture context referenced</item>
+    <item>✅ Existing code analyzed and enhancement points identified</item>
+    <item>✅ Dependencies listed (installed + needs install)</item>
+    <item>✅ Testing strategy defined</item>
+    <item>✅ Constraints and considerations documented</item>
+    <item>✅ Dev notes provide guidance for implementation</item>
+  </validation_checklist>
+
+</story-context>

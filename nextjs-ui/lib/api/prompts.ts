@@ -23,6 +23,22 @@ export interface PromptVersion {
   template_text: string;
   created_by: string;
   created_at: string;
+  description?: string;
+}
+
+export interface PaginatedVersionsResponse {
+  items: PromptVersion[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface VersionsQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  from?: string; // ISO date string
+  to?: string; // ISO date string
 }
 
 export interface CreatePromptRequest {
@@ -107,11 +123,28 @@ export async function testPrompt(
 }
 
 /**
- * Get version history for a prompt
+ * Get version history for a prompt with pagination and filters
  */
-export async function getPromptVersions(id: string): Promise<PromptVersion[]> {
-  const response = await apiClient.get<PromptVersion[]>(
-    `/api/v1/prompts/${id}/versions`
+export async function getPromptVersions(
+  id: string,
+  params?: VersionsQueryParams
+): Promise<PaginatedVersionsResponse> {
+  const response = await apiClient.get<PaginatedVersionsResponse>(
+    `/api/v1/prompts/${id}/versions`,
+    { params }
+  );
+  return response.data;
+}
+
+/**
+ * Get single version details
+ */
+export async function getPromptVersion(
+  id: string,
+  versionId: string
+): Promise<PromptVersion> {
+  const response = await apiClient.get<PromptVersion>(
+    `/api/v1/prompts/${id}/versions/${versionId}`
   );
   return response.data;
 }
@@ -121,10 +154,10 @@ export async function getPromptVersions(id: string): Promise<PromptVersion[]> {
  */
 export async function revertPromptVersion(
   id: string,
-  version: number
+  versionId: string
 ): Promise<PromptTemplate> {
   const response = await apiClient.post<PromptTemplate>(
-    `/api/v1/prompts/${id}/versions/${version}/revert`
+    `/api/v1/prompts/${id}/versions/${versionId}/revert`
   );
   return response.data;
 }

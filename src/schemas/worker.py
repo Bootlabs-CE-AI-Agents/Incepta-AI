@@ -66,6 +66,27 @@ class ThroughputDataPoint(BaseModel):
     avg_task_duration_seconds: float = Field(ge=0)
 
 
+class CpuMemoryDataPoint(BaseModel):
+    """CPU or memory data point for 7-day history (Story 21 AC-5)."""
+
+    timestamp: datetime
+    percent: float = Field(ge=0, le=100, description="CPU or memory percentage 0-100")
+
+
+class WorkerConfigDTO(BaseModel):
+    """Worker configuration details (Story 21 AC-4)."""
+
+    os_name: str = Field(..., description="Operating system name")
+    python_version: str = Field(..., description="Python version (e.g., '3.11.5')")
+    celery_version: str = Field(..., description="Celery version (e.g., '5.3.4')")
+    queues: List[str] = Field(..., description="Connected Celery queue names")
+    max_tasks_per_child: Optional[int] = Field(
+        None, description="Max tasks before worker restart (None = unlimited)"
+    )
+    concurrency: int = Field(ge=1, description="Number of worker processes")
+    pool_type: str = Field(..., description="Worker pool type (prefork/gevent/solo)")
+
+
 class WorkerMetricsDTO(BaseModel):
     """Detailed worker metrics (AC-4: GET /api/workers/{hostname}/metrics)."""
 
@@ -77,3 +98,13 @@ class WorkerMetricsDTO(BaseModel):
     uptime_seconds: int = Field(ge=0)
     celery_version: str
     python_version: str
+    # Story 21 extensions for dual-axis chart (AC-5)
+    cpu_history: List[CpuMemoryDataPoint] = Field(
+        default_factory=list, description="Last 7 days hourly CPU% (Story 21)"
+    )
+    memory_history: List[CpuMemoryDataPoint] = Field(
+        default_factory=list, description="Last 7 days hourly Memory% (Story 21)"
+    )
+    worker_config: Optional[WorkerConfigDTO] = Field(
+        None, description="Worker configuration details (Story 21 AC-4)"
+    )

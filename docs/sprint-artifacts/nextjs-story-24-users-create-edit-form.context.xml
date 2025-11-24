@@ -1,0 +1,177 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>nextjs-story-24</storyId>
+    <title>Users Management - Create/Edit User Form</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-24-users-create-edit-form.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>super_admin or tenant_admin</asA>
+    <iWant>to create new users and edit existing user details via a form</iWant>
+    <soThat>I can manage user accounts with proper validation and role assignment</soThat>
+    <tasks>
+      - Task 1: Create shared user form component (AC-1, AC-2)
+      - Task 2: Create "New User" page (AC-1)
+      - Task 3: Create "Edit User" page (AC-2)
+      - Task 4: Implement form validation with Zod + React Hook Form (AC-3)
+      - Task 5: Create password strength indicator (AC-3)
+      - Task 6: Implement show/hide password toggle (AC-3)
+      - Task 7: Create API client functions (AC-4, AC-5)
+      - Task 8: Implement create user mutation (AC-4)
+      - Task 9: Implement update user mutation (AC-5)
+      - Task 10: Implement RBAC enforcement (AC-6)
+      - Task 11: Implement cancel and unsaved changes confirmation (AC-7)
+      - Task 12: Implement data fetching for edit page (AC-8)
+      - Task 13: Implement accessibility features (AC-9)
+      - Task 14: Implement responsive layout (AC-9)
+      - Task 15: Implement performance optimizations (AC-10)
+      - Task 16: Add security measures (AC-10)
+      - Task 17: Write unit tests for form components
+      - Task 18: Write integration tests
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-1: Create User Form - Page Structure at /dashboard/users/new with 8 fields (email, password, confirm password, full_name, default_tenant_id, initial_role, force_password_change, is_active), Cancel button, Create User submit button (disabled until valid)
+    AC-2: Edit User Form - Page Structure at /dashboard/users/{userId}/edit with 5 fields (email, full_name, default_tenant_id, force_password_change, is_active), NO password fields, Save Changes button (disabled until dirty), read-only Current Roles section with "Manage Roles" button
+    AC-3: Form Validation - Real-time validation on blur: Email (required, format, 409 uniqueness), Password (min 8, complexity, strength indicator), Confirm Password (match), Full Name (max 100 chars counter), Tenants/Roles (required), form-level submit disabled until valid
+    AC-4: Form Submission - Create User Flow with POST /api/v1/users, loading state (button disabled + spinner), success (navigate /dashboard/users + toast + auto-scroll), errors (409/400/403/500)
+    AC-5: Form Submission - Edit User Flow with PUT /api/v1/users/{userId} sending only changed fields, loading state, success (toast + mark pristine), errors (400/403/404/409)
+    AC-6: RBAC Enforcement - tenant_admin: pre-select+disable default_tenant_id to their tenant, can assign any role; super_admin: all tenants, all roles; disable Is Active if editing last super_admin
+    AC-7: Cancel and Navigation - Cancel button shows unsaved changes confirmation if dirty, beforeunload event listener for browser back button, options: Stay/Leave Without Saving
+    AC-8: Loading States and Data Fetching - GET /api/v1/users/{userId} with skeleton loader, GET /api/v1/tenants (cached 5min), redirect on 404/403, pre-populate form
+    AC-9: Accessibility and UX - Keyboard navigation (Tab order, Enter submits, Escape cancels), ARIA labels (aria-required, aria-invalid, aria-live), responsive (desktop 2-col, tablet 2-col, mobile 1-col), WCAG 2.1 AA contrast + focus indicators
+    AC-10: Performance and Security - Form validation debounced 150ms, password strength debounced 300ms, tenants cached 5min, autocomplete attributes (email: "username email", password: "new-password"), CSRF JWT, network retry exponential backoff (2s/4s/8s)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/nextjs-ui-migration-tech-spec-v2.md" title="Next.js UI Migration Tech Spec v2" section="Design System &amp; Patterns">
+        Pre-implementation requirements completed: User research (5 personas), Figma design system with design-tokens.json, ADRs (001-006). React Hook Form + Zod is standard validation pattern. JWT architecture: roles on-demand (not in JWT). API versioning: /api/v1/*.
+      </doc>
+      <doc path="docs/sprint-artifacts/nextjs-story-22-users-api-crud.md" title="Story 22: Users API CRUD" section="Backend Implementation">
+        Backend APIs available: POST /api/v1/users (UserCreateDTO with initial_role), PUT /api/v1/users/{id} (UserUpdateDTO), GET /api/v1/users/{id}, POST /api/v1/users/{id}/reset-password. RBAC: super_admin sees all, tenant_admin scoped to default_tenant_id. Constraints: last super_admin protection, tenant boundaries enforced.
+      </doc>
+      <doc path="docs/sprint-artifacts/nextjs-story-23-users-management-list.md" title="Story 23: Users List Page" section="Frontend Integration Points">
+        Users list page integrates "Create User" button → /dashboard/users/new, "Edit" button → /dashboard/users/{userId}/edit. After create/edit, redirect to /dashboard/users. React Query patterns: staleTime 60s, optimistic updates with rollback. Custom Select component (NOT shadcn/ui SelectContent). TypeScript strict mode required. 80%+ test coverage target.
+      </doc>
+      <doc path="docs/architecture.md" title="System Architecture" section="Authentication &amp; RBAC">
+        Auth.js session management, JWT tokens, 5 roles (super_admin, tenant_admin, developer, operator, viewer). Middleware protection redirects non-admin to /dashboard. Tenant isolation via default_tenant_id scoping.
+      </doc>
+    </docs>
+
+    <code>
+      <artifact path="nextjs-ui/package.json" kind="dependencies" symbol="dependencies" lines="24-68" reason="Installed packages: react-hook-form@7.66.1, @hookform/resolvers@5.2.2, zod@4.1.12, @tanstack/react-query@5.62.2, next-auth@4.24.13, @headlessui/react@2.2.9, lucide-react@0.462.0, sonner@2.0.7 (toast), date-fns@3.6.0">
+      </artifact>
+      <artifact path="nextjs-ui/lib/api/users.ts" kind="api-client" symbol="usersApi" lines="1-132" reason="Existing API client with usersApi.listUsers(), usersApi.updateUser(), usersApi.resetPassword(). Need to ADD usersApi.createUser(), usersApi.getUser(userId) for form operations. TypeScript types: UserDetail, RoleEnum, UsersFilters, PaginatedUsersResponse already defined.">
+      </artifact>
+      <artifact path="nextjs-ui/lib/hooks/useUsers.ts" kind="react-hook" symbol="useUsers, useUpdateUser, useResetPassword" lines="1-141" reason="Existing React Query hooks for list/update/reset. Need to ADD useCreateUser() mutation hook and useUser(userId) query hook for edit form. Pattern: optimistic updates with onMutate/onError/onSettled, query key factory userKeys.*. staleTime 60s, retry 3.">
+      </artifact>
+      <artifact path="nextjs-ui/components/users/UsersTable.tsx" kind="component" symbol="UsersTable" lines="1-341" reason="Table component for users list. Uses TanStack Table v8 with sorting, pagination. Reference for: TypeScript interfaces, table patterns, loading/error states. Forms should follow similar TypeScript strict patterns.">
+      </artifact>
+      <artifact path="nextjs-ui/components/users/UserFilters.tsx" kind="component" symbol="UserFilters" lines="1-152" reason="Custom Select component pattern (NOT shadcn/ui). Use this pattern for tenant and role dropdowns in form. Status/Role/Tenant filters with AND logic, Clear Filters button. Headless UI Select component with Transition.">
+      </artifact>
+      <artifact path="src/schemas/user.py" kind="backend-schema" symbol="validate_password_strength, UserCreateRequest, UserUpdateRequest" lines="29-72, 147-?" reason="Password validation rules: min 8 chars, uppercase, lowercase, number, special (!@#$%^&*), no whitespace. UserCreateRequest fields: email, password, full_name, default_tenant_id, initial_role, force_password_change, is_active. Mirrors frontend Zod schema requirements.">
+      </artifact>
+    </code>
+
+    <dependencies>
+      <frontend>
+        <required>
+          <package name="react-hook-form" version="^7.66.1" reason="Form state management, already installed" />
+          <package name="@hookform/resolvers" version="^5.2.2" reason="Zod integration, already installed" />
+          <package name="zod" version="^4.1.12" reason="Schema validation, already installed" />
+          <package name="@tanstack/react-query" version="^5.62.2" reason="Data fetching + mutations, already installed" />
+          <package name="@headlessui/react" version="^2.2.9" reason="AlertDialog, Select, Transition, already installed" />
+          <package name="lucide-react" version="^0.462.0" reason="Icons (Eye, EyeOff, AlertCircle, CheckCircle), already installed" />
+          <package name="sonner" version="^2.0.7" reason="Toast notifications, already installed" />
+          <package name="date-fns" version="^3.6.0" reason="Date formatting for last updated timestamp, already installed" />
+        </required>
+        <optional>
+          <package name="@testing-library/react" version="^16.3.0" reason="Component testing, already installed" />
+          <package name="@testing-library/jest-dom" version="^6.9.1" reason="Jest matchers, already installed" />
+          <package name="@playwright/test" version="^1.56.1" reason="E2E tests, already installed" />
+        </optional>
+      </frontend>
+      <backend>
+        <api-endpoints>
+          <endpoint path="/api/v1/users" method="POST" purpose="Create user (AC-4)" />
+          <endpoint path="/api/v1/users/{id}" method="PUT" purpose="Update user (AC-5)" />
+          <endpoint path="/api/v1/users/{id}" method="GET" purpose="Fetch user for edit form (AC-8)" />
+          <endpoint path="/api/v1/tenants" method="GET" purpose="Populate tenant dropdown (AC-1, AC-2)" />
+        </api-endpoints>
+      </backend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - React Hook Form + Zod is the ONLY validation pattern allowed (no Formik, no manual state)
+    - Use custom Select component pattern from UserFilters.tsx (NOT shadcn/ui SelectContent/SelectItem)
+    - TypeScript strict mode required, all imports case-sensitive (@/components/ui/Select capital S)
+    - Single reusable UserForm component with mode prop ('create' | 'edit') to avoid duplication
+    - Password fields ONLY in create mode, never shown in edit mode (use Reset Password button instead)
+    - RBAC enforcement: tenant_admin cannot create users outside their tenant, super_admin sees all tenants
+    - Disable "Is Active" checkbox if editing last active super_admin (prevent lockout)
+    - Unsaved changes confirmation MUST be implemented (beforeunload + Cancel button)
+    - Form validation debounced (150ms general, 300ms password strength) to avoid excessive re-renders
+    - Optimistic UI updates for mutations with rollback on error
+    - Minimum 80% test coverage for form components and hooks
+    - All files ≤500 lines per C1 constraint, use modular design for form fields
+  </constraints>
+
+  <interfaces>
+    <interface name="POST /api/v1/users" kind="REST endpoint" signature="POST /api/v1/users → 201 Created" path="src/api/users.py">
+      Request: UserCreateDTO { email: string, password: string, full_name?: string, default_tenant_id: UUID, initial_role: RoleEnum, force_password_change?: boolean, is_active?: boolean }
+      Response: UserDetailDTO { id: UUID, email, is_active, default_tenant_id, default_tenant_name, roles: UserRoleDTO[], last_login, created_at, updated_at }
+      Errors: 409 Conflict (email exists), 400 Bad Request (validation), 403 Forbidden (RBAC), 500 Server Error
+    </interface>
+    <interface name="PUT /api/v1/users/{id}" kind="REST endpoint" signature="PUT /api/v1/users/{id} → 200 OK" path="src/api/users.py">
+      Request: UserUpdateDTO { email?: string, full_name?: string, default_tenant_id?: UUID, force_password_change?: boolean, is_active?: boolean }
+      Response: UserDetailDTO
+      Errors: 400 Bad Request (last super_admin), 403 Forbidden (RBAC), 404 Not Found, 409 Conflict (email exists)
+    </interface>
+    <interface name="GET /api/v1/users/{id}" kind="REST endpoint" signature="GET /api/v1/users/{id} → 200 OK" path="src/api/users.py">
+      Response: UserDetailDTO { id, email, full_name, default_tenant_id, is_active, force_password_change, roles, last_login, created_at, updated_at }
+      Errors: 404 Not Found, 403 Forbidden (RBAC)
+    </interface>
+    <interface name="GET /api/v1/tenants" kind="REST endpoint" signature="GET /api/v1/tenants → 200 OK" path="src/api/tenants.py">
+      Response: TenantDTO[] { id: UUID, name: string, created_at, updated_at }
+      Cache: React Query staleTime 5 minutes (AC-10)
+    </interface>
+    <interface name="UserForm component" kind="React component" signature="UserForm({ mode: 'create' | 'edit', initialData?: User })" path="nextjs-ui/components/users/UserForm.tsx">
+      Props: mode ('create' | 'edit'), initialData (User object for edit mode)
+      Validation: Zod schema (createUserSchema for create, editUserSchema for edit)
+      State: React Hook Form useForm() with zodResolver
+      Events: onSubmit (create/update mutation), onCancel (navigation confirmation if dirty)
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Jest + React Testing Library for unit tests (components, hooks). Playwright for E2E integration tests. Mock API responses with MSW. Test coverage target: 80%+. Test files in nextjs-ui/__tests__/users/. Pattern: Arrange-Act-Assert with descriptive test names.
+    </standards>
+    <locations>
+      nextjs-ui/__tests__/users/UserForm.test.tsx
+      nextjs-ui/__tests__/users/PasswordStrengthIndicator.test.tsx
+      nextjs-ui/__tests__/users/useCreateUser.test.ts
+      nextjs-ui/__tests__/users/useUpdateUser.test.ts
+      nextjs-ui/e2e/users-crud.spec.ts (Playwright)
+    </locations>
+    <ideas>
+      AC-1: Test create form renders with all 8 fields, default values (force_password_change=true, is_active=true, initial_role=viewer)
+      AC-2: Test edit form renders with 5 fields, NO password fields, pre-populated data from initialData prop
+      AC-3: Test email validation (required, format, blur event), password validation (min 8, complexity, strength indicator weak/medium/strong), confirm password match, full name max 100 chars counter
+      AC-4: Test create mutation success (navigate + toast + API call with correct payload), test errors (409 email exists shows inline, 403 shows toast, 500 shows form-level error)
+      AC-5: Test edit mutation success (toast + mark pristine + only changed fields sent), test errors (400 last admin, 403/404 redirect, 409 inline)
+      AC-6: Test tenant_admin RBAC (tenant dropdown disabled + pre-selected), test super_admin RBAC (all tenants available), test Is Active disabled for last super_admin
+      AC-7: Test Cancel button with pristine form (immediate navigate), test Cancel with dirty form (shows confirmation dialog), test beforeunload event listener
+      AC-8: Test edit page loading states (skeleton → form), test 404/403 error redirects to list page with toast
+      AC-9: Test keyboard navigation (Tab order, Enter submits, Escape cancels), test ARIA attributes (aria-required, aria-invalid, aria-live), test responsive breakpoints
+      AC-10: Test form validation debounce (150ms), test password strength debounce (300ms), test optimistic update rollback on mutation error
+    </ideas>
+  </tests>
+</story-context>

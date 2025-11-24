@@ -184,8 +184,9 @@ export const useDeleteTenant = () => {
         description: error instanceof Error ? error.message : 'An error occurred',
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tenantKeys.lists() });
+    onSuccess: async () => {
+      // Force immediate refetch instead of just invalidating
+      await queryClient.refetchQueries({ queryKey: tenantKeys.lists() });
       toast.success('Tenant deleted successfully');
     },
   });

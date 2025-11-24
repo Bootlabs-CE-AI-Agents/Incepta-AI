@@ -25,7 +25,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Button } from '@/components/ui/Button';
 import { useWorkerLogs } from '@/lib/hooks/useWorkers';
 import { useDebounce } from '@/lib/hooks/useDebounce';
-import { parseLogLine, getLogLevelColor, formatLogTimestamp } from '@/lib/utils/logParser';
+import { getLogLevelColor, formatLogTimestamp } from '@/lib/utils/logParser';
 import { downloadLogs } from '@/lib/utils/downloadLogs';
 import {
   Download,
@@ -51,6 +51,7 @@ const getAutoScrollKey = (hostname: string) => `worker-logs-autoscroll-${hostnam
 export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalProps) {
   const [lineCount, setLineCount] = useState<LineCount>(100);
   const [searchQuery, setSearchQuery] = useState('');
+  const [logLevelFilter, setLogLevelFilter] = useState<string>('all'); // Log level filter
   const debouncedSearchQuery = useDebounce(searchQuery, 300); // AC-3: 300ms debounce
 
   // AC-4: Auto-scroll with session storage
@@ -74,17 +75,35 @@ export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalPr
     isFetching,
   } = useWorkerLogs(hostname, lineCount, isOpen);
 
-  // Parse and filter logs
+  // Backend already returns structured logs - no parsing needed
   const parsedLogs = useMemo(() => {
     if (!logsData?.logs) return [];
-    return logsData.logs.map(parseLogLine);
+    // API returns LogEntryDTO objects with timestamp, level, message, task_id
+    // Convert to ParsedLogLine format expected by component
+    return logsData.logs.map(log => ({
+      timestamp: log.timestamp,
+      level: log.level,
+      message: log.message,
+      raw: `[${log.level}] ${log.message}`, // Construct raw for search
+    }));
   }, [logsData]);
 
   const filteredLogs = useMemo(() => {
-    if (!debouncedSearchQuery) return parsedLogs;
-    const query = debouncedSearchQuery.toLowerCase();
-    return parsedLogs.filter((log) => log.raw.toLowerCase().includes(query));
-  }, [parsedLogs, debouncedSearchQuery]);
+    let result = parsedLogs;
+
+    // Apply log level filter first
+    if (logLevelFilter !== 'all') {
+      result = result.filter((log) => log.level === logLevelFilter);
+    }
+
+    // Then apply search filter
+    if (debouncedSearchQuery) {
+      const query = debouncedSearchQuery.toLowerCase();
+      result = result.filter((log) => log.raw.toLowerCase().includes(query));
+    }
+
+    return result;
+  }, [parsedLogs, logLevelFilter, debouncedSearchQuery]);
 
   // AC-7: Virtualization with TanStack Virtual
   const rowVirtualizer = useVirtualizer({
@@ -322,6 +341,25 @@ export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalPr
                       <option value={250}>250</option>
                       <option value={500}>500</option>
                       <option value={1000}>1000</option>
+                    </select>
+                  </div>
+
+                  {/* Log Level Filter */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-muted-foreground" htmlFor="log-level">
+                      Level:
+                    </label>
+                    <select
+                      id="log-level"
+                      value={logLevelFilter}
+                      onChange={(e) => setLogLevelFilter(e.target.value)}
+                      className="px-3 py-1.5 text-sm border border-border rounded-md bg-background"
+                    >
+                      <option value="all">All</option>
+                      <option value="ERROR">ERROR</option>
+                      <option value="WARNING">WARNING</option>
+                      <option value="INFO">INFO</option>
+                      <option value="DEBUG">DEBUG</option>
                     </select>
                   </div>
 

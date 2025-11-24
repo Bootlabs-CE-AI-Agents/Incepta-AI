@@ -64,7 +64,7 @@ async def list_workers(
     "/{hostname}/logs",
     response_model=WorkerLogsResponse,
     summary="Get Worker Logs",
-    description="Fetch recent logs from a specific worker pod (AC-2).",
+    description="Fetch recent logs from a specific worker container (AC-2).",
 )
 async def get_worker_logs(
     hostname: str,
@@ -77,7 +77,7 @@ async def get_worker_logs(
     Get logs for a specific worker (AC-2).
 
     Args:
-        hostname: Worker hostname (e.g., celery@worker-pod-123)
+        hostname: Worker hostname (e.g., celery@worker-container-id)
         lines: Number of log lines to fetch (default 100, max 1000)
         since: Optional ISO 8601 timestamp filter
 
@@ -89,7 +89,7 @@ async def get_worker_logs(
         HTTPException: 401 if not authenticated
         HTTPException: 403 if not admin
         HTTPException: 404 if worker not found
-        HTTPException: 503 if Kubernetes API unavailable
+        HTTPException: 503 if Docker API unavailable
     """
     try:
         logs = await worker_service.get_worker_logs(hostname, lines, since)
@@ -101,7 +101,7 @@ async def get_worker_logs(
         logger.error(f"Error fetching logs for {hostname}: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Failed to fetch logs for {hostname}. Kubernetes API unavailable.",
+            detail=f"Failed to fetch logs for {hostname}. Docker API unavailable.",
         )
 
 

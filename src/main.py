@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
 
 from src.api import health, webhooks, feedback, plugins, agents, prompts, budget, llm_providers, llm_models, fallback_chains, byok, agent_testing, memory, llm_costs, agent_performance, tenant_spend, executions, openapi_tools, mcp_servers, agent_execution, unified_tools, metrics, tenants, dashboard, queue, audit, workers
-from src.api import auth, users  # Story 1C: Authentication endpoints
+from src.api import auth, users, roles  # Story 1C: Authentication endpoints, Story 25: Role management
 from src.api.admin import tenants as admin_tenants
 from src.api.exception_handlers import setup_exception_handlers  # Story 1C
 from src.middleware.rate_limit import setup_rate_limiting, limiter  # Story 1C
@@ -81,6 +81,7 @@ setup_exception_handlers(app)
 # Story 1C: Authentication routers (register BEFORE other routers)
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(roles.router)  # Story 25: Role assignment endpoints
 
 # Existing routers
 app.include_router(dashboard.router)  # Story 0.1: Dashboard summary metrics endpoint

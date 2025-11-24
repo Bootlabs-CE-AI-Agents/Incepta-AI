@@ -8,7 +8,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { workersApi } from '../api/workers';
-import type { WorkerStatus, WorkerLogsResponse, WorkerRestartResponse } from '../api/workers';
+import type { WorkerStatus, WorkerLogsResponse, WorkerRestartResponse, WorkerMetrics } from '../api/workers';
 
 /**
  * Query keys for cache management
@@ -17,6 +17,7 @@ export const workerKeys = {
   all: ['workers'] as const,
   lists: () => [...workerKeys.all, 'list'] as const,
   logs: (hostname: string) => [...workerKeys.all, 'logs', hostname] as const,
+  metrics: (hostname: string) => [...workerKeys.all, 'metrics', hostname] as const,
 };
 
 /**
@@ -55,6 +56,28 @@ export const useWorkerLogs = (hostname: string | null, lines: number = 100, enab
     queryFn: () => workersApi.getWorkerLogs(hostname!, lines),
     enabled: enabled && !!hostname,
     staleTime: 10 * 1000, // Logs stale after 10s
+    retry: 2,
+  });
+};
+
+/**
+ * Fetch worker metrics (historical performance data)
+ *
+ * @param hostname - Worker hostname
+ * @param enabled - Enable query (default: false, only fetch when charts are visible)
+ * @returns UseQueryResult with WorkerMetrics including throughput history
+ *
+ * Configuration:
+ * - staleTime: 5 minutes (metrics don't change frequently)
+ * - refetchInterval: disabled (only refetch manually or on window focus)
+ * - retry: 2 attempts
+ */
+export const useWorkerMetrics = (hostname: string | null, enabled: boolean = false) => {
+  return useQuery<WorkerMetrics, Error>({
+    queryKey: workerKeys.metrics(hostname || ''),
+    queryFn: () => workersApi.getWorkerMetrics(hostname!),
+    enabled: enabled && !!hostname,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
   });
 };

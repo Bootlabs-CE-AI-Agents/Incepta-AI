@@ -56,12 +56,28 @@ export interface PasswordResetResponse {
 }
 
 /**
- * User update request DTO (for deactivate/activate actions)
+ * User create request DTO (AC-4)
+ * Matches UserCreateRequest from src/schemas/user.py
+ */
+export interface UserCreateRequest {
+  email: string;
+  password: string;
+  full_name?: string;
+  default_tenant_id: string;
+  initial_role: RoleEnum;
+  force_password_change?: boolean;
+  is_active?: boolean;
+}
+
+/**
+ * User update request DTO (for deactivate/activate actions + AC-5 edit form)
  */
 export interface UserUpdateRequest {
   is_active?: boolean;
   email?: string;
+  full_name?: string;
   default_tenant_id?: string;
+  force_password_change?: boolean;
 }
 
 /**
@@ -103,12 +119,38 @@ export const usersApi = {
   },
 
   /**
-   * Update user (AC-7 Deactivate/Activate actions)
+   * Get single user by ID (AC-8 edit form data fetch)
+   *
+   * GET /api/v1/users/{id}
+   *
+   * @param userId - User ID
+   * @returns Promise<UserDetail> - User object with all fields
+   */
+  getUser: async (userId: string): Promise<UserDetail> => {
+    const response = await apiClient.get<UserDetail>(`/api/v1/users/${userId}`);
+    return response.data;
+  },
+
+  /**
+   * Create new user (AC-4)
+   *
+   * POST /api/v1/users
+   *
+   * @param userData - User creation data
+   * @returns Promise<UserDetail> - Created user object
+   */
+  createUser: async (userData: UserCreateRequest): Promise<UserDetail> => {
+    const response = await apiClient.post<UserDetail>('/api/v1/users', userData);
+    return response.data;
+  },
+
+  /**
+   * Update user (AC-5 edit form + AC-7 Deactivate/Activate actions)
    *
    * PUT /api/v1/users/{id}
    *
    * @param userId - User ID
-   * @param updates - Fields to update (is_active, email, default_tenant_id)
+   * @param updates - Fields to update (email, full_name, default_tenant_id, force_password_change, is_active)
    * @returns Promise<UserDetail> - Updated user object
    */
   updateUser: async (userId: string, updates: UserUpdateRequest): Promise<UserDetail> => {

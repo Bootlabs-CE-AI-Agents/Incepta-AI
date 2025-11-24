@@ -5,12 +5,7 @@ import { useSession } from "next-auth/react";
 import { Listbox } from "@headlessui/react";
 import { ChevronDown, Check, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-
-interface Tenant {
-  id: string;
-  name: string;
-  slug: string;
-}
+import { useTenantStore, type Tenant } from "@/lib/stores/useTenantStore";
 
 interface UserRole {
   role: string;
@@ -37,7 +32,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export function TenantSwitcher() {
   const { data: session } = useSession();
-  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const { selectedTenant, setSelectedTenant } = useTenantStore();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch user's accessible tenants

@@ -17,8 +17,8 @@ import {
   SortingState,
 } from '@tanstack/react-table';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import {
   Table,
   TableBody,
@@ -26,7 +26,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from '@/components/ui/Table';
 import type { UserDetail } from '@/lib/api/users';
 import { formatLastLogin, formatCreatedDate, formatRoles, getStatusBadge } from '@/lib/utils/users';
 import { UserActionButtons } from './UserActionButtons';
@@ -38,6 +38,7 @@ interface UsersTableProps {
   onSortingChange: (sorting: SortingState) => void;
   currentUser: UserDetail | null;
   isSuperAdmin: boolean;
+  onManageRoles?: (user: UserDetail) => void;
 }
 
 /**
@@ -47,7 +48,7 @@ interface UsersTableProps {
  * - 6 columns: Email, Roles, Status, Last Login, Created, Actions
  * - Click-to-sort on all columns except Actions
  * - Visual sort indicators (arrows)
- * - Action buttons per row (Deactivate/Activate, Reset Password)
+ * - Action buttons per row (Deactivate/Activate, Reset Password, Manage Roles)
  *
  * @param users - Array of user objects from API
  * @param isLoading - Loading state (shows skeleton rows)
@@ -55,8 +56,9 @@ interface UsersTableProps {
  * @param onSortingChange - Callback to update parent sort state
  * @param currentUser - Current logged-in user (for security checks)
  * @param isSuperAdmin - Whether current user is super_admin
+ * @param onManageRoles - Callback for "Manage Roles" button (Story 26 AC-1)
  */
-export function UsersTable({ users, isLoading, sorting, onSortingChange, currentUser, isSuperAdmin }: UsersTableProps) {
+export function UsersTable({ users, isLoading, sorting, onSortingChange, currentUser, isSuperAdmin, onManageRoles }: UsersTableProps) {
   // Column definitions (AC-1: Email, Roles, Status, Last Login, Created, Actions)
   const columns = useMemo<ColumnDef<UserDetail>[]>(
     () => [
@@ -127,7 +129,7 @@ export function UsersTable({ users, isLoading, sorting, onSortingChange, current
         cell: ({ row }) => {
           const badge = getStatusBadge(row.original.is_active);
           return (
-            <Badge variant={badge.variant as any} className={badge.className}>
+            <Badge variant={badge.variant} className={badge.className}>
               {badge.label}
             </Badge>
           );
@@ -182,11 +184,12 @@ export function UsersTable({ users, isLoading, sorting, onSortingChange, current
             currentUser={currentUser}
             isSuperAdmin={isSuperAdmin}
             allUsers={users}
+            onManageRoles={onManageRoles}
           />
         ),
       },
     ],
-    [currentUser, isSuperAdmin, users]
+    [currentUser, isSuperAdmin, users, onManageRoles]
   );
 
   // Initialize TanStack Table v8 with sorting
@@ -196,7 +199,11 @@ export function UsersTable({ users, isLoading, sorting, onSortingChange, current
     state: {
       sorting,
     },
-    onSortingChange,
+    onSortingChange: (updaterOrValue) => {
+      // Handle both direct values and updater functions from TanStack Table
+      const newValue = typeof updaterOrValue === 'function' ? updaterOrValue(sorting) : updaterOrValue;
+      onSortingChange(newValue);
+    },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(), // AC-2: Client-side sorting
   });

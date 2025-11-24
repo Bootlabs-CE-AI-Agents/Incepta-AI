@@ -12,6 +12,7 @@ import { useState } from 'react';
 import MCPToolDiscovery from '@/components/tools/MCPToolDiscovery';
 import { SystemPromptEditor } from '@/components/prompts/SystemPromptEditor';
 import { useSession } from 'next-auth/react';
+import { useTenantStore } from '@/lib/stores/useTenantStore';
 
 /**
  * Agent Form Component
@@ -36,6 +37,7 @@ export function AgentForm({
   mode = 'create',
 }: AgentFormProps) {
   const { data: session } = useSession();
+  const { selectedTenant } = useTenantStore();
   const [forceRefresh, setForceRefresh] = useState(false);
   const { data: availableModels = [], isLoading: modelsLoading, refetch: refetchModels } = useAvailableModels(forceRefresh);
 
@@ -44,9 +46,9 @@ export function AgentForm({
     new Set(defaultValues?.tool_ids || [])
   );
 
-  // Get tenant ID from session (Story 1C: Authentication integration)
-  // Fallback to 'default' if session not available (matches backend's AI_AGENTS_DEFAULT_TENANT_ID)
-  const tenantId = session?.user?.defaultTenantId || 'default';
+  // Get tenant ID from Zustand store (global tenant selection)
+  // Falls back to session defaultTenantId, then 'default' (matches backend's AI_AGENTS_DEFAULT_TENANT_ID)
+  const tenantId = selectedTenant?.id || session?.user?.defaultTenantId || 'default';
 
   const form = useForm<AgentFormData>({
     resolver: zodResolver(agentCreateSchema),

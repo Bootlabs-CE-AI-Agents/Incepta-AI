@@ -1,0 +1,438 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>nextjs-story-25</storyId>
+    <title>Role Assignment API - POST /api/users/{id}/roles, tenant-role mapping</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-25-role-assignment-api.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>backend developer</asA>
+    <iWant>API endpoints to assign and revoke user roles</iWant>
+    <soThat>admins can manage user permissions across tenants</soThat>
+    <tasks>
+- [ ] **Task 1:** Create API router and schemas (AC-1, AC-8)
+- [ ] **Task 2:** Implement POST /api/users/{user_id}/roles endpoint (AC-1, AC-5)
+- [ ] **Task 3:** Implement DELETE /api/users/{user_id}/roles/{role_id} endpoint (AC-2, AC-6)
+- [ ] **Task 4:** Implement GET /api/users/{user_id}/roles endpoint (AC-3)
+- [ ] **Task 5:** Implement GET /api/roles endpoint (AC-4)
+- [ ] **Task 6:** Implement service layer functions (AC-1, AC-2, AC-7)
+- [ ] **Task 7:** Add audit logging (AC-7)
+- [ ] **Task 8:** Update OpenAPI schema
+- [ ] **Task 9:** Write unit tests for service layer (AC-1 to AC-6)
+- [ ] **Task 10:** Write integration tests for all endpoints (AC-1 to AC-6)
+- [ ] **Task 11:** Verify audit logging in integration tests (AC-7)
+- [ ] **Task 12:** Test with multiple tenants and roles (AC-5, AC-6)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+### AC-1: POST /api/users/{user_id}/roles - Assign Role Endpoint
+- Endpoint: POST /api/v1/users/{user_id}/roles
+- Request body: {tenant_id: UUID, role: RoleEnum}
+- Auth: super_admin or tenant_admin (own tenant only)
+- Returns: 201 Created with RoleAssignmentResponse
+- Validation: user exists, tenant exists, valid role, no duplicates
+- Side effects: Creates UserTenantRole, audit log, invalidates JWT
+
+### AC-2: DELETE /api/users/{user_id}/roles/{role_id} - Revoke Role Endpoint
+- Endpoint: DELETE /api/v1/users/{user_id}/roles/{role_id}
+- Auth: super_admin or tenant_admin (own tenant only)
+- Returns: 204 No Content
+- Protection: Cannot remove last super_admin role
+- Side effects: Deletes UserTenantRole, audit log, invalidates JWT
+
+### AC-3: GET /api/users/{user_id}/roles - List User's Roles
+- Endpoint: GET /api/v1/users/{user_id}/roles
+- Auth: super_admin (all), tenant_admin (own tenant), user (self only)
+- Returns: Array of RoleAssignmentResponse with tenant_name joined
+- RBAC enforced by current user's role
+
+### AC-4: GET /api/roles - List Available Roles
+- Endpoint: GET /api/v1/roles
+- Auth: Any authenticated user
+- Returns: Array of {role, display_name, description, level} ordered by level
+- Static list of 5 roles (super_admin, tenant_admin, developer, operator, viewer)
+
+### AC-5: Authorization & Tenant Scoping
+- tenant_admin can only assign/revoke roles for own tenant (default_tenant_id match)
+- super_admin can manage roles for any tenant
+- Use @require_role("super_admin", "tenant_admin") decorator
+- Return 403 Forbidden for tenant boundary violations
+
+### AC-6: Last Super Admin Protection
+- Before revoking role, check COUNT(*) WHERE role = 'super_admin'
+- If count = 1 and attempting to delete, return 400 Bad Request
+- Error message: "Cannot remove the last super_admin role from the system"
+
+### AC-7: Audit Logging for All Operations
+- Log action="role_assigned" with user_id, tenant_id, role, assigned_by, IP, timestamp
+- Log action="role_revoked" with same metadata fields
+- Use existing AuditLog model, log after successful operation in service layer
+
+### AC-8: Input Validation with Pydantic Schemas
+- RoleAssignmentCreate schema: tenant_id (UUID), role (RoleEnum with validator)
+- RoleAssignmentResponse schema: id, user_id, tenant_id, tenant_name, role, assigned_at, assigned_by
+- RoleInfo schema: role, display_name, description, level
+- Pydantic validation errors returned as 422 Unprocessable Entity
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics-nextjs-feature-parity-completion.md</path>
+        <title>Epic 3: User & Role Management System</title>
+        <section>Story 3.4: Role Assignment API (lines 944-1005)</section>
+        <snippet>Defines 4 endpoints (POST/DELETE/GET roles, GET roles list), validation rules (tenant scoping, last super_admin protection), and RBAC requirements (super_admin vs tenant_admin permissions)</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Document</title>
+        <section>Row-Level Security Implementation (lines 522-606)</section>
+        <snippet>PostgreSQL RLS patterns with session variable tenant isolation. Includes set_tenant_context() function, FastAPI integration via get_tenant_db dependency, and Celery task integration patterns.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-22-users-api-crud.md</path>
+        <title>Story 22: Users API CRUD</title>
+        <section>Entire File</section>
+        <snippet>Previous story created User CRUD endpoints (GET/POST/PUT/DELETE /api/users, POST /reset-password). Provides user_service.py patterns, auth decorators, tenant scoping logic, and last super_admin protection examples to reuse.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-24-users-create-edit-form.md</path>
+        <title>Story 24: Users Create/Edit Form</title>
+        <section>Dev Notes - Learnings from Previous Story</section>
+        <snippet>Frontend sends initial_role in create user request. Backend automatically creates UserTenantRole record. This story provides APIs to manage additional role assignments beyond initial role.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/database/models.py</path>
+        <kind>database model</kind>
+        <symbol>UserTenantRole</symbol>
+        <lines>156-170</lines>
+        <reason>Core model for role assignments. Has unique constraint on (user_id, tenant_id, role) preventing duplicates. Includes assigned_by foreign key for audit trail.</reason>
+      </artifact>
+      <artifact>
+        <path>src/database/models.py</path>
+        <kind>enum</kind>
+        <symbol>RoleEnum</symbol>
+        <lines>145-150</lines>
+        <reason>Enum definition for 5 roles: SUPER_ADMIN, TENANT_ADMIN, DEVELOPER, OPERATOR, VIEWER. Used for validation in Pydantic schemas.</reason>
+      </artifact>
+      <artifact>
+        <path>src/database/models.py</path>
+        <kind>database model</kind>
+        <symbol>User</symbol>
+        <lines>780-820</lines>
+        <reason>User model with email, password_hash, default_tenant_id, is_active, force_password_change, last_login_at. Target of role assignments.</reason>
+      </artifact>
+      <artifact>
+        <path>src/database/models.py</path>
+        <kind>database model</kind>
+        <symbol>AuditLog</symbol>
+        <lines>890-920</lines>
+        <reason>Audit logging model for tracking all operations. Includes action, user_id, tenant_id, details JSON, request_ip, timestamp fields.</reason>
+      </artifact>
+      <artifact>
+        <path>src/api/users.py</path>
+        <kind>api router</kind>
+        <symbol>router</symbol>
+        <lines>1-20</lines>
+        <reason>Existing FastAPI router with user CRUD endpoints. Demonstrates @require_role decorator usage, Depends(get_current_user) pattern, and tenant scoping logic.</reason>
+      </artifact>
+      <artifact>
+        <path>src/api/users.py</path>
+        <kind>endpoint function</kind>
+        <symbol>create_user</symbol>
+        <lines>150-200</lines>
+        <reason>Shows initial_role assignment pattern. Creates User and UserTenantRole in same transaction. Example of validation, error handling, audit logging.</reason>
+      </artifact>
+      <artifact>
+        <path>src/api/dependencies.py</path>
+        <kind>auth decorator</kind>
+        <symbol>require_role</symbol>
+        <lines>180-210</lines>
+        <reason>RBAC decorator factory. Returns decorator that checks current_user.role against allowed_roles list. Raises 403 HTTPException if unauthorized.</reason>
+      </artifact>
+      <artifact>
+        <path>src/api/dependencies.py</path>
+        <kind>dependency function</kind>
+        <symbol>get_current_user</symbol>
+        <lines>140-170</lines>
+        <reason>Extracts and validates JWT token, returns User object. Used with Depends() for endpoint auth. Checks token validity and user is_active status.</reason>
+      </artifact>
+      <artifact>
+        <path>src/schemas/user.py</path>
+        <kind>pydantic model</kind>
+        <symbol>UserDetailDTO</symbol>
+        <lines>120-150</lines>
+        <reason>Example Pydantic schema for user responses. Shows field validation, model_config, and response serialization patterns to follow.</reason>
+      </artifact>
+      <artifact>
+        <path>src/services/user_service.py</path>
+        <kind>service layer</kind>
+        <symbol>user_service.py</symbol>
+        <lines>entire file</lines>
+        <reason>Service layer pattern for user management. Shows async database operations, validation logic, error handling, and audit logging integration. Model for new role_service.py.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <python>
+        <package name="fastapi" version="^0.104.0">Web framework for API endpoints</package>
+        <package name="pydantic" version="^2.0.0">Data validation and schemas</package>
+        <package name="sqlalchemy" version="^2.0.0">Async ORM for database operations</package>
+        <package name="alembic" version="^1.12.0">Database migrations</package>
+        <package name="pytest" version="^7.4.0">Testing framework</package>
+        <package name="pytest-asyncio" version="^0.21.0">Async test support</package>
+        <package name="httpx" version="^0.25.0">HTTP client for testing</package>
+      </python>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+- **C1: RBAC Pattern** - Use @require_role("super_admin", "tenant_admin") decorator on all endpoints. Extract current user via Depends(get_current_user).
+- **C2: Tenant Isolation** - tenant_admin can ONLY manage roles for their default_tenant_id. super_admin has no restrictions. Enforce at service layer.
+- **C3: Service Layer Pattern** - Business logic belongs in src/services/role_service.py, NOT in endpoints. Endpoints call service functions.
+- **C4: Audit Logging** - ALL operations must log to AuditLog table after successful completion. Include user_id, tenant_id, role, assigned_by/revoked_by, IP, timestamp.
+- **C5: Last Super Admin Protection** - MUST prevent deletion of last super_admin role. Query COUNT(*) before deletion, return 400 if count would be 0.
+- **C6: Validation Order** - Validate in this order: (1) Authentication (JWT valid), (2) Authorization (has required role), (3) Input (Pydantic), (4) Business rules (tenant scope, duplicate check, last admin).
+- **C7: Error Handling** - Return appropriate HTTP status codes: 400 (validation), 401 (auth), 403 (authorization), 404 (not found), 422 (Pydantic validation).
+- **C8: Database Transactions** - Use async database sessions. Commit after successful operation, rollback on error. No partial commits.
+- **C9: Unique Constraint** - UserTenantRole has unique constraint on (user_id, tenant_id, role). Catch IntegrityError and return 400 "duplicate assignment".
+- **C10: JWT Invalidation** - After role changes, user's JWT token contains outdated role information. Document that user must re-login to see new permissions (optional: implement token revocation).
+- **C11: OpenAPI Documentation** - Add detailed descriptions, request/response examples, and tags to all endpoints for auto-generated docs at /docs.
+- **C12: Testing Coverage** - Minimum 80% coverage for service layer and endpoints. Test all validation rules, RBAC scenarios, and edge cases.
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>POST /api/v1/users/{user_id}/roles</name>
+      <kind>REST endpoint</kind>
+      <signature>
+POST /api/v1/users/{user_id}/roles
+Authorization: Bearer {jwt_token}
+Content-Type: application/json
+
+Request Body:
+{
+  "tenant_id": "uuid",
+  "role": "super_admin" | "tenant_admin" | "developer" | "operator" | "viewer"
+}
+
+Response (201 Created):
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "tenant_id": "uuid",
+  "role": "string",
+  "assigned_at": "datetime",
+  "assigned_by": "uuid"
+}
+      </signature>
+      <path>src/api/roles.py</path>
+    </interface>
+    <interface>
+      <name>DELETE /api/v1/users/{user_id}/roles/{role_id}</name>
+      <kind>REST endpoint</kind>
+      <signature>
+DELETE /api/v1/users/{user_id}/roles/{role_id}
+Authorization: Bearer {jwt_token}
+
+Response: 204 No Content (success) or 400 Bad Request (last super_admin)
+      </signature>
+      <path>src/api/roles.py</path>
+    </interface>
+    <interface>
+      <name>GET /api/v1/users/{user_id}/roles</name>
+      <kind>REST endpoint</kind>
+      <signature>
+GET /api/v1/users/{user_id}/roles
+Authorization: Bearer {jwt_token}
+
+Response (200 OK):
+[
+  {
+    "id": "uuid",
+    "user_id": "uuid",
+    "tenant_id": "uuid",
+    "tenant_name": "string",
+    "role": "string",
+    "assigned_at": "datetime",
+    "assigned_by": "uuid"
+  }
+]
+      </signature>
+      <path>src/api/roles.py</path>
+    </interface>
+    <interface>
+      <name>GET /api/v1/roles</name>
+      <kind>REST endpoint</kind>
+      <signature>
+GET /api/v1/roles
+Authorization: Bearer {jwt_token}
+
+Response (200 OK):
+[
+  {
+    "role": "super_admin",
+    "display_name": "Super Admin",
+    "description": "Full system access across all tenants",
+    "level": 1
+  },
+  ...
+]
+      </signature>
+      <path>src/api/roles.py</path>
+    </interface>
+    <interface>
+      <name>RoleAssignmentCreate</name>
+      <kind>Pydantic schema</kind>
+      <signature>
+class RoleAssignmentCreate(BaseModel):
+    tenant_id: UUID
+    role: RoleEnum
+
+    @validator('role')
+    def validate_role(cls, v):
+        if v not in RoleEnum:
+            raise ValueError(f"Invalid role. Must be one of: {list(RoleEnum)}")
+        return v
+      </signature>
+      <path>src/schemas/user.py</path>
+    </interface>
+    <interface>
+      <name>RoleAssignmentResponse</name>
+      <kind>Pydantic schema</kind>
+      <signature>
+class RoleAssignmentResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    tenant_id: UUID
+    tenant_name: str  # Joined from Tenant table
+    role: RoleEnum
+    assigned_at: datetime
+    assigned_by: UUID
+      </signature>
+      <path>src/schemas/user.py</path>
+    </interface>
+    <interface>
+      <name>RoleInfo</name>
+      <kind>Pydantic schema</kind>
+      <signature>
+class RoleInfo(BaseModel):
+    role: RoleEnum
+    display_name: str
+    description: str
+    level: int
+      </signature>
+      <path>src/schemas/user.py</path>
+    </interface>
+    <interface>
+      <name>assign_role</name>
+      <kind>Service layer function</kind>
+      <signature>
+async def assign_role(
+    db: AsyncSession,
+    user_id: UUID,
+    tenant_id: UUID,
+    role: RoleEnum,
+    assigned_by: UUID
+) -> UserTenantRole:
+    """
+    Assign a role to a user for a specific tenant.
+
+    Validates: user exists, tenant exists, no duplicate assignment
+    Side effects: Creates UserTenantRole, logs to audit
+    Raises: ValueError for validation failures
+    """
+      </signature>
+      <path>src/services/role_service.py</path>
+    </interface>
+    <interface>
+      <name>revoke_role</name>
+      <kind>Service layer function</kind>
+      <signature>
+async def revoke_role(
+    db: AsyncSession,
+    role_id: UUID,
+    revoked_by: UUID
+) -> None:
+    """
+    Revoke a role assignment.
+
+    Validates: role exists, not last super_admin
+    Side effects: Deletes UserTenantRole, logs to audit
+    Raises: ValueError for validation failures (last super_admin)
+    """
+      </signature>
+      <path>src/services/role_service.py</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+**Testing Framework:** Pytest with pytest-asyncio for async support
+
+**Unit Tests:** Test service layer functions in isolation with mocked database sessions. Focus on business logic validation (tenant scoping, duplicate checks, last super_admin protection).
+
+**Integration Tests:** Use FastAPI TestClient with test database. Test full request/response cycle, authentication, authorization, and database state changes.
+
+**Fixtures:** Reuse existing fixtures from tests/fixtures/ for database sessions, test users, test tenants, and authentication tokens.
+
+**Coverage Target:** Minimum 80% for service layer and endpoint functions. Use pytest-cov to measure.
+
+**Naming Convention:** test_{function_name}_{scenario} (e.g., test_assign_role_duplicate_raises_error)
+
+**Assertions:** Verify status codes, response schemas, database state, and audit log entries.
+    </standards>
+    <locations>
+- tests/unit/test_role_service.py - Service layer unit tests
+- tests/integration/test_roles_api.py - Endpoint integration tests
+    </locations>
+    <ideas>
+**Unit Tests for AC-1 (Assign Role):**
+- test_assign_role_success - Happy path with valid inputs
+- test_assign_role_duplicate_raises_error - Unique constraint validation
+- test_assign_role_invalid_user_raises_error - User doesn't exist
+- test_assign_role_invalid_tenant_raises_error - Tenant doesn't exist
+- test_assign_role_tenant_admin_scoping - tenant_admin can only assign for own tenant
+
+**Unit Tests for AC-2 (Revoke Role):**
+- test_revoke_role_success - Happy path deletion
+- test_revoke_role_last_super_admin_raises_error - Protection against removing last super_admin
+- test_revoke_role_not_found_raises_error - Role assignment doesn't exist
+
+**Unit Tests for AC-3 (List User Roles):**
+- test_get_user_roles_with_super_admin - super_admin sees all roles
+- test_get_user_roles_with_tenant_admin - Tenant-scoped filtering
+- test_get_user_roles_with_regular_user - User can only see own roles
+
+**Integration Tests for AC-1:**
+- test_assign_role_as_super_admin_success - 201 Created response
+- test_assign_role_as_tenant_admin_own_tenant - 201 Created
+- test_assign_role_as_tenant_admin_other_tenant - 403 Forbidden
+- test_assign_role_duplicate_returns_400 - Validation error
+- test_assign_role_without_auth_returns_401 - Unauthorized
+
+**Integration Tests for AC-2:**
+- test_revoke_role_success_returns_204 - Successful deletion
+- test_revoke_role_last_super_admin_returns_400 - Protection enforced
+- test_revoke_role_as_tenant_admin_other_tenant - 403 Forbidden
+
+**Integration Tests for AC-3:**
+- test_list_user_roles_as_super_admin - Returns all roles
+- test_list_user_roles_as_regular_user_viewing_self - Success
+- test_list_user_roles_as_regular_user_viewing_others - 403 Forbidden
+
+**Integration Tests for AC-4:**
+- test_list_available_roles_returns_5_roles - Response validation
+
+**Integration Tests for AC-7 (Audit Logging):**
+- test_assign_role_creates_audit_log - Verify AuditLog entry with correct metadata
+- test_revoke_role_creates_audit_log - Verify audit trail
+    </ideas>
+  </tests>
+</story-context>

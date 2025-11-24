@@ -2,27 +2,33 @@
 
 /**
  * CodeMirror Wrapper Component
- * 
+ *
  * Wraps CodeMirror 6 with custom extensions for:
  * - Variable placeholder highlighting ({{variable_name}})
  * - Token counting
  * - Dark theme
- * 
+ * - Line numbers
+ * - Find/Replace functionality
+ * - Keyboard shortcuts (Ctrl+S for save)
+ *
  * Story 0.4.3: System Prompt Editor Part 2 - CodeMirror integration
+ * Story 27: Enhanced with line numbers, find/replace, and keyboard shortcuts
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { EditorView, keymap } from '@codemirror/view';
+import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { EditorState, Extension } from '@codemirror/state';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { Decoration, DecorationSet, ViewPlugin, ViewUpdate } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/state';
+import { search, searchKeymap } from '@codemirror/search';
 
 interface CodeMirrorEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onSave?: () => void | Promise<void>;
   placeholder?: string;
   readOnly?: boolean;
   className?: string;
@@ -83,6 +89,7 @@ const variableHighlighter = ViewPlugin.fromClass(
 export function CodeMirrorEditor({
   value,
   onChange,
+  onSave,
   placeholder = '',
   readOnly = false,
   className = '',
@@ -97,10 +104,25 @@ export function CodeMirrorEditor({
 
     if (!editorRef.current) return;
 
+    // Custom keymap for Ctrl+S save
+    const customKeymap = onSave
+      ? [
+          {
+            key: 'Mod-s',
+            run: () => {
+              onSave();
+              return true; // Prevent default browser save
+            },
+          },
+        ]
+      : [];
+
     // Create extensions
     const extensions: Extension[] = [
+      lineNumbers(), // AC-2: Line numbers
       history(),
-      keymap.of([...defaultKeymap, ...historyKeymap]),
+      keymap.of([...customKeymap, ...defaultKeymap, ...historyKeymap, ...searchKeymap]), // AC-6: Ctrl+S, AC-8: Find/Replace
+      search(), // AC-8: Find and replace functionality
       markdown(),
       oneDark,
       variableHighlighter,

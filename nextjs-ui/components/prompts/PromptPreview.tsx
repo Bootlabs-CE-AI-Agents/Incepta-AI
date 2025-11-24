@@ -1,13 +1,15 @@
 /**
  * Prompt Preview Component
- * 
+ *
  * Displays a preview of the prompt with variables substituted.
  * Story 0.4.2: System Prompt Editor Part 1 - Part 6
+ * Story 27 AC-4/AC-5: Enhanced with markdown rendering and variable substitution toggle
  */
 
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { substituteVariables, validatePrompt } from '@/lib/utils/promptVariables';
 import type { PromptVariable } from '@/types/prompts';
 import { Eye, EyeOff, Copy, Check } from 'lucide-react';
@@ -42,14 +44,16 @@ export function PromptPreview({
 }: PromptPreviewProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [substituteVars, setSubstituteVars] = useState(false); // AC-5: Variable substitution toggle
+  const [renderMarkdown, setRenderMarkdown] = useState(true); // AC-4: Markdown rendering toggle
 
   // Build variable values for preview
   const variableValues = useMemo(() => {
     const values: Record<string, string> = {};
-    
+
     variables.forEach((variable) => {
       // Priority: previewValues > exampleValue > defaultValue > placeholder
-      values[variable.name] = 
+      values[variable.name] =
         previewValues[variable.name] ||
         variable.exampleValue ||
         variable.defaultValue ||
@@ -59,13 +63,16 @@ export function PromptPreview({
     return values;
   }, [variables, previewValues]);
 
-  // Substitute variables
+  // Substitute variables (AC-5: Only if enabled)
   const previewText = useMemo(() => {
-    return substituteVariables(promptText, variableValues, {
-      useDefaults: true,
-      keepMissing: true,
-    });
-  }, [promptText, variableValues]);
+    if (substituteVars) {
+      return substituteVariables(promptText, variableValues, {
+        useDefaults: true,
+        keepMissing: true,
+      });
+    }
+    return promptText; // Show raw template if substitution disabled
+  }, [promptText, variableValues, substituteVars]);
 
   // Validate prompt
   const validation = useMemo(() => {
@@ -96,6 +103,12 @@ export function PromptPreview({
               ⚠️ {validation.errors.length} warning{validation.errors.length !== 1 ? 's' : ''}
             </span>
           )}
+          {/* AC-5: Substitution mode badge */}
+          {substituteVars && (
+            <span className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs rounded">
+              🔄 Substitution Mode
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -124,6 +137,28 @@ export function PromptPreview({
         </div>
       </div>
 
+      {/* AC-5: Toggles for substitution and markdown */}
+      <div className="flex items-center gap-4 text-xs">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={substituteVars}
+            onChange={(e) => setSubstituteVars(e.target.checked)}
+            className="rounded border-gray-600 text-primary focus:ring-primary"
+          />
+          <span className="text-text-secondary">Substitute variables with sample values</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={renderMarkdown}
+            onChange={(e) => setRenderMarkdown(e.target.checked)}
+            className="rounded border-gray-600 text-primary focus:ring-primary"
+          />
+          <span className="text-text-secondary">Render markdown</span>
+        </label>
+      </div>
+
       {/* Validation warnings */}
       {!validation.isValid && (
         <div className="space-y-1">
@@ -138,15 +173,53 @@ export function PromptPreview({
         </div>
       )}
 
-      {/* Preview content */}
+      {/* Preview content (AC-4: Markdown rendering) */}
       {isVisible && (
         <div className="relative">
           <div className="p-4 bg-surface border border-white/10 rounded-lg overflow-auto max-h-96">
-            <pre className="text-sm text-text-primary whitespace-pre-wrap font-mono leading-relaxed">
-              {previewText}
-            </pre>
+            {renderMarkdown ? (
+              /* AC-4: Markdown rendered preview */
+              <div className="prose prose-invert prose-sm max-w-none">
+                <ReactMarkdown
+                  components={{
+                    // Style variables distinctly even when rendered
+                    code: ({ className, children, ...props }: React.ComponentProps<'code'>) => {
+                      const text = String(children);
+                      // Inline code doesn't have className starting with 'language-'
+                      const isInline = !className || !className.startsWith('language-');
+                      // Check if it looks like a variable {{varname}}
+                      if (isInline && /^\{\{[\w_]+\}\}$/.test(text.trim())) {
+                        return (
+                          <code
+                            className="px-1 py-0.5 bg-primary/20 text-primary rounded font-mono text-xs"
+                            {...props}
+                          >
+                            {children}
+                          </code>
+                        );
+                      }
+                      return (
+                        <code
+                          className={isInline ? 'bg-gray-800 px-1 rounded' : className}
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      );
+                    },
+                  }}
+                >
+                  {previewText}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              /* Plain text preview */
+              <pre className="text-sm text-text-primary whitespace-pre-wrap font-mono leading-relaxed">
+                {previewText}
+              </pre>
+            )}
           </div>
-          
+
           {/* Stats */}
           <div className="flex items-center gap-4 mt-2 text-xs text-text-tertiary">
             <span>{previewText.length.toLocaleString()} characters</span>

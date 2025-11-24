@@ -15,6 +15,9 @@ import { Button } from '@/components/ui';
  * Reference: tech-spec Epic 3, Story 5
  */
 
+// Force dynamic rendering (required for forms with mutations)
+export const dynamic = 'force-dynamic';
+
 export default function NewAgentPage() {
   const router = useRouter();
   const createAgentMutation = useCreateAgent();

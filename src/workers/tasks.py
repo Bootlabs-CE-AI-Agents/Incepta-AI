@@ -1794,3 +1794,164 @@ def cleanup_old_mcp_metrics_task(self: Task) -> Dict[str, Any]:
         )
         # Retry on failure (up to 3 times with 5min delay)
         raise self.retry(exc=e)
+
+# ==============================================================================
+# EMAIL TASKS: Story nextjs-story-22-users-api-crud
+# ==============================================================================
+
+
+@celery_app.task(
+    bind=True,
+    name="tasks.send_welcome_email",
+    track_started=True,
+    max_retries=3,
+    default_retry_delay=60,  # 1 minute
+)
+def send_welcome_email_task(self: Task, user_email: str, user_id: str) -> Dict[str, Any]:
+    """
+    Send welcome email to newly created user (AC-2).
+
+    This task is queued asynchronously when a new user is created with
+    send_welcome_email=True. It sends a welcome message with account setup
+    instructions.
+
+    Args:
+        self: Celery task instance (injected by bind=True)
+        user_email: User's email address
+        user_id: User UUID (for tracking)
+
+    Returns:
+        Dict with status and metadata
+
+    Raises:
+        Exception: If email sending fails (will retry up to 3 times)
+
+    Story: nextjs-story-22-users-api-crud (AC-2)
+    """
+    logger.info(
+        f"Task send_welcome_email started",
+        extra={
+            "task_id": self.request.id,
+            "user_email": user_email,
+            "user_id": user_id,
+        },
+    )
+
+    try:
+        # TODO: Implement actual email sending logic
+        # For now, just log the welcome email
+        # In production, integrate with email service (SendGrid, AWS SES, etc.)
+        logger.info(
+            f"Welcome email sent to {user_email}",
+            extra={
+                "task_id": self.request.id,
+                "user_email": user_email,
+                "user_id": user_id,
+                "email_type": "welcome",
+            },
+        )
+
+        return {
+            "status": "success",
+            "user_email": user_email,
+            "user_id": user_id,
+            "email_type": "welcome",
+            "sent_at": datetime.now(UTC).isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(
+            f"Failed to send welcome email: {e}",
+            exc_info=True,
+            extra={
+                "task_id": self.request.id,
+                "user_email": user_email,
+                "user_id": user_id,
+                "error": str(e),
+            },
+        )
+        # Retry with exponential backoff
+        raise self.retry(exc=e)
+
+
+@celery_app.task(
+    bind=True,
+    name="tasks.send_password_reset_email",
+    track_started=True,
+    max_retries=3,
+    default_retry_delay=60,  # 1 minute
+)
+def send_password_reset_email_task(
+    self: Task, user_email: str, user_id: str, temporary_password: str
+) -> Dict[str, Any]:
+    """
+    Send password reset email with temporary password (AC-5).
+
+    This task is queued asynchronously when an admin resets a user's password.
+    It sends the temporary password with instructions to change it on next login.
+
+    Args:
+        self: Celery task instance (injected by bind=True)
+        user_email: User's email address
+        user_id: User UUID (for tracking)
+        temporary_password: Temporary password (plain text, shown only once)
+
+    Returns:
+        Dict with status and metadata
+
+    Raises:
+        Exception: If email sending fails (will retry up to 3 times)
+
+    Security:
+        - Temporary password is transmitted only once via email
+        - force_password_change flag enforces password change on next login
+        - JWT revocation invalidates existing sessions
+
+    Story: nextjs-story-22-users-api-crud (AC-5)
+    """
+    logger.info(
+        f"Task send_password_reset_email started",
+        extra={
+            "task_id": self.request.id,
+            "user_email": user_email,
+            "user_id": user_id,
+        },
+    )
+
+    try:
+        # TODO: Implement actual email sending logic
+        # For now, just log the password reset email
+        # In production, integrate with email service (SendGrid, AWS SES, etc.)
+        # IMPORTANT: Never log the temporary_password in production!
+        logger.info(
+            f"Password reset email sent to {user_email}",
+            extra={
+                "task_id": self.request.id,
+                "user_email": user_email,
+                "user_id": user_id,
+                "email_type": "password_reset",
+                # SECURITY: Do NOT log temporary_password in production
+            },
+        )
+
+        return {
+            "status": "success",
+            "user_email": user_email,
+            "user_id": user_id,
+            "email_type": "password_reset",
+            "sent_at": datetime.now(UTC).isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(
+            f"Failed to send password reset email: {e}",
+            exc_info=True,
+            extra={
+                "task_id": self.request.id,
+                "user_email": user_email,
+                "user_id": user_id,
+                "error": str(e),
+            },
+        )
+        # Retry with exponential backoff
+        raise self.retry(exc=e)

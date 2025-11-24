@@ -11,7 +11,7 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Shield } from 'lucide-react';
 import type { UserDetail } from '@/lib/api/users';
 import { useUpdateUser, useResetPassword } from '@/lib/hooks/useUsers';
 import { isLastSuperAdmin } from '@/lib/utils/users';
@@ -21,14 +21,16 @@ interface UserActionButtonsProps {
   currentUser: UserDetail | null;
   isSuperAdmin: boolean;
   allUsers: UserDetail[];
+  onManageRoles?: (user: UserDetail) => void;
 }
 
 /**
  * UserActionButtons - Action buttons with confirmation dialogs
  *
- * Features (per AC-7):
+ * Features (per AC-7 + Story 26 AC-1):
  * - Deactivate/Activate button (toggles is_active with confirmation)
  * - Reset Password button (shows temp password in toast)
+ * - Manage Roles button (Story 26 AC-1, only for super_admin/tenant_admin)
  * - Confirmation dialogs for all destructive actions
  * - Loading states during mutations
  * - Optimistic UI updates via useUpdateUser/useResetPassword hooks
@@ -37,13 +39,15 @@ interface UserActionButtonsProps {
  * - Cannot modify own account
  * - Cannot deactivate last super_admin
  * - tenant_admin can only modify users in their tenant
+ * - Only super_admin and tenant_admin can manage roles
  *
  * @param user - User object from table row
  * @param currentUser - Current logged-in user
  * @param isSuperAdmin - Whether current user is super_admin
  * @param allUsers - All users in current view (for last admin check)
+ * @param onManageRoles - Callback for "Manage Roles" button (Story 26 AC-1)
  */
-export function UserActionButtons({ user, currentUser, isSuperAdmin, allUsers }: UserActionButtonsProps) {
+export function UserActionButtons({ user, currentUser, isSuperAdmin, allUsers, onManageRoles }: UserActionButtonsProps) {
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
 
@@ -68,6 +72,21 @@ export function UserActionButtons({ user, currentUser, isSuperAdmin, allUsers }:
     return true;
   }, [user, currentUser, isSuperAdmin, allUsers]);
 
+  // Story 26 AC-1: Check if current user can manage roles (super_admin or tenant_admin)
+  const canManageRoles = useMemo(() => {
+    if (!currentUser) return false;
+
+    const isTenantAdmin = currentUser.roles.some((r) => r.role === 'tenant_admin');
+    const hasPermission = isSuperAdmin || isTenantAdmin;
+
+    // tenant_admin can only manage roles for users in their tenant
+    if (isTenantAdmin && !isSuperAdmin) {
+      return hasPermission && user.default_tenant_id === currentUser.default_tenant_id;
+    }
+
+    return hasPermission;
+  }, [currentUser, isSuperAdmin, user.default_tenant_id]);
+
   // Handle deactivate/activate action (AC-7)
   const handleToggleActive = () => {
     updateUserMutation.mutate({
@@ -87,6 +106,21 @@ export function UserActionButtons({ user, currentUser, isSuperAdmin, allUsers }:
 
   return (
     <div className="flex items-center gap-2">
+      {/* Manage Roles Button (Story 26 AC-1) */}
+      {canManageRoles && onManageRoles && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onManageRoles(user)}
+          disabled={isLoading}
+          title="Manage user role assignments"
+          className="flex items-center gap-1"
+        >
+          <Shield className="h-4 w-4" />
+          Manage Roles
+        </Button>
+      )}
+
       {/* Deactivate/Activate Button */}
       <Button
         variant={user.is_active ? 'secondary' : 'primary'}

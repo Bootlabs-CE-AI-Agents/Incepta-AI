@@ -398,7 +398,10 @@ class TenantService:
 
         # Note: Soft delete would require adding 'active' column to schema
         # For now, perform hard delete as per AC
-        self.db.delete(db_config)
+        # Using explicit DELETE SQL due to RLS policy requirements
+        from sqlalchemy import delete as sql_delete
+        delete_stmt = sql_delete(TenantConfigModel).where(TenantConfigModel.tenant_id == tenant_id)
+        await self.db.execute(delete_stmt)
         await self.db.flush()
         logger.info(f"Deleted tenant config for {tenant_id}")
 

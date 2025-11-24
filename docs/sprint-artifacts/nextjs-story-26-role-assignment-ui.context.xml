@@ -1,0 +1,273 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs</epicId>
+    <storyId>26</storyId>
+    <title>Role Assignment UI - Tenant-role matrix for user permissions</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-26-role-assignment-ui.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>tenant administrator</asA>
+    <iWant>a user-friendly interface to assign and revoke user roles across tenants</iWant>
+    <soThat>I can manage user permissions efficiently without using API tools</soThat>
+    <tasks>14 major tasks, 108 subtasks total:
+- Create role types and API client (lib/types/role.ts, lib/api/roles.ts)
+- Create React Query hooks (useUserRoles, useAssignRole, useRemoveRole, useAvailableRoles)
+- Create RoleAssignmentModal component with Headless UI Dialog
+- Implement CurrentAssignmentsTable (fetch, display, loading/error/empty states, remove button)
+- Implement AssignRoleForm (tenant dropdown with scoping, role dropdown, validation, mutation)
+- Implement RemoveRoleDialog with confirmation
+- Implement optimistic UI updates with rollback (onMutate, onSuccess, onError)
+- Add "Manage Roles" button to Users table with RBAC visibility
+- Implement mobile responsive design (cards < 768px, table ≥ 768px)
+- Implement loading/error states (skeletons, spinners, error banners, retry)
+- Write unit tests (RTL for all components)
+- Write integration tests (MSW for API mocking)
+- Add Storybook stories (all components, dark mode)
+- Update documentation (user guide, troubleshooting)</tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="AC-1" title="Role Assignment UI Access & Navigation">
+      - "Manage Roles" button appears in each user row (glassmorphic Button component)
+      - Button visible only for users with super_admin or tenant_admin role
+      - Clicking button opens Role Assignment Modal
+      - Mobile: Button icon-only (Shield icon) to save space
+      - RBAC: super_admin sees button for all users, tenant_admin only for users in their tenant
+    </ac>
+    <ac id="AC-2" title="Role Assignment Modal UI">
+      - Modal with header (user name/email, close button)
+      - Current Assignments table: Tenant Name, Role badge (color-coded), Remove button
+      - Assign New Role form: Tenant dropdown (searchable), Role dropdown (5 roles with descriptions), Assign button
+      - Footer with Close button
+      - Uses Headless UI Dialog component (accessible, keyboard nav, ESC to close)
+      - Glassmorphic design (.glass-card class)
+    </ac>
+    <ac id="AC-3" title="Fetch Current Role Assignments">
+      - API: GET /api/v1/users/{user_id}/roles on modal open
+      - Use React Query useQuery with key ['userRoles', user_id]
+      - Loading state: 3 skeleton rows in table
+      - Error state: Error banner with retry button
+    </ac>
+    <ac id="AC-4" title="Assign New Role">
+      - API: POST /api/v1/users/{user_id}/roles with {tenant_id, role}
+      - Use React Query useMutation
+      - On success: Invalidate ['userRoles', user_id] query, show green toast, reset form
+      - Optimistic update: Add row immediately, rollback if error
+      - Error responses: 400 (duplicate), 403 (forbidden), 404 (not found)
+    </ac>
+    <ac id="AC-5" title="Remove Role Assignment">
+      - Confirmation dialog with Headless UI Dialog
+      - API: DELETE /api/v1/users/{user_id}/roles/{role_id}
+      - Use React Query useMutation
+      - On success: Invalidate query, show green toast
+      - Optimistic update: Remove row immediately, rollback if error
+      - Last super_admin protection: 400 error shows toast, do not remove row
+    </ac>
+    <ac id="AC-6" title="Tenant Dropdown Scoping">
+      - tenant_admin: Dropdown disabled, pre-selected with default_tenant_id
+      - super_admin: Dropdown enabled, searchable (Headless UI Combobox), fetches all tenants from GET /api/v1/tenants
+    </ac>
+    <ac id="AC-7" title="Role Dropdown with Metadata">
+      - API: GET /api/v1/roles (returns 5 roles with display_name, description, level)
+      - Dropdown shows: "{display_name} - {description}" for each option
+      - Sorted by level (super_admin first, viewer last)
+      - Uses Headless UI Listbox
+    </ac>
+    <ac id="AC-8" title="Optimistic UI Updates">
+      - Assign: Immediate UI update (add row with spinner) before API confirmation
+      - Remove: Immediate UI update (remove row with fade-out) before API confirmation
+      - Success: Replace/keep optimistic change, show toast
+      - Error: Rollback to previous state (re-add/remove row), show error toast
+    </ac>
+    <ac id="AC-9" title="Mobile Responsive Design">
+      - Mobile (<768px): Full-screen modal, card-based list, vertical stack
+      - Desktop (≥768px): 600px modal, table layout, horizontal form
+      - Tailwind classes: md:table, md:flex-row, sm:max-w-lg md:max-w-2xl
+    </ac>
+    <ac id="AC-10" title="Loading & Error States">
+      - Loading: Skeleton rows (3), spinner on buttons, disabled form
+      - Error: Error banner with retry, error toasts with API messages
+      - Empty: "No role assignments yet" message with Shield icon
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics-nextjs-feature-parity-completion.md</path>
+        <title>Next.js Feature Parity Epic - Story 3.5: Role Assignment UI</title>
+        <section>Story 3.5 (lines 1008-1070)</section>
+        <snippet>As a super_admin or tenant_admin, I want to assign and revoke user roles via the UI. Modal opens with tenant selector dropdown, role selector dropdown. RBAC: super_admin can assign any role for any tenant, tenant_admin can only assign roles for own tenant. Special case: Cannot remove last super_admin.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-25-role-assignment-api.md</path>
+        <title>Backend Role Assignment API (Prerequisite Story)</title>
+        <section>Complete API Contract</section>
+        <snippet>Backend APIs ready: POST /api/v1/users/{user_id}/roles (assign role, 201 Created), DELETE /api/v1/users/{user_id}/roles/{role_id} (revoke role, 204 No Content), GET /api/v1/users/{user_id}/roles (list roles with tenant_name joined), GET /api/v1/roles (5 roles with metadata). Critical: UserTenantRole.tenant_id is VARCHAR (not UUID), must match TenantConfig.tenant_id field. RBAC enforced via JWT, tenant_admin scoped to own tenant only.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics-nextjs-ui-migration.md</path>
+        <title>Next.js UI Migration Epic - Story 2 Component Patterns</title>
+        <section>Story 2 (lines 443-577)</section>
+        <snippet>Use Headless UI for accessible components (Dialog, Listbox, Combobox). Glassmorphic design with .glass-card class for modals. React Query for server state with optimistic updates. React Hook Form + Zod for form validation. Lucide React for icons (tree-shakable). Framer Motion for animations.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>System Architecture - Authentication & Authorization</title>
+        <section>Security Architecture (lines 485-492)</section>
+        <snippet>Multi-tenant RBAC with 5 roles: super_admin (full system access), tenant_admin (full access within tenant), developer (create agents/prompts/tools), operator (view metrics, execute agents), viewer (read-only). Row-level security in PostgreSQL enforces tenant isolation. JWT tokens contain user_id, tenant_id, role for authorization.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-23-users-management-list.md</path>
+        <title>Users Management List Page (Existing UI to Extend)</title>
+        <section>Users Table Implementation</section>
+        <snippet>Existing Users table at nextjs-ui/app/dashboard/users/page.tsx with filters, search, pagination. Uses glassmorphic Button component from src/components/ui/Button.tsx. RBAC patterns: super_admin sees all users, tenant_admin sees only their tenant's users. Extend this table with "Manage Roles" button in action column.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>nextjs-ui/app/dashboard/users/page.tsx</path>
+        <kind>page</kind>
+        <symbol>UsersPage (default export)</symbol>
+        <lines>full file</lines>
+        <reason>Existing Users list page where "Manage Roles" button will be added to table action column. Demonstrates RBAC patterns (super_admin vs tenant_admin visibility), table structure, filter/search/pagination patterns.</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/api/users.ts</path>
+        <kind>api-client</kind>
+        <symbol>RoleEnum type (line 13), UserDetail interface (lines 27-38), usersApi object</symbol>
+        <lines>1-80</lines>
+        <reason>Existing types and API client for users. Defines RoleEnum matching backend. This file will be extended with role-specific API functions (fetchUserRoles, assignRole, removeRole)</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/hooks/useUsers.ts</path>
+        <kind>react-hook</kind>
+        <symbol>userKeys (line 17-22), useUsers hook (line 35-42), useUpdateUser hook (line 55-111)</symbol>
+        <lines>full file</lines>
+        <reason>Existing React Query patterns for user management. Demonstrates query key structure, optimistic updates with onMutate/onError/onSettled callbacks, error handling with toast. New hooks (useUserRoles, useAssignRole, useRemoveRole) will follow same patterns.</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/ui/Button.tsx</path>
+        <kind>ui-component</kind>
+        <symbol>Button component (line 23-71)</symbol>
+        <lines>1-50</lines>
+        <reason>Glassmorphic button component with variants (primary, secondary, ghost, danger), sizes (sm, md, lg), loading states. Used for "Manage Roles", "Assign", "Remove", "Close" buttons per AC-1, AC-2.</reason>
+      </artifact>
+      <artifact>
+        <path>src/api/roles.py</path>
+        <kind>backend-api</kind>
+        <symbol>POST /users/{user_id}/roles (line 141-253), DELETE /users/{user_id}/roles/{role_id} (line 256-341), GET /users/{user_id}/roles (line 344-456), GET /roles (line 459-501)</symbol>
+        <lines>full file</lines>
+        <reason>Backend API endpoints that this UI will consume. Defines request/response contracts, RBAC authorization logic (super_admin vs tenant_admin), error responses (400 duplicate, 403 forbidden, 404 not found), tenant scoping, last super_admin protection.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package>@headlessui/react</package>
+        <version>^2.0.0</version>
+        <usage>Dialog (modal), Listbox (role dropdown), Combobox (tenant dropdown with search)</usage>
+      </node>
+      <package>@tanstack/react-query</package>
+      <version>^5.0.0</version>
+      <usage>useQuery (fetch user roles, available roles), useMutation (assign/remove with optimistic updates)</usage>
+      </node>
+      <package>react-hook-form</package>
+      <version>^7.0.0</version>
+      <usage>Form state management for Assign Role form</usage>
+      </node>
+      <package>zod</package>
+      <version>^3.0.0</version>
+      <usage>Schema validation for role assignment form (tenant_id required UUID, role required RoleEnum)</usage>
+      </node>
+      <package>lucide-react</package>
+      <version>latest</version>
+      <usage>Icons: Shield (Manage Roles button), Trash2 (Remove button), X (Close button)</usage>
+      </node>
+      <package>framer-motion</package>
+      <version>latest</version>
+      <usage>AnimatePresence for smooth row add/remove transitions in Current Assignments table</usage>
+      </node>
+      <package>sonner</package>
+      <version>latest</version>
+      <usage>Toast notifications for success/error messages (assign/remove actions)</usage>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Must use Headless UI components (Dialog, Listbox, Combobox) for accessibility (AC-2, AC-6, AC-7)
+    - Glassmorphic design: All modals use .glass-card class for backdrop-filter transparency (AC-2)
+    - React Query required: useQuery for fetching, useMutation for mutations with optimistic updates (AC-3, AC-4, AC-5, AC-8)
+    - Optimistic updates mandatory: onMutate (add/remove row), onSuccess (invalidate query), onError (rollback with snapshot) (AC-8)
+    - React Hook Form + Zod required for form validation (AC-4)
+    - RBAC visibility: "Manage Roles" button shows only for super_admin/tenant_admin (AC-1)
+    - Tenant scoping: tenant_admin sees only own tenant in dropdown (disabled, pre-selected), super_admin sees all tenants (AC-6)
+    - Critical data type: tenant_id is VARCHAR (not UUID) in UserTenantRole table - must pass tenant.tenant_id (not tenant.id) to API (from Story 25 learnings)
+    - Last super_admin protection: Cannot remove last super_admin role - show error toast if API returns 400 (AC-5)
+    - Mobile responsive: Cards < 768px, table ≥ 768px (AC-9)
+    - Error handling: All API errors show toast with backend error message or generic fallback (AC-10)
+    - No new page routes: Modal opens on current Users page, no navigation (AC-1, AC-2)
+    - Code reuse: Extend existing nextjs-ui/lib/api/users.ts and nextjs-ui/lib/hooks/useUsers.ts, do not create duplicate files
+  </constraints>
+
+  <interfaces>
+    <api name="POST /api/v1/users/{user_id}/roles" method="POST">
+      <description>Assign role to user for specific tenant</description>
+      <request>{tenant_id: string (VARCHAR), role: RoleEnum}</request>
+      <response>201 Created: {id, user_id, tenant_id, tenant_name, role, created_at, created_by}</response>
+      <errors>400 (duplicate/user not found/tenant not found), 403 (tenant_admin for other tenant), 401 (unauthorized)</errors>
+    </api>
+    <api name="DELETE /api/v1/users/{user_id}/roles/{role_id}" method="DELETE">
+      <description>Revoke role assignment</description>
+      <request>No body</request>
+      <response>204 No Content</response>
+      <errors>400 (last super_admin), 403 (tenant_admin for other tenant), 404 (role not found), 401 (unauthorized)</errors>
+    </api>
+    <api name="GET /api/v1/users/{user_id}/roles" method="GET">
+      <description>List user's role assignments with tenant names</description>
+      <request>No body</request>
+      <response>200 OK: Array of {id, user_id, tenant_id, tenant_name, role, created_at, created_by}</response>
+      <errors>403 (view other users), 404 (user not found), 401 (unauthorized)</errors>
+    </api>
+    <api name="GET /api/v1/roles" method="GET">
+      <description>List all available roles with metadata</description>
+      <request>No body</request>
+      <response>200 OK: Array of {role: RoleEnum, display_name: string, description: string, level: number} sorted by level (1=super_admin first, 5=viewer last)</response>
+      <errors>401 (unauthorized)</errors>
+    </api>
+    <api name="GET /api/v1/tenants" method="GET">
+      <description>List all tenants (existing endpoint from Story 23)</description>
+      <request>No body</request>
+      <response>200 OK: Array of {id: UUID, tenant_id: string (VARCHAR), name: string}</response>
+      <note>Use tenant.tenant_id (VARCHAR) in role assignment API calls, NOT tenant.id (UUID)</note>
+    </api>
+  </interfaces>
+
+  <tests>
+    <standards>React Testing Library + Jest for unit tests, MSW (Mock Service Worker) for API mocking in integration tests, @testing-library/user-event for user interactions. All tests use async/await patterns. Coverage target: 80%+ for components and hooks. Follow patterns from existing tests in tests/components/users/ and tests/integration/.</standards>
+    <locations>
+      - tests/components/users/RoleAssignmentModal.test.tsx (new file)
+      - tests/components/users/CurrentAssignmentsTable.test.tsx (new file)
+      - tests/components/users/AssignRoleForm.test.tsx (new file)
+      - tests/components/users/RemoveRoleDialog.test.tsx (new file)
+      - tests/integration/role-assignment.test.tsx (new file)
+      - tests/components/users/__tests__/ (existing pattern from Story 23)
+    </locations>
+    <ideas>
+      AC-1: Test "Manage Roles" button visibility (shows for super_admin/tenant_admin, hidden for developer/operator/viewer), button click opens modal
+      AC-2: Test modal opens/closes, header displays user name/email, close button works, ESC key closes modal
+      AC-3: Test fetching user roles (loading skeleton appears, data displays in table, error banner with retry), test empty state message
+      AC-4: Test assign role form (tenant dropdown, role dropdown, assign button disabled until both selected, form submission, success toast, optimistic row addition, error rollback for 400 duplicate/403 forbidden)
+      AC-5: Test remove role (confirmation dialog opens, cancel button, confirm button, success toast, optimistic row removal, error rollback for 400 last super_admin/404 not found)
+      AC-6: Test tenant scoping (tenant_admin sees disabled dropdown pre-selected with default_tenant_id, super_admin sees enabled searchable dropdown with all tenants)
+      AC-7: Test role dropdown (displays 5 roles with display_name + description, sorted by level, selection updates form)
+      AC-8: Test optimistic updates (assign adds row immediately before API response, remove removes row immediately, both rollback on error with previous data snapshot)
+      AC-9: Test mobile responsive (modal full-screen < 768px with card layout, modal 600px ≥ 768px with table layout)
+      AC-10: Test loading states (assign button spinner during mutation, remove button spinner, skeleton rows), test error states (API error messages in toasts)
+    </ideas>
+  </tests>
+</story-context>

@@ -3,10 +3,12 @@
  *
  * Axios instance configured for FastAPI backend communication.
  * Automatically includes JWT authentication tokens from NextAuth session.
+ * Includes tenant context from Zustand store for multi-tenant operations.
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { getSession } from 'next-auth/react';
+import { useTenantStore } from '@/lib/stores/useTenantStore';
 
 /**
  * Create configured axios instance for API calls
@@ -32,10 +34,14 @@ export const createApiClient = (): AxiosInstance => {
         config.headers.Authorization = `Bearer ${session.accessToken}`;
       }
 
-      // Add X-Tenant-ID header if available
+      // Add X-Tenant-ID header from Zustand store (global tenant selection)
+      // Falls back to session defaultTenantId if no tenant selected in UI
       // Backend uses this to determine which tenant the request belongs to
-      if (session?.user?.defaultTenantId) {
-        config.headers['X-Tenant-ID'] = session.user.defaultTenantId;
+      const selectedTenant = useTenantStore.getState().selectedTenant;
+      const tenantId = selectedTenant?.id || session?.user?.defaultTenantId;
+
+      if (tenantId) {
+        config.headers['X-Tenant-ID'] = tenantId;
       }
 
       return config;

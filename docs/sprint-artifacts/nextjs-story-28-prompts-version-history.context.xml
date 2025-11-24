@@ -1,0 +1,396 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>28</storyId>
+    <title>Prompts Page - Version History</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-28-prompts-version-history.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to view and revert to previous prompt versions</iWant>
+    <soThat>I can recover from mistakes and track changes over time</soThat>
+    <tasks>
+- **Task 1:** Create Version History Tab component (AC-1, AC-4, AC-5, AC-6)
+  - 1.1 Create `components/prompts/VersionHistoryTab.tsx`
+  - 1.2 Implement version list table with columns (Version, Saved, Description, Characters, Actions)
+  - 1.3 Add pagination controls (Previous, Page X of Y, Next)
+  - 1.4 Implement search by description input with debounce (500ms)
+  - 1.5 Add date range filter (From/To date pickers)
+  - 1.6 Add "Clear Filters" button
+  - 1.7 Implement empty state for new prompts
+  - 1.8 Use React Query with pagination and filters
+  - 1.9 Format dates with `date-fns` relative time
+
+- **Task 2:** Create API integration and data fetching (AC-1, AC-2, AC-3)
+  - 2.1 Create `usePromptVersions()` hook with pagination + filters
+  - 2.2 API call: `GET /api/v1/prompts/{id}/versions?page=&limit=&search=&from=&to=`
+  - 2.3 Create `usePromptVersion()` hook for single version fetch
+  - 2.4 API call: `GET /api/v1/prompts/{id}/versions/{version_id}`
+  - 2.5 Create `useRevertPromptVersion()` mutation hook
+  - 2.6 API call: `POST /api/v1/prompts/{id}/versions/{version_id}/revert`
+  - 2.7 Add React Query invalidation after revert (refresh version list)
+
+- **Task 3:** Create Version Diff Modal (AC-2)
+  - 3.1 Create `components/prompts/VersionDiffModal.tsx`
+  - 3.2 Install and configure `react-diff-viewer` library
+  - 3.3 Implement side-by-side diff comparison (current vs selected)
+  - 3.4 Highlight additions (green), deletions (red), modifications (yellow)
+  - 3.5 Display version metadata in modal header
+  - 3.6 Add Close button (X icon, ESC key handler)
+  - 3.7 Use Headless UI `Dialog` component
+  - 3.8 Add ARIA labels and accessibility attributes
+
+- **Task 4:** Create Revert Confirmation Dialog (AC-3)
+  - 4.1 Create `components/prompts/RevertConfirmDialog.tsx`
+  - 4.2 Implement warning message and version info display
+  - 4.3 Add "Cancel" and "Confirm Revert" buttons
+  - 4.4 Add loading state during revert ("Reverting...")
+  - 4.5 Handle success: Update editor, show toast, close dialog
+  - 4.6 Handle error: Show toast, keep dialog open for retry
+  - 4.7 Use Headless UI `AlertDialog` component
+  - 4.8 Add keyboard support (ESC to cancel, Enter to confirm)
+
+- **Task 5:** Integrate Version History tab into Prompts page (AC-9)
+  - 5.1 Update `app/dashboard/prompts/[id]/page.tsx`
+  - 5.2 Add "Version History" tab to tab navigation
+  - 5.3 Import and render `<VersionHistoryTab>` component
+  - 5.4 Update URL query param: `?tab=versions`
+  - 5.5 Preserve editor state when switching tabs
+  - 5.6 Add RBAC check: developer/admin only
+  - 5.7 Test tab navigation and state preservation
+
+- **Task 6:** Implement responsive layout (AC-7)
+  - 6.1 Add Tailwind breakpoints for desktop, tablet, mobile
+  - 6.2 Create `VersionCardMobile.tsx` component for mobile card layout
+  - 6.3 Conditional rendering based on screen size
+  - 6.4 Test on real devices (iPhone, iPad, Android)
+  - 6.5 Verify table → cards transition at 768px breakpoint
+
+- **Task 7:** Implement loading and error states (AC-8)
+  - 7.1 Create `VersionHistorySkeleton` component
+  - 7.2 Add loading spinner for page changes
+  - 7.3 Add error state with "Retry" button
+  - 7.4 Handle network timeout errors
+  - 7.5 Add loading state to Revert button
+  - 7.6 Test error scenarios (404, 500, network offline)
+
+- **Task 8:** Add keyboard accessibility (AC-10)
+  - 8.1 Verify Tab navigation works for all interactive elements
+  - 8.2 Add ARIA labels to buttons and inputs
+  - 8.3 Test ESC key closes modals
+  - 8.4 Add focus visible indicators
+  - 8.5 Test with keyboard-only navigation
+  - 8.6 Test with screen reader (NVDA/VoiceOver)
+
+- **Task 9:** Write unit tests (all ACs)
+  - 9.1 Test `usePromptVersions()` hook
+  - 9.2 Test `useRevertPromptVersion()` mutation
+  - 9.3 Test `VersionHistoryTab` component
+  - 9.4 Test `VersionDiffModal` component
+  - 9.5 Test `RevertConfirmDialog` component
+  - 9.6 Test pagination logic
+  - 9.7 Test search and filter logic
+  - 9.8 Test error handling and retry
+  - 9.9 Achieve 80%+ code coverage
+
+- **Task 10:** Manual QA and edge case testing (all ACs)
+  - 10.1 Test with no versions (empty state)
+  - 10.2 Test with 1 version (no revert option)
+  - 10.3 Test with > 20 versions (pagination works)
+  - 10.4 Test revert to very old version (large diff)
+  - 10.5 Test concurrent reverts (race conditions)
+  - 10.6 Test date range filter edge cases
+  - 10.7 Test search with special characters
+  - 10.8 Test responsive behavior at exact breakpoints
+  - 10.9 Test accessibility with keyboard-only
+  - 10.10 Test screen reader compatibility
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+### AC-1: Version History Tab with Version List
+- Display list of previous versions with version number, saved date/time (relative), description, character count, and actions
+- Table layout with pagination (20 versions per page)
+- Empty state for new prompts
+- Loading skeleton while fetching
+
+### AC-2: View Version Modal with Diff View
+- Modal shows version metadata and full prompt text
+- Side-by-side diff comparison (current vs selected version)
+- Highlighted additions (green), deletions (red), modifications (yellow)
+- Close button and ESC key support
+
+### AC-3: Revert Version with Confirmation
+- Confirmation dialog with warning message
+- Displays current and selected version numbers
+- Creates new version with old content (immutable history)
+- Success toast and refresh version list
+- Error handling with retry option
+
+### AC-4: Version Search and Filtering
+- Search by description (debounced 500ms)
+- Date range filter (From/To date pickers)
+- Clear filters button
+- Show filtered count
+
+### AC-5: Pagination for Version List
+- 20 versions per page
+- Previous/Next buttons with page indicator
+- Preserve scroll position on page change
+- Maintain filters across pages
+
+### AC-6: Empty State for New Prompts
+- Icon and message: "No version history available"
+- Description explaining versions are auto-created
+
+### AC-7: Responsive Layout
+- Desktop (≥1024px): Table layout with all columns
+- Tablet (768-1023px): Condensed table (hide description column)
+- Mobile (<768px): Card layout (stack version info vertically)
+
+### AC-8: Loading and Error States
+- Skeleton loader for initial load
+- Loading spinner for page changes
+- Error state with Retry button
+- Handle network timeout errors
+
+### AC-9: Integration with Existing Prompts Page
+- Tab navigation: "Editor" | "Preview" | "Version History" | "Test"
+- URL updates: `?tab=versions`
+- Preserve editor state when switching tabs
+- RBAC: developer/admin only
+
+### AC-10: Keyboard Accessibility
+- Tab navigation between elements
+- Enter to activate buttons
+- Escape to close modal/dialog
+- ARIA labels on all interactive elements
+- Focus visible indicators
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>AI Agents - Decision Architecture</title>
+        <section>Technology Stack Details - Frontend</section>
+        <snippet>Next.js 14 App Router, shadcn/ui + Headless UI for accessible components, Tailwind CSS styling, React Query for server state, Zod + React Hook Form for validation. Streamlit for admin UI.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics-nextjs-feature-parity-completion.md</path>
+        <title>Next.js Feature Parity Epic</title>
+        <section>Story 4.2: Prompts Page - Version History</section>
+        <snippet>Requirements for version history tab: list versions with pagination, view diff modal with react-diff-viewer, revert confirmation with immutable history, search/filter by description and date range. APIs: GET /api/prompts/{id}/versions, POST /api/prompts/{id}/versions/revert.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-27-prompts-rich-editor.md</path>
+        <title>Story 27: Prompts Rich Editor (Previous Story)</title>
+        <section>Dev Notes - Learnings from Previous Story</section>
+        <snippet>Established patterns: useAutoSaveDraft hook (localStorage draft handling), CodeMirror editor with line numbers/search/Ctrl+S, debounced input (300ms search, 500ms auto-save), React Query optimistic updates, Headless UI Dialog pattern, character count validation with color warnings.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>nextjs-ui/components/prompts/PromptVersionHistory.tsx</path>
+        <kind>component</kind>
+        <symbol>PromptVersionHistory</symbol>
+        <lines>1-50</lines>
+        <reason>Existing version history component - needs enhancement to meet all AC requirements (pagination, search/filter, diff modal, revert confirmation)</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/prompts/CodeMirrorEditor.tsx</path>
+        <kind>component</kind>
+        <symbol>CodeMirrorEditor</symbol>
+        <lines>all</lines>
+        <reason>Established CodeMirror editor pattern from Story 27 - reference for editor integration</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/prompts/PromptEditor.tsx</path>
+        <kind>component</kind>
+        <symbol>PromptEditor</symbol>
+        <lines>all</lines>
+        <reason>Main prompt editor component - understand current editor state management for version revert updates</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/hooks/usePrompts.ts</path>
+        <kind>hook</kind>
+        <symbol>usePromptVersions</symbol>
+        <lines>40-46</lines>
+        <reason>Existing version fetching hook - needs enhancement for pagination, search, and filter params</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/hooks/useDebounce.ts</path>
+        <kind>hook</kind>
+        <symbol>useDebounce</symbol>
+        <lines>all</lines>
+        <reason>Reusable debounce hook for search input (AC-4 requires 500ms debounce)</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/hooks/useAutoSaveDraft.ts</path>
+        <kind>hook</kind>
+        <symbol>useAutoSaveDraft</symbol>
+        <lines>all</lines>
+        <reason>localStorage draft pattern established in Story 27 - reference for state persistence</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/api/prompts.ts</path>
+        <kind>api-client</kind>
+        <symbol>PromptVersion</symbol>
+        <lines>19-26</lines>
+        <reason>Existing PromptVersion type definition - reference for API response shape</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/app/dashboard/prompts/[id]/page.tsx</path>
+        <kind>page</kind>
+        <symbol>PromptDetailPage</symbol>
+        <lines>1-80</lines>
+        <reason>Main prompts edit page - needs tab integration for Version History tab (AC-9)</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/ui/Button.tsx</path>
+        <kind>component</kind>
+        <symbol>Button</symbol>
+        <lines>all</lines>
+        <reason>UI button component - use for actions (View, Revert, pagination controls)</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/users/UsersTable.tsx</path>
+        <kind>component</kind>
+        <symbol>UsersTable</symbol>
+        <lines>all</lines>
+        <reason>Reference for table layout with pagination pattern (20 per page) established in Story 23</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.15" />
+        <package name="react" version="^18.3.1" />
+        <package name="react-dom" version="^18.3.1" />
+        <package name="@tanstack/react-query" version="^5.62.2" />
+        <package name="@headlessui/react" version="^2.2.9" />
+        <package name="date-fns" version="^3.6.0" />
+        <package name="sonner" version="^2.0.7" />
+        <package name="lucide-react" version="^0.462.0" />
+        <package name="@codemirror/view" version="^6.38.8" />
+        <package name="react-markdown" version="^10.1.0" />
+        <package name="zod" version="^4.1.12" />
+        <package name="next-auth" version="^4.24.13" />
+        <note>react-diff-viewer library needs to be added for AC-2 diff view feature</note>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Follow Next.js 14 App Router conventions for routing and page structure</constraint>
+    <constraint>Use shadcn/ui + Headless UI for accessible component patterns (Dialog, AlertDialog, TabGroup)</constraint>
+    <constraint>Implement Tailwind CSS responsive design: desktop (≥1024px), tablet (768-1023px), mobile (<768px)</constraint>
+    <constraint>Use React Query for all data fetching with pagination, filters, and optimistic updates</constraint>
+    <constraint>Enforce RBAC: Version History tab accessible only to developer and admin roles</constraint>
+    <constraint>TypeScript strict mode must be enabled with zero type errors</constraint>
+    <constraint>Achieve 80%+ unit test coverage for all new components and hooks</constraint>
+    <constraint>Follow established patterns from Story 27: useDebounce (500ms), Headless UI Dialog, React Query mutations</constraint>
+    <constraint>All dates must use date-fns library for relative and absolute formatting</constraint>
+    <constraint>Toast notifications must use sonner library for success/error feedback</constraint>
+    <constraint>Version history must preserve immutability: revert creates new version, old versions never deleted</constraint>
+    <constraint>Keyboard accessibility: Tab navigation, Enter to activate, Escape to close, ARIA labels on all interactive elements</constraint>
+    <constraint>Error handling: Graceful fallbacks with Retry buttons, timeout handling, offline detection</constraint>
+    <constraint>Pagination must default to 20 items per page with Previous/Next controls</constraint>
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>GET /api/v1/prompts/{id}/versions</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/prompts/{id}/versions?page={number}&amp;limit={number}&amp;search={string}&amp;from={date}&amp;to={date}</signature>
+      <path>src/api/prompts.py (backend endpoint - already exists)</path>
+      <returns>PaginatedResponse&lt;PromptVersion&gt; with { items: PromptVersion[], total: number, page: number, limit: number }</returns>
+    </interface>
+    <interface>
+      <name>GET /api/v1/prompts/{id}/versions/{version_id}</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/prompts/{id}/versions/{version_id}</signature>
+      <path>src/api/prompts.py (backend endpoint - already exists)</path>
+      <returns>PromptVersion with { id, template_id, version_number, template_text, created_by, created_at, description? }</returns>
+    </interface>
+    <interface>
+      <name>POST /api/v1/prompts/{id}/versions/{version_id}/revert</name>
+      <kind>REST endpoint</kind>
+      <signature>POST /api/v1/prompts/{id}/versions/{version_id}/revert</signature>
+      <path>src/api/prompts.py (backend endpoint - already exists)</path>
+      <behavior>Creates new version with content from selected old version. Auto-generates description: "Reverted to v{N}". Returns new version object.</behavior>
+      <returns>PromptVersion (newly created version)</returns>
+    </interface>
+    <interface>
+      <name>usePromptVersions</name>
+      <kind>React Query hook</kind>
+      <signature>usePromptVersions(id: string, options: { page: number, limit: number, search?: string, from?: Date, to?: Date })</signature>
+      <path>nextjs-ui/lib/hooks/usePrompts.ts (needs enhancement for pagination/filters)</path>
+      <returns>UseQueryResult&lt;PaginatedResponse&lt;PromptVersion&gt;&gt;</returns>
+    </interface>
+    <interface>
+      <name>useRevertPromptVersion</name>
+      <kind>React Query mutation hook</kind>
+      <signature>useRevertPromptVersion()</signature>
+      <path>nextjs-ui/lib/hooks/usePrompts.ts (new hook to create)</path>
+      <returns>UseMutationResult with mutate function for revert action</returns>
+    </interface>
+    <interface>
+      <name>PromptVersion</name>
+      <kind>TypeScript interface</kind>
+      <signature>interface PromptVersion { id: string; template_id: string; version_number: number; template_text: string; created_by: string; created_at: string; description?: string; }</signature>
+      <path>nextjs-ui/lib/api/prompts.ts (already exists)</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>Test framework: Jest + React Testing Library for unit/component tests, Playwright for E2E tests. Coverage target: 80%+ for new code. Test naming: ComponentName.test.tsx for unit tests, feature-name.spec.ts for E2E. All tests in __tests__/ directory mirroring source structure or co-located with components. Use MSW (Mock Service Worker) for API mocking. Accessibility tests: keyboard navigation, screen reader compatibility (NVDA/VoiceOver). Error scenario testing: 404, 500, network offline, timeout.</standards>
+    <locations>
+      nextjs-ui/__tests__/components/prompts/VersionHistoryTab.test.tsx
+      nextjs-ui/__tests__/components/prompts/VersionDiffModal.test.tsx
+      nextjs-ui/__tests__/components/prompts/RevertConfirmDialog.test.tsx
+      nextjs-ui/__tests__/lib/hooks/usePromptVersions.test.ts
+      nextjs-ui/__tests__/lib/hooks/useRevertPromptVersion.test.ts
+      nextjs-ui/e2e/prompts-version-history.spec.ts
+    </locations>
+    <ideas>
+      <test ac="AC-1">
+        <description>Version list displays correctly with pagination</description>
+        <cases>- Renders version table with all columns (Version, Saved, Description, Characters, Actions) - Displays versions in reverse chronological order (newest first) - Shows pagination controls when > 20 versions - Empty state displays for new prompts with no versions - Loading skeleton shows during initial fetch</cases>
+      </test>
+      <test ac="AC-2">
+        <description>View version modal shows diff comparison</description>
+        <cases>- Modal opens when View button clicked - Displays version metadata (number, date, character count) - Shows side-by-side diff with current version - Highlights additions (green), deletions (red), modifications (yellow) - ESC key closes modal - X button closes modal - Focus trap works correctly</cases>
+      </test>
+      <test ac="AC-3">
+        <description>Revert version with confirmation</description>
+        <cases>- Confirmation dialog opens when Revert clicked - Displays warning message and version info - Cancel button closes dialog without action - Confirm button triggers revert API call - Success shows toast and refreshes version list - Error shows toast and keeps dialog open for retry - Loading state shows during revert operation - Editor updates with reverted content</cases>
+      </test>
+      <test ac="AC-4">
+        <description>Search and filter functionality</description>
+        <cases>- Search input filters by description (debounced 500ms) - Date range filter works (From/To dates) - Clear Filters resets all filters - Filtered count displays correctly - No results shows empty state message - Filters persist across pagination</cases>
+      </test>
+      <test ac="AC-5">
+        <description>Pagination controls</description>
+        <cases>- Previous button disabled on first page - Next button disabled on last page - Page indicator shows "Page X of Y" - Total count displays - Clicking Next/Previous loads correct page - Loading state shows during page change</cases>
+      </test>
+      <test ac="AC-7">
+        <description>Responsive layout</description>
+        <cases>- Desktop (≥1024px) shows full table layout - Tablet (768-1023px) hides description column - Mobile (<768px) switches to card layout - Breakpoint transitions work smoothly</cases>
+      </test>
+      <test ac="AC-8">
+        <description>Loading and error states</description>
+        <cases>- Initial load shows skeleton - Page change shows spinner - Revert button shows "Reverting..." - Fetch error shows "Failed to load" with Retry - Network timeout shows timeout message - Retry button refetches data</cases>
+      </test>
+      <test ac="AC-10">
+        <description>Keyboard accessibility</description>
+        <cases>- Tab key navigates all interactive elements - Enter activates buttons - Space toggles checkboxes - Escape closes modals/dialogs - All elements have ARIA labels - Focus indicators visible - Screen reader announces content correctly</cases>
+      </test>
+      <test type="integration">
+        <description>Full workflow E2E test</description>
+        <cases>- User navigates to Prompts page - Opens prompt editor - Clicks Version History tab - Views list of versions - Clicks View on a version (modal opens with diff) - Closes modal - Clicks Revert on a version (confirmation dialog) - Confirms revert - Version list refreshes - Editor updates with old content - Success toast displays</cases>
+      </test>
+    </ideas>
+  </tests>
+</story-context>

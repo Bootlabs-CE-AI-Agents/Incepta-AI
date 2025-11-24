@@ -14,7 +14,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ArrowUpDown, Search, Filter, FileText, RotateCw } from 'lucide-react';
+import { ArrowUpDown, Search, Filter, FileText, RotateCw, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -22,6 +22,9 @@ import { Badge } from '@/components/ui/Badge';
 import { formatUptime, getCPUMemoryColor } from '@/lib/utils/workers';
 import type { WorkerStatus, WorkerStatusEnum } from '@/lib/api/workers';
 import { useDebounce } from '@/lib/hooks/useDebounce';
+import { useWorkerMetrics } from '@/lib/hooks/useWorkers';
+import { WorkerPerformanceCharts } from './WorkerPerformanceCharts';
+import { WorkerConfigDetails } from './WorkerConfigDetails';
 
 export interface WorkersTableProps {
   /** Array of workers to display */
@@ -68,6 +71,9 @@ export function WorkersTable({ workers, loading = false, onViewLogs, onRestart }
   // Debounced search (AC-4: 300ms)
   const debouncedSearch = useDebounce(searchQuery, 300);
 
+  // Expandable row state (Story 21 AC-1, AC-6, AC-7)
+  const [expandedWorker, setExpandedWorker] = useState<string | null>(null);
+
   /**
    * Handle column sort toggle (AC-4)
    */
@@ -79,6 +85,19 @@ export function WorkersTable({ workers, loading = false, onViewLogs, onRestart }
       setSortDirection('asc');
     }
   };
+
+  /**
+   * Handle row click to expand/collapse worker details (Story 21 AC-1, AC-6, AC-7)
+   */
+  const handleRowClick = (hostname: string) => {
+    setExpandedWorker((prev) => (prev === hostname ? null : hostname));
+  };
+
+  // Fetch worker metrics for expanded row (Story 21 AC-5)
+  const { data: workerMetrics, isLoading: metricsLoading, error: metricsError } = useWorkerMetrics(
+    expandedWorker,
+    !!expandedWorker
+  );
 
   /**
    * Filter and sort workers (AC-4)
@@ -223,6 +242,17 @@ export function WorkersTable({ workers, loading = false, onViewLogs, onRestart }
                   </div>
                 </th>
 
+                {/* Completed Tasks Column */}
+                <th
+                  className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted/70"
+                  onClick={() => handleSort('completed_tasks')}
+                >
+                  <div className="flex items-center justify-end gap-2">
+                    Completed Tasks
+                    <ArrowUpDown className="h-3 w-3" />
+                  </div>
+                </th>
+
                 {/* CPU % Column */}
                 <th
                   className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider cursor-pointer hover:bg-muted/70"
@@ -266,69 +296,157 @@ export function WorkersTable({ workers, loading = false, onViewLogs, onRestart }
             <tbody className="divide-y divide-border">
               {filteredAndSortedWorkers.map((worker) => {
                 const statusBadge = getStatusBadge(worker.status);
+                const isExpanded = expandedWorker === worker.hostname;
 
                 return (
-                  <tr key={worker.hostname} className="hover:bg-muted/30 transition-colors">
-                    {/* Hostname */}
-                    <td className="px-4 py-3 text-sm font-medium text-foreground">
-                      {worker.hostname}
-                    </td>
+                  <React.Fragment key={worker.hostname}>
+                    {/* Main Row */}
+                    <tr
+                      onClick={() => handleRowClick(worker.hostname)}
+                      className={`cursor-pointer transition-colors ${
+                        isExpanded ? 'bg-muted/50' : 'hover:bg-muted/30'
+                      }`}
+                    >
+                      {/* Hostname */}
+                      <td className="px-4 py-3 text-sm font-medium text-foreground">
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          {worker.hostname}
+                        </div>
+                      </td>
 
-                    {/* Status Badge (AC-3) */}
-                    <td className="px-4 py-3 text-sm">
-                      <Badge className={statusBadge.className}>
-                        {statusBadge.icon && <span className="mr-1">{statusBadge.icon}</span>}
-                        {worker.status.toUpperCase()}
-                      </Badge>
-                    </td>
+                      {/* Status Badge (AC-3) */}
+                      <td className="px-4 py-3 text-sm">
+                        <Badge className={statusBadge.className}>
+                          {statusBadge.icon && <span className="mr-1">{statusBadge.icon}</span>}
+                          {worker.status.toUpperCase()}
+                        </Badge>
+                      </td>
 
-                    {/* Uptime (AC-3: formatted) */}
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {formatUptime(worker.uptime_seconds)}
-                    </td>
+                      {/* Uptime (AC-3: formatted) */}
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        {formatUptime(worker.uptime_seconds)}
+                      </td>
 
-                    {/* Active Tasks */}
-                    <td className="px-4 py-3 text-sm text-right font-mono">
-                      {worker.active_tasks}
-                    </td>
+                      {/* Active Tasks */}
+                      <td className="px-4 py-3 text-sm text-right font-mono">
+                        {worker.active_tasks}
+                      </td>
 
-                    {/* CPU % (AC-3: color-coded) */}
-                    <td className={`px-4 py-3 text-sm text-right font-mono ${getCPUMemoryColor(worker.cpu_percent)}`}>
-                      {worker.cpu_percent.toFixed(1)}%
-                    </td>
+                      {/* Completed Tasks */}
+                      <td className="px-4 py-3 text-sm text-right font-mono text-muted-foreground">
+                        {worker.completed_tasks.toLocaleString()}
+                      </td>
 
-                    {/* Memory % (AC-3: color-coded) */}
-                    <td className={`px-4 py-3 text-sm text-right font-mono ${getCPUMemoryColor(worker.memory_percent)}`}>
-                      {worker.memory_percent.toFixed(1)}%
-                    </td>
+                      {/* CPU % (AC-3: color-coded with alert) */}
+                      <td className={`px-4 py-3 text-sm text-right font-mono ${getCPUMemoryColor(worker.cpu_percent)}`}>
+                        <div className="flex items-center justify-end gap-1">
+                          {worker.cpu_percent.toFixed(1)}%
+                          {worker.cpu_percent > 80 && (
+                            <span title="High CPU usage">
+                              <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" aria-label="High CPU usage" />
+                            </span>
+                          )}
+                        </div>
+                      </td>
 
-                    {/* Throughput (AC-3: 1 decimal) */}
-                    <td className="px-4 py-3 text-sm text-right font-mono">
-                      {worker.throughput_per_minute.toFixed(1)}
-                    </td>
+                      {/* Memory % (AC-3: color-coded) */}
+                      <td className={`px-4 py-3 text-sm text-right font-mono ${getCPUMemoryColor(worker.memory_percent)}`}>
+                        {worker.memory_percent.toFixed(1)}%
+                      </td>
 
-                    {/* Actions (AC-4) */}
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onViewLogs(worker.hostname)}
-                          aria-label={`View logs for ${worker.hostname}`}
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onRestart(worker.hostname)}
-                          aria-label={`Restart ${worker.hostname}`}
-                        >
-                          <RotateCw className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+                      {/* Throughput (AC-3: 1 decimal) */}
+                      <td className="px-4 py-3 text-sm text-right font-mono">
+                        {worker.throughput_per_minute.toFixed(1)}
+                      </td>
+
+                      {/* Actions (AC-4) */}
+                      <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onViewLogs(worker.hostname)}
+                            aria-label={`View logs for ${worker.hostname}`}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onRestart(worker.hostname)}
+                            aria-label={`Restart ${worker.hostname}`}
+                          >
+                            <RotateCw className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Expanded Section (Story 21 AC-1, AC-2, AC-3, AC-4, AC-5) */}
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={9} className="bg-muted/20 px-8 py-6">
+                          <div className="space-y-6">
+                            {/* Collapse Button (AC-7) */}
+                            <div className="flex justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setExpandedWorker(null)}
+                                className="gap-2"
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                                Collapse
+                              </Button>
+                            </div>
+
+                            {/* Loading State */}
+                            {metricsLoading && (
+                              <div className="flex items-center justify-center py-12">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                <span className="ml-3 text-sm text-muted-foreground">Loading metrics...</span>
+                              </div>
+                            )}
+
+                            {/* Error State */}
+                            {metricsError && (
+                              <div className="flex items-center justify-center py-12">
+                                <div className="text-center">
+                                  <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-2" />
+                                  <p className="text-sm text-destructive">Failed to load metrics</p>
+                                  <p className="text-xs text-muted-foreground mt-1">{metricsError.message}</p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Worker Metrics - Performance Charts & Config (AC-2, AC-3, AC-4) */}
+                            {workerMetrics && !metricsLoading && !metricsError && (
+                              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Performance Charts (2/3 width on desktop) - AC-2, AC-3 */}
+                                <div className="lg:col-span-2">
+                                  <WorkerPerformanceCharts
+                                    cpuHistory={workerMetrics.cpu_history}
+                                    memoryHistory={workerMetrics.memory_history}
+                                    throughputHistory={workerMetrics.throughput_history}
+                                  />
+                                </div>
+
+                                {/* Worker Configuration (1/3 width on desktop) - AC-4 */}
+                                <div className="lg:col-span-1">
+                                  <WorkerConfigDetails config={workerMetrics.worker_config} />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>

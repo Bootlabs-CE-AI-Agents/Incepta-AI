@@ -26,6 +26,9 @@ from src.services.worker_metrics_helper import (
     parse_worker_logs,
     fetch_prometheus_current_metrics,
     fetch_prometheus_throughput_history,
+    fetch_prometheus_cpu_history,
+    fetch_prometheus_memory_history,
+    extract_worker_config,
 )
 from src.utils.logger import logger
 
@@ -146,10 +149,10 @@ class WorkerService:
         since: Optional[datetime] = None,
     ) -> List[LogEntryDTO]:
         """
-        Fetch logs from Kubernetes pod (AC-2).
+        Fetch logs from Docker container (modified for Docker Compose deployment).
 
         Args:
-            hostname: Worker hostname (Celery format: celery@pod-name)
+            hostname: Worker hostname (Celery format: celery@container-id or celery@hostname)
             lines: Number of log lines to fetch (max 1000)
             since: Optional timestamp filter
 
@@ -157,32 +160,46 @@ class WorkerService:
             List of structured log entries with timestamp, level, message, task_id
 
         Raises:
-            ValueError: If worker pod not found (handled in API layer → 404)
-            Exception: If K8s API fails (handled in API layer → 503)
+            ValueError: If worker container not found (handled in API layer → 404)
+            Exception: If Docker API fails (handled in API layer → 503)
         """
-        if not self.k8s_core_api:
-            raise Exception("Kubernetes API unavailable")
-
+        import subprocess
+        
         try:
-            # Extract pod name from Celery hostname (format: celery@pod-name)
-            pod_name = hostname.split("@")[-1] if "@" in hostname else hostname
-
-            # Fetch pod logs via K8s API
-            logs_raw = self.k8s_core_api.read_namespaced_pod_log(
-                name=pod_name,
-                namespace=self.k8s_namespace,
-                tail_lines=lines,
-                timestamps=True,
+            # Extract container identifier from Celery hostname (format: celery@container-id)
+            container_id = hostname.split("@")[-1] if "@" in hostname else hostname
+            
+            # For Docker Compose, the worker container is ai-agents-worker
+            # Try to get logs from the worker container
+            container_name = "ai-agents-worker"
+            
+            # Build docker logs command (no --timestamps flag per industry best practice)
+            # Application logs (Loguru/Celery) already include timestamps
+            cmd = ["docker", "logs", "--tail", str(lines), container_name]
+            
+            # Execute docker logs command
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
-
+            
+            if result.returncode != 0:
+                if "No such container" in result.stderr:
+                    raise ValueError(f"Worker {hostname} not found")
+                logger.error(f"Docker logs error for {hostname}: {result.stderr}")
+                raise Exception("Docker API error")
+            
             # Parse logs into structured format (AC-2: LogEntryDTO)
+            logs_raw = result.stdout
             return parse_worker_logs(logs_raw, since)
 
-        except ApiException as e:
-            if e.status == 404:
-                raise ValueError(f"Worker {hostname} not found")
-            logger.error(f"K8s API error fetching logs for {hostname}: {e}")
-            raise Exception("Kubernetes API error")
+        except subprocess.TimeoutExpired:
+            logger.error(f"Timeout fetching logs for {hostname}")
+            raise Exception("Docker logs timeout")
+        except ValueError:
+            raise  # Re-raise ValueError for 404 handling
         except Exception as e:
             logger.error(f"Error fetching logs for {hostname}: {e}")
             raise
@@ -235,13 +252,18 @@ class WorkerService:
 
     async def get_worker_metrics(self, hostname: str) -> WorkerMetricsDTO:
         """
-        Fetch detailed metrics from Prometheus + Celery (AC-4).
+        Fetch detailed metrics from Prometheus + Celery (AC-4, Story 21 extensions).
+
+        Story 21 extensions:
+        - cpu_history: 7-day hourly CPU% for dual-axis chart (AC-2)
+        - memory_history: 7-day hourly Memory% for dual-axis chart (AC-2)
+        - worker_config: OS, Python, Celery, queues, concurrency, pool (AC-4)
 
         Args:
             hostname: Worker hostname
 
         Returns:
-            WorkerMetricsDTO with current metrics, 7-day throughput history, metadata
+            WorkerMetricsDTO with current metrics, historical data, and config
 
         Raises:
             ValueError: If worker not found
@@ -256,7 +278,12 @@ class WorkerService:
         # Fetch 7-day throughput history (AC-4: hourly granularity)
         history = await fetch_prometheus_throughput_history(self.prometheus_url, hostname)
 
+        # Story 21: Fetch 7-day CPU/Memory history for dual-axis chart
+        cpu_history = await fetch_prometheus_cpu_history(self.prometheus_url, hostname)
+        memory_history = await fetch_prometheus_memory_history(self.prometheus_url, hostname)
+
         # Fetch metadata from Celery inspect (AC-4: versions, uptime)
+        worker_config = None
         try:
             if not self.celery_app:
                 raise ValueError(f"Worker {hostname} not found - Celery unavailable")
@@ -272,11 +299,15 @@ class WorkerService:
             python_version = worker_stats.get("software_version", "unknown")
             uptime_seconds = int(worker_stats.get("uptime", 0))
 
+            # Story 21: Extract worker config for AC-4
+            worker_config = extract_worker_config({hostname: worker_stats})
+
         except Exception as e:
             logger.warning(f"Celery metadata unavailable for {hostname}: {e}")
             celery_version = "unknown"
             python_version = "unknown"
             uptime_seconds = 0
+            # worker_config remains None (handled as optional in schema)
 
         return WorkerMetricsDTO(
             hostname=hostname,
@@ -285,6 +316,9 @@ class WorkerService:
             uptime_seconds=uptime_seconds,
             celery_version=celery_version,
             python_version=python_version,
+            cpu_history=cpu_history,  # Story 21
+            memory_history=memory_history,  # Story 21
+            worker_config=worker_config,  # Story 21
         )
 
 

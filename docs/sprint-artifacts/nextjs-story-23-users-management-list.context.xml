@@ -1,0 +1,244 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>23</storyId>
+    <title>Users Management Page - List & CRUD</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-23-users-management-list.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>super_admin or tenant_admin</asA>
+    <iWant>to view and manage users</iWant>
+    <soThat>I can control who has access to the system</soThat>
+    <tasks>
+      - Task 1: Create page structure and routing (AC-1)
+      - Task 2: Create useUsers() hook with pagination + filters (AC-1, AC-3, AC-4, AC-5)
+      - Task 3: Create UsersTable component with sorting (AC-1, AC-2)
+      - Task 4: Create search input with debounce (AC-3)
+      - Task 5: Create filter dropdowns (AC-4)
+      - Task 6: Create action buttons (AC-7)
+      - Task 7: Create "Create User" button (AC-1)
+      - Task 8: Implement pagination controls (AC-5)
+      - Task 9: Implement RBAC enforcement (AC-6)
+      - Task 10: Add loading, error, and empty states (AC-8)
+      - Task 11: Implement responsive layout (AC-9)
+      - Task 12: Write unit tests for components and hooks
+      - Task 13: Accessibility testing (AC-10)
+      - Task 14: Performance testing (AC-10)
+      - Task 15: Integration testing
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-1: Users Table Display - Display users table with 7 columns (Email, Default Tenant, Roles, Status, Last Login, Created, Actions), search input, filters (Status/Role/Tenant), pagination (20/page), "Create User" button
+    AC-2: Table Sorting and Interaction - Click column headers to sort (asc/desc), click row to view details (/dashboard/users/{userId}), sort indicators (arrows)
+    AC-3: Search Functionality - Debounced search (300ms), case-insensitive email substring match, preserved in URL query params, clear button, combined with filters
+    AC-4: Filtering - Status (All/Active/Inactive), Role (All/super_admin/tenant_admin/developer/operator/viewer), Tenant (All/tenant names from GET /api/tenants), AND logic, URL query params, "Clear all filters" button
+    AC-5: Pagination - 20 users/page, Previous/Next buttons, page indicator ("Page X of Y"), total count ("Showing 1-20 of N users"), URL query params, reset to page 1 on filter/search change
+    AC-6: RBAC Enforcement - super_admin sees all users (no tenant_id filter), tenant_admin scoped to their tenant (tenant_id=default_tenant_id), developer/operator/viewer redirect to /dashboard with 403
+    AC-7: Action Buttons - Edit (navigate to /dashboard/users/{userId}/edit, Story 3.3 scope), Reset Password (confirmation dialog → POST /api/users/{id}/reset-password → temp password toast), Deactivate (confirmation → PUT /api/users/{id} is_active=false → toast → refetch), Activate (PUT /api/users/{id} is_active=true → toast → refetch), disabled for own account/last super_admin/users outside tenant
+    AC-8: Loading, Error, and Empty States - Skeleton loader (shimmer), error state with Retry button, empty state ("No users found. Create your first user..."), no search results state
+    AC-9: Responsive Layout - Desktop (≥1024px): full table 7 columns, Tablet (768-1023px): full table stacked filters, Mobile (&lt;768px): card layout (email + status + actions), expandable details
+    AC-10: Performance and Accessibility - Initial load &lt;2s, search debounce, React Query caching (staleTime 60s, refetchOnWindowFocus false), optimistic UI updates, WCAG 2.1 AA (keyboard nav, screen reader, ARIA labels, focus indicators, contrast ≥4.5:1)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <artifact>
+        <path>docs/nextjs-ui-migration-tech-spec-v2.md</path>
+        <title>Next.js UI Migration Technical Specification v2.0</title>
+        <section>0. Pre-Implementation Requirements, Design System</section>
+        <snippet>Defines Next.js 14 App Router architecture, shadcn/ui component library, React Query v5 patterns, URL state management (useSearchParams), optimistic UI updates, design tokens (Apple Liquid Glass), responsive breakpoints (mobile &lt;768px, tablet 768-1023px, desktop ≥1024px)</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/architecture.md</path>
+        <title>AI Agents - Decision Architecture</title>
+        <section>Technology Stack Details</section>
+        <snippet>Backend: FastAPI 0.104+, PostgreSQL 17 with row-level security for multi-tenancy, Redis 7.x caching, Celery 5.x task queue. Frontend (Epic 6 → Next.js): React Query v5 for data fetching, Zod for validation, TypeScript strict mode, Testing with Pytest + Jest + Playwright</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/sprint-artifacts/nextjs-story-22-users-api-crud.md</path>
+        <title>Story 22: Users API - Full CRUD Endpoints (Backend, done)</title>
+        <section>Acceptance Criteria AC-1 to AC-5</section>
+        <snippet>Backend APIs available: GET /api/v1/users (list with pagination tenant_id/is_active/role filters, tenant scoping), POST /api/v1/users (create with password validation), PUT /api/v1/users/{id} (update with last super_admin protection), DELETE /api/v1/users/{id} (soft delete), POST /api/v1/users/{id}/reset-password (temp password generation). Response DTOs: PaginatedUsersResponse with items/total/limit/offset, UserDetailDTO with roles array (role/tenant_id/tenant_name), last_login timestamp, force_password_change flag.</snippet>
+      </artifact>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>nextjs-ui/lib/hooks/useWorkers.ts</path>
+        <kind>hook</kind>
+        <symbol>useWorkers</symbol>
+        <lines>35-44</lines>
+        <reason>React Query v5 pattern template for useUsers hook - shows staleTime 30s, refetchInterval 30s, refetchOnWindowFocus false, retry 3, query key factory pattern workerKeys.lists()</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/workers/WorkersTable.tsx</path>
+        <kind>component</kind>
+        <symbol>WorkersTable</symbol>
+        <lines>all</lines>
+        <reason>Table component pattern template for UsersTable - shows TanStack Table sorting, status badges (green/gray/red with icons), action buttons, responsive columns, keyboard navigation, ARIA labels</reason>
+      </artifact>
+      <artifact>
+        <path>src/api/users.py</path>
+        <kind>api</kind>
+        <symbol>list_users, update_user, reset_user_password</symbol>
+        <lines>all</lines>
+        <reason>Backend FastAPI endpoints (GET /api/v1/users with pagination/filtering, PUT /api/v1/users/{id} for deactivate/activate, POST /api/v1/users/{id}/reset-password for temp password generation). Implements RBAC with require_admin_role dependency, tenant scoping logic (super_admin no filter, tenant_admin scoped to default_tenant_id), last super_admin protection, audit logging</reason>
+      </artifact>
+      <artifact>
+        <path>src/schemas/user.py</path>
+        <kind>schema</kind>
+        <symbol>UserDetailDTO, PaginatedUsersResponse, UserUpdateDTO, PasswordResetResponseDTO</symbol>
+        <lines>all</lines>
+        <reason>Pydantic DTOs for API requests/responses. UserDetailDTO includes roles array (UserRoleDetailDTO with role/tenant_id/tenant_name), last_login, force_password_change. PaginatedUsersResponse matches backend pagination format. Password validation helper (validate_password) with 5 rules (min 8 chars, uppercase, lowercase, number, special char)</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/api/workers.ts</path>
+        <kind>api-client</kind>
+        <symbol>listWorkers, restartWorker</symbol>
+        <lines>all</lines>
+        <reason>API client pattern template for users.ts - shows axios instance with baseURL env variable, Authorization header from session, error handling, TypeScript types, query params URLSearchParams construction</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package>next</package>
+        <version>14.2.15</version>
+        <usage>Next.js 14 App Router framework (Server Components, Client Components with 'use client', useSearchParams, router.push, getServerSession)</usage>
+      </node>
+      <node>
+        <package>@tanstack/react-query</package>
+        <version>^5.62.2</version>
+        <usage>Data fetching and caching (useQuery for GET requests, useMutation for PUT/POST/DELETE, query key factory pattern, staleTime/refetchInterval/retry config)</usage>
+      </node>
+      <node>
+        <package>@tanstack/react-table</package>
+        <version>^8.21.3</version>
+        <usage>Table sorting and pagination (getSortedRowModel, getPaginationRowModel, column sorting state, sort toggle handlers)</usage>
+      </node>
+      <node>
+        <package>@headlessui/react</package>
+        <version>^2.2.9</version>
+        <usage>Accessible UI components (Dialog for confirmations, Listbox for dropdowns, used in shadcn/ui primitives)</usage>
+      </node>
+      <node>
+        <package>next-auth</package>
+        <version>^4.24.13</version>
+        <usage>Authentication (getServerSession for server-side auth checks, useSession for client-side session, JWT token access for API calls)</usage>
+      </node>
+      <node>
+        <package>date-fns</package>
+        <version>^3.6.0</version>
+        <usage>Date formatting (formatDistanceToNow for "2 hours ago", format for "Nov 24, 2025")</usage>
+      </node>
+      <node>
+        <package>axios</package>
+        <version>^1.7.9</version>
+        <usage>HTTP client for backend API calls (GET /api/v1/users, PUT /api/v1/users/{id}, POST /api/v1/users/{id}/reset-password)</usage>
+      </node>
+      <node>
+        <package>lucide-react</package>
+        <version>^0.462.0</version>
+        <usage>Icons (Search, Plus, ChevronUp, ChevronDown, X, MoreHorizontal, Edit, RefreshCw, UserX, UserCheck)</usage>
+      </node>
+      <node>
+        <package>sonner</package>
+        <version>^2.0.7</version>
+        <usage>Toast notifications (success/error messages for deactivate/activate/reset password actions)</usage>
+      </node>
+      <node>
+        <package>zod</package>
+        <version>^4.1.12</version>
+        <usage>TypeScript-first schema validation (form validation, API response validation)</usage>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - File size limit: 500 lines per file (split large components into subcomponents)
+    - Use Next.js 14 App Router: Server Components by default, 'use client' for interactivity (useState, useQuery)
+    - TypeScript strict mode: All files must pass tsc --noEmit with strict: true
+    - shadcn/ui components only: No custom Tailwind classes for standard components (use Table, Select, Input, Button, Badge, Dialog)
+    - RBAC enforcement: Redirect non-admin users to /dashboard with 403 message, tenant_admin auto-scoped to default_tenant_id
+    - URL state management: Preserve search/filters/pagination in query params (e.g., /dashboard/users?search=john&status=active&page=2)
+    - React Query v5 patterns: Query key factory (userKeys.all, userKeys.lists), staleTime 60s, refetchOnWindowFocus false, retry 3
+    - Optimistic UI updates: Use onMutate/onError/onSettled for deactivate/activate actions (snapshot → optimistic update → rollback on error → invalidate)
+    - Accessibility WCAG 2.1 AA: Keyboard navigation (Tab, Enter, Escape), screen reader ARIA labels, focus indicators visible, contrast ≥4.5:1
+    - Test coverage ≥80%: Unit tests (Jest + RTL) for hooks/components, integration tests (Playwright) for full workflows
+    - Performance targets: Initial load &lt;2s, search debounce 300ms, no excessive API calls (React Query caching)
+    - Responsive design: Mobile &lt;768px (card layout), Tablet 768-1023px (stacked filters), Desktop ≥1024px (full table)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>GET /api/v1/users</name>
+      <kind>REST endpoint</kind>
+      <signature>GET /api/v1/users?tenant_id={uuid}&is_active={bool}&role={string}&limit={int}&offset={int}</signature>
+      <path>src/api/users.py:list_users</path>
+      <notes>Returns PaginatedUsersResponse with items (array of UserDetailDTO), total, limit, offset. Tenant scoping: super_admin no filter, tenant_admin auto-scoped to default_tenant_id. Requires Authorization: Bearer {jwt_token} header.</notes>
+    </interface>
+    <interface>
+      <name>PUT /api/v1/users/{id}</name>
+      <kind>REST endpoint</kind>
+      <signature>PUT /api/v1/users/{id} {is_active, email, default_tenant_id}</signature>
+      <path>src/api/users.py:update_user</path>
+      <notes>Updates user fields. Used for deactivate (is_active=false) and activate (is_active=true). Returns updated UserDetailDTO. Protects last active super_admin (400 error if trying to deactivate). Audit logging included.</notes>
+    </interface>
+    <interface>
+      <name>POST /api/v1/users/{id}/reset-password</name>
+      <kind>REST endpoint</kind>
+      <signature>POST /api/v1/users/{id}/reset-password {}</signature>
+      <path>src/api/users.py:reset_user_password</path>
+      <notes>Generates 16-char temp password (1 upper, 1 lower, 1 digit, 1 special). Sets force_password_change=True. Returns PasswordResetResponseDTO with temporary_password and message. Sends email via Celery asynchronously. Frontend should display temp password in toast/dialog for manual copy.</notes>
+    </interface>
+    <interface>
+      <name>PaginatedUsersResponse</name>
+      <kind>TypeScript interface</kind>
+      <signature>{ items: UserDetailDTO[], total: number, limit: number, offset: number }</signature>
+      <path>nextjs-ui/lib/api/users.ts</path>
+      <notes>Frontend TypeScript interface matching backend Pydantic schema. items is array of users, total is count for pagination calculation (totalPages = Math.ceil(total / limit)).</notes>
+    </interface>
+    <interface>
+      <name>UserDetailDTO</name>
+      <kind>TypeScript interface</kind>
+      <signature>{ id: string, email: string, is_active: boolean, default_tenant_id: string, default_tenant_name: string, roles: UserRoleDetailDTO[], last_login: string | null, created_at: string, updated_at: string }</signature>
+      <path>nextjs-ui/lib/api/users.ts</path>
+      <notes>User detail object. roles is array of {role: RoleEnum, tenant_id: string, tenant_name: string}. last_login is ISO 8601 string or null for "Never". Format last_login with date-fns formatDistanceToNow(), created_at with format(date, 'MMM dd, yyyy').</notes>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest + React Testing Library for unit tests, Playwright for E2E integration tests.
+      Test files location: nextjs-ui/__tests__/users/ for components/hooks, nextjs-ui/e2e/users.spec.ts for integration.
+      Coverage target: 80%+ for hooks and components (measured with jest --coverage).
+      Patterns: Mock API calls with MSW (Mock Service Worker), use renderHook() from @testing-library/react for hooks, use render() + screen.getByRole() for components, use waitFor() for async assertions.
+      Accessibility: Include axe-core/playwright for automated a11y testing in E2E tests.
+    </standards>
+    <locations>
+      nextjs-ui/__tests__/users/page.test.tsx
+      nextjs-ui/__tests__/users/useUsers.test.ts
+      nextjs-ui/__tests__/users/UsersTable.test.tsx
+      nextjs-ui/__tests__/users/UserFilters.test.tsx
+      nextjs-ui/__tests__/users/UserActionButtons.test.tsx
+      nextjs-ui/e2e/users.spec.ts
+    </locations>
+    <ideas>
+      <test ac="AC-1" idea="Test useUsers hook fetches users with pagination (mocked API response, verify items.length, total, limit, offset)" />
+      <test ac="AC-2" idea="Test UsersTable sorting (click Email header → verify sort direction asc, click again → desc)" />
+      <test ac="AC-3" idea="Test search debounce (type 'john' → fast-forward 300ms with jest.useFakeTimers → verify API call with search=john)" />
+      <test ac="AC-4" idea="Test filter dropdown (select Status=Active → verify API call with is_active=true, check URL query param ?status=active)" />
+      <test ac="AC-5" idea="Test pagination (click Next → verify page 2, check URL ?page=2, verify API call with offset=20)" />
+      <test ac="AC-6" idea="Test RBAC redirect (mock session with role=developer → navigate to /dashboard/users → expect redirect to /dashboard)" />
+      <test ac="AC-7" idea="Test deactivate button (click Deactivate → confirm dialog → verify PUT /api/users/{id} with is_active=false → success toast → refetch)" />
+      <test ac="AC-8" idea="Test loading state (useUsers isLoading=true → expect skeleton rows visible)" />
+      <test ac="AC-9" idea="Test responsive layout (resize viewport to 500px → expect card layout, not table)" />
+      <test ac="AC-10" idea="E2E accessibility (run axe-core scan on /dashboard/users → expect 0 violations)" />
+    </ideas>
+  </tests>
+</story-context>

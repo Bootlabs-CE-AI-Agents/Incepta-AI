@@ -1,0 +1,326 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>32</storyId>
+    <title>Tenants Form - Complete Field Coverage</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-32-tenants-complete-fields.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>admin</asA>
+    <iWant>to create/edit tenants with all required backend fields</iWant>
+    <soThat>tenant configuration is complete, functional, and leverages all platform capabilities including BYOK, budget limits, and proper tool configuration</soThat>
+    <tasks>
+      - Task 1: Update Zod Validation Schema (AC: #9)
+      - Task 2: Update TypeScript Types (AC: #9)
+      - Task 3: Implement BYOK Configuration Section (AC: #1)
+      - Task 4: Implement Budget Configuration Section (AC: #2)
+      - Task 5: Enhance Tool Configuration Section (AC: #3)
+      - Task 6: Enhance Webhook Configuration Section (AC: #4)
+      - Task 7: Implement Enhancement Preferences Dual-Mode (AC: #5)
+      - Task 8: Add Is Active Toggle (AC: #6)
+      - Task 9: Verify Logo URL Preview (AC: #7)
+      - Task 10: Implement Form Layout with Accordions (AC: #8)
+      - Task 11: Update Form Submission Logic (AC: #9)
+      - Task 12: Implement Accessibility Features (AC: #10)
+      - Task 13: Write Unit Tests (AC: All)
+      - Task 14: Integration Testing (AC: #9)
+      - Task 15: Manual QA and Browser Testing (AC: #10)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-1: BYOK (Bring Your Own Key) Fields - BYOK Enabled toggle, conditional OpenAI/Anthropic API key inputs (masked), validation (at least one key if enabled, format checks sk-/sk-ant-)
+
+    AC-2: Budget Enforcement Fields - Max Budget ($0-$10,000, default $500), Alert Threshold (50-100%, default 80%), Grace Threshold (100-150%, default 110%), Budget Duration (30d/60d/90d), inter-field validation (grace > alert)
+
+    AC-3: ServiceDesk Plus vs Jira Tool Configuration - Tool Type dropdown (servicedesk_plus/jira/none), conditional field rendering (ServiceDesk URL/API Key when tool=servicedesk_plus, Jira URL/API Token/Project Key when tool=jira), HTTPS URL validation
+
+    AC-4: Webhook Signing Secret Field - Optional masked input, "Generate" button (crypto.randomBytes 32 bytes base64), temporary unmask for 3s, copy-to-clipboard, toast notification
+
+    AC-5: Enhancement Preferences as JSON Editor - Dual-mode (Simple Form default with 3 fields: max_enhancement_length/include_monitoring/kb_timeout_seconds, OR JSON Editor with CodeMirror), bidirectional conversion, mode toggle, session storage persistence
+
+    AC-6: Is Active Toggle - Default ON for new tenants, preserves state for edit, warning message when OFF ("⚠️ Deactivating this tenant will prevent all agent executions and API access")
+
+    AC-7: Logo URL with Preview - Optional input, live preview 100x100px with 500ms debounce, placeholder on invalid/failed load, supports PNG/JPG/SVG/WebP/base64 data URIs
+
+    AC-8: Form Layout and Organization - 6 collapsible Accordion sections (Basic Info expanded by default, others collapsed: Tool Config, Webhook Config, Enhancement Prefs, BYOK Config, Budget Config), mobile responsive (stack vertical, full width), desktop (max-width 800px, centered)
+
+    AC-9: Form Submission and Validation - Client-side Zod validation, inline errors, disabled submit during submission, loading spinner, POST /api/v1/tenants (create) or PUT /api/v1/tenants/{id} (update), success toast + navigate to /dashboard/tenants, error toast + highlight fields + keep data
+
+    AC-10: Responsive Layout and Accessibility - Mobile (<768px) single column full width, Tablet (768-1023px) single column max-width 700px, Desktop (≥1024px) single column max-width 800px, all inputs have labels (ARIA or visible), error messages role="alert" aria-live="polite", toggle switches aria-checked, collapsible sections aria-expanded, Enter submit, Tab navigation logical, focus states visible
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <item>
+        <path>docs/epics-nextjs-ui-migration.md</path>
+        <title>Next.js UI Migration Epic</title>
+        <section>Epic Overview & Authentication Foundation</section>
+        <snippet>Migration from Streamlit to Next.js 14 with Apple Liquid Glass design and RBAC. Includes database models (User, UserTenantRole, AuthAuditLog, AuditLog), JWT authentication, role-based access (super_admin, tenant_admin, operator, developer, viewer), multi-tenant context switching with tenant switcher.</snippet>
+      </item>
+      <item>
+        <path>docs/sprint-artifacts/nextjs-story-32-tenants-complete-fields.md</path>
+        <title>Story 32: Tenants Form - Complete Field Coverage</title>
+        <section>Full Story Specification</section>
+        <snippet>Complete specification with 10 acceptance criteria covering BYOK fields, budget configuration, tool selection (ServiceDesk/Jira), webhook secrets, enhancement preferences dual-mode editor, is_active toggle, logo preview, accordion layout, form submission, and accessibility requirements. Includes 15 tasks with 73 subtasks.</snippet>
+      </item>
+      <item>
+        <path>docs/sprint-artifacts/nextjs-story-31-tools-test-connection.md</path>
+        <title>Story 31: Tools Test Connection (Reference)</title>
+        <section>Learnings Section</section>
+        <snippet>Pattern established for loading/error states, success/error panels, collapsible sections, troubleshooting tips. Testing approach: 61/62 tests passing (98.4%), comprehensive error handling. Accessibility: ARIA labels, keyboard navigation, responsive layout. Code quality: TypeScript strict mode, shadcn/ui components, React Query hooks.</snippet>
+      </item>
+    </docs>
+
+    <code>
+      <item>
+        <path>nextjs-ui/components/tenants/TenantForm.tsx</path>
+        <kind>component</kind>
+        <symbol>TenantForm</symbol>
+        <lines>1-100</lines>
+        <reason>Existing tenant form component using React Hook Form + Zod validation. Currently has basic fields (tenant_id, name, description, logo, tool_type with conditional ServiceDesk/Jira fields, webhook_signing_secret, enhancement_preferences as simple form). Missing: BYOK fields, budget fields, is_active toggle, accordion layout, JSON editor mode for enhancement_preferences.</reason>
+      </item>
+      <item>
+        <path>nextjs-ui/lib/validations/tenants.ts</path>
+        <kind>schema</kind>
+        <symbol>tenantCreateSchema</symbol>
+        <lines>unknown</lines>
+        <reason>Zod validation schema for TenantFormData. Needs extension with: BYOK fields (byok_enabled boolean, byok_openai_key/byok_anthropic_key with conditional validation), budget fields (max_budget float 0-10000, alert_threshold int 50-100, grace_threshold int 100-150 with grace>alert validation, budget_duration enum 30d/60d/90d), is_active boolean default true.</reason>
+      </item>
+      <item>
+        <path>nextjs-ui/lib/api/tenants.ts</path>
+        <kind>api-client</kind>
+        <symbol>Tenant interface, createTenant/updateTenant</symbol>
+        <lines>unknown</lines>
+        <reason>TypeScript interfaces and API client functions for tenant CRUD operations. Needs Tenant interface update to match all backend TenantConfig fields. API calls (POST /api/v1/tenants, PUT /api/v1/tenants/{id}) need to include all new fields in request payload.</reason>
+      </item>
+      <item>
+        <path>src/database/models.py</path>
+        <kind>model</kind>
+        <symbol>TenantConfig class</symbol>
+        <lines>38-248</lines>
+        <reason>Backend database model with all fields that need UI support. BYOK fields (byok_enabled bool default False, byok_openai_key_encrypted text nullable, byok_anthropic_key_encrypted text nullable, byok_virtual_key text nullable, byok_enabled_at datetime nullable). Budget fields (max_budget float default 500.00 range 0-10000, alert_threshold int default 80 range 50-100, grace_threshold int default 110 range 100-150, budget_duration str default "30d" options 30d/60d/90d, budget_reset_at datetime, litellm_key_last_reset datetime nullable). Tool config (tool_type str default "servicedesk_plus" options servicedesk_plus/jira/none, servicedesk_url/servicedesk_api_key_encrypted required if tool=servicedesk_plus, jira_url/jira_api_token_encrypted/jira_project_key required if tool=jira). Other (is_active bool default True, enhancement_preferences dict JSON, webhook_signing_secret_encrypted text optional, logo text URL/base64).</reason>
+      </item>
+      <item>
+        <path>src/api/tenants.py</path>
+        <kind>api-endpoint</kind>
+        <symbol>POST /api/v1/tenants, PUT /api/v1/tenants/{id}</symbol>
+        <lines>unknown</lines>
+        <reason>FastAPI endpoints for tenant create/update. Backend accepts all fields from TenantConfig model. Frontend form submission must match backend Pydantic schemas in src/schemas/tenant.py.</reason>
+      </item>
+      <item>
+        <path>src/services/tenant_service.py</path>
+        <kind>service</kind>
+        <symbol>create_tenant, update_tenant</symbol>
+        <lines>unknown</lines>
+        <reason>Service layer functions for tenant CRUD with encryption logic for sensitive fields (API keys, secrets). Frontend sends plaintext keys, backend encrypts using Fernet before database storage.</reason>
+      </item>
+      <item>
+        <path>nextjs-ui/components/ui/Accordion.tsx</path>
+        <kind>component</kind>
+        <symbol>Accordion (shadcn/ui)</symbol>
+        <lines>unknown</lines>
+        <reason>shadcn/ui Accordion component for collapsible form sections. Used to organize 6 sections in AC-8. Set defaultValue={["basic"]} to expand Basic Information by default.</reason>
+      </item>
+      <item>
+        <path>nextjs-ui/components/ui/Switch.tsx</path>
+        <kind>component</kind>
+        <symbol>Switch (shadcn/ui)</symbol>
+        <lines>unknown</lines>
+        <reason>shadcn/ui Switch component for toggle inputs (BYOK Enabled, Include Monitoring, Is Active). Has built-in aria-checked attribute.</reason>
+      </item>
+    </code>
+
+    <dependencies>
+      <framework>Next.js 14.2.15</framework>
+      <framework>React 18.3.1</framework>
+      <framework>TypeScript 5.6.3</framework>
+      <library>react-hook-form v7.66.1 - Form state management</library>
+      <library>@hookform/resolvers v5.2.2 - Zod resolver integration</library>
+      <library>zod v4.1.12 - Schema validation</library>
+      <library>@headlessui/react v2.2.9 - Headless UI components</library>
+      <library>@tanstack/react-query v5.62.2 - Data fetching and caching</library>
+      <library>axios v1.7.9 - HTTP client</library>
+      <library>next-auth v4.24.13 - Auth.js authentication</library>
+      <library>tailwindcss v3.4.14 - Utility-first CSS</library>
+      <library>lucide-react v0.462.0 - Icon library</library>
+      <library>sonner v2.0.7 - Toast notifications</library>
+      <library>@uiw/react-codemirror v4.25.3 - CodeMirror editor for JSON mode (ALREADY INSTALLED)</library>
+      <library>@codemirror/lang-json (NEEDS INSTALL) - JSON syntax highlighting for CodeMirror</library>
+      <library>clsx v2.1.1 - Conditional className utility</library>
+      <library>date-fns v3.6.0 - Date formatting utilities</library>
+      <shadcn-ui>Accordion, Switch, Input, Textarea, Select, Button, Alert, Form components</shadcn-ui>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    C1: All sensitive fields (API keys, secrets) must use password input type (type="password") for security
+    C2: BYOK API keys must be validated client-side (OpenAI starts with "sk-", Anthropic starts with "sk-ant-") before submission
+    C3: Budget thresholds must enforce inter-field validation (grace_threshold > alert_threshold)
+    C4: Tool configuration fields must use conditional rendering based on tool_type watch value (ServiceDesk fields shown only when tool_type='servicedesk_plus', Jira fields only when tool_type='jira', webhook secret always shown)
+    C5: Enhancement preferences must support bidirectional conversion between simple form and JSON editor modes without data loss
+    C6: Form must use shadcn/ui Accordion component for collapsible sections with "Basic Information" expanded by default
+    C7: All form fields must have associated labels (visible or ARIA) and error messages must have role="alert" and aria-live="polite" for accessibility
+    C8: Form submission must prevent double-submit using React Hook Form's isSubmitting state
+    C9: Logo preview must debounce updates by 500ms to prevent excessive re-renders during typing
+    C10: Generated webhook secrets must use cryptographically secure randomness (crypto.randomBytes or crypto.getRandomValues) with 32 bytes base64-encoded
+    C11: Is Active toggle warning must be visible immediately when toggled to false (no confirmation required, just informational warning)
+    C12: JSON editor mode choice must persist in sessionStorage to maintain user preference across form reloads
+    C13: Currency formatting for max_budget must use pattern: $${value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')} to display as "$1,234.56"
+    C14: All URL fields (servicedesk_url, jira_url) must validate HTTPS protocol (not HTTP)
+    C15: Form must preserve all data on backend error (don't clear) and map backend field-level errors to form fields using form.setError()
+  </constraints>
+
+  <interfaces>
+    <item>
+      <name>TenantFormData</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface TenantFormData {
+  tenant_id: string;
+  name: string;
+  description?: string;
+  logo?: string;
+  tool_type: 'servicedesk_plus' | 'jira' | 'none';
+  servicedesk_url?: string;
+  servicedesk_api_key?: string;
+  jira_url?: string;
+  jira_api_token?: string;
+  jira_project_key?: string;
+  webhook_signing_secret?: string;
+  enhancement_preferences: {
+    max_enhancement_length: number;
+    include_monitoring: boolean;
+    kb_timeout_seconds: number;
+  };
+  // NEW FIELDS TO ADD:
+  byok_enabled: boolean;
+  byok_openai_key?: string;
+  byok_anthropic_key?: string;
+  max_budget: number;
+  alert_threshold: number;
+  grace_threshold: number;
+  budget_duration: '30d' | '60d' | '90d';
+  is_active: boolean;
+}</signature>
+      <path>nextjs-ui/lib/validations/tenants.ts</path>
+    </item>
+    <item>
+      <name>tenantCreateSchema</name>
+      <kind>Zod Schema</kind>
+      <signature>const tenantCreateSchema = z.object({
+  tenant_id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  logo: z.string().url().optional(),
+  tool_type: z.enum(['servicedesk_plus', 'jira', 'none']),
+  // Conditional tool fields...
+  byok_enabled: z.boolean().default(false),
+  byok_openai_key: z.string().startsWith('sk-').optional(),
+  byok_anthropic_key: z.string().startsWith('sk-ant-').optional(),
+  max_budget: z.number().min(0).max(10000).default(500),
+  alert_threshold: z.number().int().min(50).max(100).default(80),
+  grace_threshold: z.number().int().min(100).max(150).default(110),
+  budget_duration: z.enum(['30d', '60d', '90d']).default('30d'),
+  is_active: z.boolean().default(true),
+  enhancement_preferences: z.object({...}),
+}).refine(
+  (data) => !data.byok_enabled || data.byok_openai_key || data.byok_anthropic_key,
+  { message: "At least one API key required when BYOK enabled" }
+).refine(
+  (data) => data.grace_threshold > data.alert_threshold,
+  { message: "Grace threshold must be greater than alert threshold" }
+);</signature>
+      <path>nextjs-ui/lib/validations/tenants.ts</path>
+    </item>
+    <item>
+      <name>POST /api/v1/tenants</name>
+      <kind>REST API Endpoint</kind>
+      <signature>POST /api/v1/tenants
+Content-Type: application/json
+Authorization: Bearer {jwt_token}
+
+Request Body: TenantFormData (all fields)
+Response 201: { id: UUID, tenant_id: string, name: string, ... }
+Response 400: { detail: string } or { field: "error message" }
+Response 403: { detail: "Forbidden" }
+Response 409: { detail: "Tenant ID already exists" }</signature>
+      <path>src/api/tenants.py</path>
+    </item>
+    <item>
+      <name>PUT /api/v1/tenants/{id}</name>
+      <kind>REST API Endpoint</kind>
+      <signature>PUT /api/v1/tenants/{id}
+Content-Type: application/json
+Authorization: Bearer {jwt_token}
+
+Request Body: TenantFormData (all fields, partial updates not supported)
+Response 200: { id: UUID, tenant_id: string, name: string, ... }
+Response 400: { detail: string } or { field: "error message" }
+Response 403: { detail: "Forbidden" }
+Response 404: { detail: "Tenant not found" }</signature>
+      <path>src/api/tenants.py</path>
+    </item>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Use Jest + React Testing Library for unit tests. Test Zod schema validation with valid/invalid data, conditional rendering (BYOK fields show/hide based on toggle, tool fields show/hide based on dropdown), form submission with mocked API calls, error handling and field-level error display. Minimum 80% code coverage for new components. Use Playwright for integration/E2E tests covering full create/edit flows with all fields filled, form validation error display, backend error handling. Manual QA checklist includes: accordion sections expand/collapse, logo preview with various image URLs, webhook secret generation and copy-to-clipboard, enhancement preferences toggle (simple ↔ JSON), budget currency formatting ($1,234.56), threshold percentage inputs (alert < grace), tool type dropdown switches conditional fields, BYOK toggle shows/hides API key fields, form submission success navigates to tenant list, form submission error displays inline errors.
+    </standards>
+    <locations>
+      nextjs-ui/components/tenants/TenantForm.test.tsx
+      nextjs-ui/lib/validations/tenants.test.ts
+      e2e/tenants-crud.spec.ts
+    </locations>
+    <ideas>
+      <test id="AC-1-BYOK">
+        <description>Test BYOK toggle shows/hides API key fields</description>
+        <criteria>AC-1</criteria>
+        <approach>Render form, toggle BYOK Enabled to ON, assert OpenAI/Anthropic inputs visible. Toggle to OFF, assert inputs hidden. Submit with BYOK ON but no keys, assert validation error "At least one API key required". Submit with invalid format keys (no "sk-" or "sk-ant-" prefix), assert validation errors.</approach>
+      </test>
+      <test id="AC-2-Budget">
+        <description>Test budget configuration field validation and formatting</description>
+        <criteria>AC-2</criteria>
+        <approach>Render form, set max_budget to 1234.56, assert displayed as "$1,234.56". Set alert_threshold to 85, grace_threshold to 80, assert validation error "Grace threshold must be greater than alert threshold". Set valid values (alert 80, grace 110), assert no error. Set max_budget to -1, assert error. Set max_budget to 10001, assert error.</approach>
+      </test>
+      <test id="AC-3-ToolConfig">
+        <description>Test tool type dropdown conditional rendering</description>
+        <criteria>AC-3</criteria>
+        <approach>Render form, assert tool_type defaults to "servicedesk_plus". Assert ServiceDesk URL/API Key inputs visible, Jira inputs hidden. Select "jira", assert Jira URL/API Token/Project Key inputs visible, ServiceDesk inputs hidden. Select "none", assert all tool-specific inputs hidden, webhook secret still visible.</approach>
+      </test>
+      <test id="AC-4-WebhookSecret">
+        <description>Test webhook secret generation and copy</description>
+        <criteria>AC-4</criteria>
+        <approach>Render form, click "Generate" button, assert input field populated with 44-character base64 string (32 bytes = 44 chars base64). Assert toast notification appears. Mock crypto.randomBytes/getRandomValues to ensure secure randomness. Test copy-to-clipboard functionality.</approach>
+      </test>
+      <test id="AC-5-EnhancementPrefs">
+        <description>Test enhancement preferences dual-mode toggle</description>
+        <criteria>AC-5</criteria>
+        <approach>Render form with simple mode default, assert 3 input fields visible (max_enhancement_length, include_monitoring toggle, kb_timeout_seconds). Click "Switch to JSON Editor", assert CodeMirror visible with JSON representation of form values. Edit JSON (change max_enhancement_length from 500 to 1000), click "Switch to Simple Form", assert simple form fields updated to JSON values. Test invalid JSON (missing closing brace), assert validation error shown.</approach>
+      </test>
+      <test id="AC-6-IsActive">
+        <description>Test is_active toggle and warning message</description>
+        <criteria>AC-6</criteria>
+        <approach>Render form (create mode), assert is_active toggle defaults to ON, no warning visible. Toggle to OFF, assert warning Alert component visible with text "⚠️ Deactivating this tenant will prevent all agent executions and API access". Toggle back to ON, assert warning hidden.</approach>
+      </test>
+      <test id="AC-8-AccordionLayout">
+        <description>Test accordion sections expand/collapse correctly</description>
+        <criteria>AC-8</criteria>
+        <approach>Render form, assert "Basic Information" section expanded by default (aria-expanded="true"), other 5 sections collapsed (aria-expanded="false"). Click "Tool Configuration" header, assert section expands and content visible. Click again, assert section collapses. Verify keyboard navigation (Tab to header, Enter/Space to toggle).</approach>
+      </test>
+      <test id="AC-9-FormSubmission">
+        <description>Test form submission success and error handling</description>
+        <criteria>AC-9</criteria>
+        <approach>Mock POST /api/v1/tenants to return 201 success. Fill all required fields, submit form. Assert loading state shown (button disabled, spinner visible). Assert success toast "Tenant 'X' created successfully". Assert navigation to /dashboard/tenants. Mock POST to return 400 with field errors { "tenant_id": "Already exists" }. Submit form, assert inline error displayed under tenant_id field. Assert form data not cleared (values preserved). Assert submit button re-enabled.</approach>
+      </test>
+      <test id="AC-10-Accessibility">
+        <description>Test keyboard navigation and ARIA attributes</description>
+        <criteria>AC-10</criteria>
+        <approach>Render form, assert all inputs have associated labels (visible or aria-label). Tab through form, assert focus order logical (Basic Info fields → Tool Config → ... → Submit/Cancel buttons). Press Enter on form, assert submission triggered. Assert error messages have role="alert" and aria-live="polite". Assert toggle switches have aria-checked attribute. Assert accordion sections have aria-expanded attribute.</approach>
+      </test>
+    </ideas>
+  </tests>
+</story-context>

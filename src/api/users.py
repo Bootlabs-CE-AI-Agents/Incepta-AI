@@ -25,7 +25,7 @@ from src.api.dependencies import (
     get_user_service,
     require_admin_role,
 )
-from src.database.models import AuthAuditLog, User, UserTenantRole, RoleEnum
+from src.database.models import AuthAuditLog, User, UserTenantRole, RoleEnum, TenantConfig
 from src.database.session import get_async_session
 from src.services.auth_service import (
     AuthService,
@@ -60,6 +60,7 @@ class RoleAssignment(BaseModel):
     """User role assignment for a tenant."""
 
     tenant_id: str  # VARCHAR tenant_id (e.g., "default", "production"), not UUID
+    tenant_name: str | None = None  # Human-readable tenant name from TenantConfig
     role: RoleEnum
 
     model_config = {"from_attributes": True}
@@ -149,13 +150,25 @@ async def get_current_user_profile(
         GET /api/users/me
         Headers: Authorization: Bearer <access_token>
     """
-    # Fetch user's roles for all tenants
-    stmt = select(UserTenantRole).where(UserTenantRole.user_id == current_user.id)
+    # Fetch user's roles for all tenants with tenant names
+    # Join with TenantConfig to get tenant names
+    stmt = (
+        select(UserTenantRole, TenantConfig.name)
+        .outerjoin(TenantConfig, UserTenantRole.tenant_id == TenantConfig.tenant_id)
+        .where(UserTenantRole.user_id == current_user.id)
+    )
     result = await db.execute(stmt)
-    roles = result.scalars().all()
+    role_rows = result.all()
 
-    # Build response with roles
-    role_assignments = [RoleAssignment(tenant_id=role.tenant_id, role=role.role) for role in roles]
+    # Build response with roles and tenant names
+    role_assignments = [
+        RoleAssignment(
+            tenant_id=role.tenant_id,
+            tenant_name=tenant_name,
+            role=role.role
+        )
+        for role, tenant_name in role_rows
+    ]
 
     return UserDetailResponse(
         id=current_user.id,
@@ -363,6 +376,7 @@ async def list_users(
     """
     # Call service method with tenant scoping
     users, total = await user_service.list_users(
+        search=params.search,
         tenant_id=params.tenant_id,
         is_active=params.is_active,
         role=params.role,
@@ -375,13 +389,33 @@ async def list_users(
     # Convert User models to UserDetailDTO with roles
     user_dtos = []
     for user in users:
-        # Fetch roles for each user
-        stmt = select(UserTenantRole).where(UserTenantRole.user_id == user.id)
+        # Fetch roles for each user with tenant names (LEFT JOIN with TenantConfig)
+        stmt = (
+            select(UserTenantRole, TenantConfig.name)
+            .outerjoin(TenantConfig, UserTenantRole.tenant_id == TenantConfig.tenant_id)
+            .where(UserTenantRole.user_id == user.id)
+        )
         result = await db.execute(stmt)
-        roles = result.scalars().all()
+        role_rows = result.all()
 
-        # Convert to UserRoleDTO
-        role_dtos = [UserRoleDTO(role=r.role, tenant_id=UUID(r.tenant_id)) for r in roles]
+        # Convert to UserRoleDTO with tenant names
+        role_dtos = [
+            UserRoleDTO(
+                role=role.role,
+                tenant_id=role.tenant_id,
+                tenant_name=tenant_name
+            )
+            for role, tenant_name in role_rows
+        ]
+
+        # Fetch default tenant name
+        default_tenant_name = None
+        if user.default_tenant_id:
+            stmt_tenant = select(TenantConfig.name).where(
+                TenantConfig.tenant_id == str(user.default_tenant_id)
+            )
+            result_tenant = await db.execute(stmt_tenant)
+            default_tenant_name = result_tenant.scalar_one_or_none()
 
         # Create UserDetailDTO
         user_dto = UserDetailDTO(
@@ -389,6 +423,7 @@ async def list_users(
             email=user.email,
             is_active=user.is_active,
             default_tenant_id=user.default_tenant_id,
+            default_tenant_name=default_tenant_name,
             roles=role_dtos,
             last_login_at=user.last_login_at,
             created_at=user.created_at,

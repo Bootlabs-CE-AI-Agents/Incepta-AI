@@ -479,6 +479,7 @@ class UserService:
 
     async def list_users(
         self,
+        search: Optional[str],
         tenant_id: Optional[UUID],
         is_active: Optional[bool],
         role: Optional[RoleEnum],
@@ -488,14 +489,16 @@ class UserService:
         db: AsyncSession,
     ) -> tuple[list[User], int]:
         """
-        List users with pagination and filtering (AC-1).
+        List users with pagination and filtering (AC-1, AC-3).
 
         Supports:
+        - Email search (case-insensitive substring match)
         - Pagination (limit, offset)
         - Filtering by tenant_id, is_active, role
         - Tenant scoping (super_admin sees all, tenant_admin sees their tenant only)
 
         Args:
+            search: Filter by email (case-insensitive substring match, optional)
             tenant_id: Filter by tenant UUID (optional)
             is_active: Filter by active status (optional)
             role: Filter by role enum (optional)
@@ -511,7 +514,7 @@ class UserService:
             - super_admin: Can view all users across all tenants
             - tenant_admin: Can only view users in their own tenant
 
-        Story: nextjs-story-22-users-api-crud (AC-1)
+        Story: nextjs-story-22-users-api-crud (AC-1), nextjs-story-23-users-management-page (AC-3)
         """
         from sqlalchemy import func
 
@@ -520,6 +523,10 @@ class UserService:
 
         # Apply tenant scoping (RBAC enforcement)
         stmt = await self._apply_tenant_scoping(stmt, current_user, db)
+
+        # Apply email search filter (AC-3: case-insensitive substring match)
+        if search:
+            stmt = stmt.where(User.email.ilike(f"%{search}%"))
 
         # Apply filters
         if tenant_id is not None:

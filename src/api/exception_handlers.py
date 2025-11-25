@@ -73,9 +73,40 @@ def setup_exception_handlers(app: FastAPI) -> None:
                 "body": {"email": "invalid-email", "password": "..."}
             }
         """
+        # Convert exc.body to string if it contains non-serializable objects
+        import json as json_lib
+
+        # Handle exc.body
+        if not hasattr(exc, 'body'):
+            body_content = None
+        else:
+            try:
+                # Test if exc.body is JSON-serializable
+                json_lib.dumps(exc.body)
+                # If successful, use it as-is
+                body_content = exc.body
+            except (TypeError, ValueError, AttributeError, OverflowError):
+                # If not serializable, convert to string
+                try:
+                    body_content = str(exc.body)
+                except Exception:
+                    body_content = "Error body not displayable"
+
+        # Build content and test if it's JSON-serializable
+        content = {"detail": exc.errors(), "body": body_content}
+        try:
+            # Test if the entire content is JSON-serializable
+            json_lib.dumps(content)
+        except (TypeError, ValueError, AttributeError, OverflowError):
+            # If not serializable, convert to string representation
+            content = {
+                "detail": str(exc.errors()),
+                "body": str(body_content) if body_content else None
+            }
+
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={"detail": exc.errors(), "body": exc.body},
+            content=content,
         )
 
     @app.exception_handler(JWTError)

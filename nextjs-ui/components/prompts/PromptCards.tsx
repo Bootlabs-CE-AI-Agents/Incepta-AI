@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Edit, FileText } from 'lucide-react';
 import Link from 'next/link';
 import type { PromptTemplate } from '@/lib/api/prompts';
+import { extractVariables } from '@/lib/utils/promptVariables';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -41,41 +42,44 @@ export function PromptCards({ prompts, canEdit }: PromptCardsProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {prompts.map((prompt) => (
-        <Card key={prompt.id} className="p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900 truncate flex-1">
-              {prompt.name}
-            </h3>
-            {canEdit && (
-              <Link href={`/dashboard/prompts/${prompt.id}`}>
-                <Button variant="ghost" size="sm">
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </Link>
-            )}
-          </div>
-
-          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-            {prompt.description || 'No description provided'}
-          </p>
-
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <div className="flex items-center gap-2">
-              <Badge variant="info">
-                {prompt.variables.length} variable
-                {prompt.variables.length !== 1 ? 's' : ''}
-              </Badge>
+      {prompts.map((prompt) => {
+        const variables = extractVariables(prompt.template_text || '');
+        return (
+          <Card key={prompt.id} className="p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-900 truncate flex-1">
+                {prompt.name}
+              </h3>
+              {canEdit && (
+                <Link href={`/dashboard/prompts/${prompt.id}`}>
+                  <Button variant="ghost" size="sm">
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </Link>
+              )}
             </div>
-            <span>
-              Updated{' '}
-              {formatDistanceToNow(new Date(prompt.updated_at), {
-                addSuffix: true,
-              })}
-            </span>
-          </div>
-        </Card>
-      ))}
+
+            <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+              {prompt.description || 'No description provided'}
+            </p>
+
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center gap-2">
+                <Badge variant="info">
+                  {variables.length} variable
+                  {variables.length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+              <span>
+                Updated{' '}
+                {formatDistanceToNow(new Date(prompt.updated_at), {
+                  addSuffix: true,
+                })}
+              </span>
+            </div>
+          </Card>
+        );
+      })}
     </div>
   );
 }

@@ -41,13 +41,18 @@ export interface Tool {
 }
 
 export interface AuthConfig {
-  type: 'none' | 'api_key' | 'bearer' | 'basic';
+  type: 'none' | 'api_key' | 'bearer' | 'basic' | 'oauth2';
   api_key_name?: string; // For API Key auth (header or query param name)
   api_key_location?: 'header' | 'query'; // Where to send API key
   api_key_value?: string; // The actual API key (encrypted server-side)
   bearer_token?: string; // Bearer token value
   basic_username?: string; // Basic auth username
   basic_password?: string; // Basic auth password
+  oauth2_client_id?: string; // OAuth2 client ID
+  oauth2_client_secret?: string; // OAuth2 client secret
+  oauth2_auth_url?: string; // OAuth2 authorization URL (HTTPS)
+  oauth2_token_url?: string; // OAuth2 token URL (HTTPS)
+  oauth2_scopes?: string[]; // OAuth2 scopes (e.g., ['read:user', 'write:repo'])
 }
 
 export interface ParseSpecRequest {
@@ -108,4 +113,38 @@ export async function getTool(id: string): Promise<Tool> {
  */
 export async function deleteTool(id: string): Promise<void> {
   await apiClient.delete(`/api/v1/tools/${id}`);
+}
+
+/**
+ * Test Connection Request/Response Types
+ */
+export interface TestConnectionRequest {
+  spec: Record<string, unknown>; // Full OpenAPI spec
+  auth_config: AuthConfig; // Auth configuration to test
+}
+
+export interface TestConnectionResponse {
+  success: boolean;
+  status_code?: number;
+  response_time_ms: number;
+  headers?: Record<string, string>;
+  body?: string;
+  error?: string;
+  tested_endpoint?: string;
+  error_type?: 'network' | 'auth' | 'timeout' | 'server' | 'not_found' | 'unknown';
+}
+
+/**
+ * Test API connection with given auth config
+ * Makes actual HTTP request to target API to validate credentials and connectivity
+ */
+export async function testConnection(
+  data: TestConnectionRequest
+): Promise<TestConnectionResponse> {
+  const response = await apiClient.post<TestConnectionResponse>(
+    '/api/v1/tools/test-connection',
+    data,
+    { timeout: 12000 } // 12s timeout (backend has 10s, plus overhead)
+  );
+  return response.data;
 }

@@ -62,7 +62,7 @@ export function TenantSwitcher() {
     queryKey: ["userRole", selectedTenant?.id],
     queryFn: async () => {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/users/me/role?tenant_id=${selectedTenant?.id}`,
+        `${API_BASE_URL}/api/v1/users/me/role?tenant_id=${selectedTenant?.tenant_id}`,
         {
           headers: {
             Authorization: `Bearer ${session?.accessToken}`,

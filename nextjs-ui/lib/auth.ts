@@ -86,34 +86,29 @@ export const authOptions: NextAuthOptions = {
           // FastAPI JWT contains: sub (user_id), email, default_tenant_id, token_version, exp, jti
           const jwtPayload = decodeJWT(data.access_token);
 
-          // Fetch user's role for their default tenant
-          // This enables RBAC for pages that check session.user.role
-          let role = null;
-          const defaultTenantId = jwtPayload.default_tenant_id;
-
-          if (defaultTenantId) {
-            try {
-              const roleResponse = await fetch(
-                `${API_BASE_URL}/api/v1/users/me/role?tenant_id=${defaultTenantId}`,
-                {
-                  headers: {
-                    Authorization: `Bearer ${data.access_token}`,
-                  },
-                }
-              );
-
-              if (roleResponse.ok) {
-                const roleData = await roleResponse.json();
-                role = roleData.role;
-              } else {
-                console.warn("Failed to fetch user role:", roleResponse.statusText);
+          // Fetch full user profile with all roles from /api/v1/users/me
+          // This returns all roles across all tenants with tenant names
+          let userProfile = null;
+          try {
+            const profileResponse = await fetch(
+              `${API_BASE_URL}/api/v1/users/me`,
+              {
+                headers: {
+                  Authorization: `Bearer ${data.access_token}`,
+                },
               }
-            } catch (roleError) {
-              console.error("Error fetching user role:", roleError);
+            );
+
+            if (profileResponse.ok) {
+              userProfile = await profileResponse.json();
+            } else {
+              console.warn("Failed to fetch user profile:", profileResponse.statusText);
             }
+          } catch (profileError) {
+            console.error("Error fetching user profile:", profileError);
           }
 
-          // Return user object with access_token, role, and tenant info
+          // Return user object with access_token and full profile
           // NextAuth will include this in the JWT token
           return {
             id: jwtPayload.sub,
@@ -121,8 +116,9 @@ export const authOptions: NextAuthOptions = {
             name: jwtPayload.email, // Use email as display name
             accessToken: data.access_token,
             tokenVersion: jwtPayload.token_version,
-            role: role, // User's role for default tenant
-            defaultTenantId: defaultTenantId,
+            defaultTenantId: jwtPayload.default_tenant_id,
+            // Include full user profile with roles array
+            ...(userProfile || {}),
           };
         } catch (error) {
           console.error("Authentication error:", error);
@@ -139,12 +135,28 @@ export const authOptions: NextAuthOptions = {
         token.userId = user.id;
         token.tokenVersion = user.tokenVersion as number;
 
-        // Add role and tenant info if available
-        if ("role" in user) {
-          token.role = user.role;
-        }
+        // Add default tenant ID
         if ("defaultTenantId" in user) {
           token.defaultTenantId = user.defaultTenantId;
+        }
+
+        // Add roles array if available
+        if ("roles" in user) {
+          token.roles = user.roles;
+        }
+
+        // Add other profile fields
+        if ("is_active" in user) {
+          token.is_active = user.is_active;
+        }
+        if ("last_login_at" in user) {
+          token.last_login_at = user.last_login_at;
+        }
+        if ("created_at" in user) {
+          token.created_at = user.created_at;
+        }
+        if ("default_tenant_name" in user) {
+          token.default_tenant_name = user.default_tenant_name;
         }
       }
 
@@ -157,12 +169,28 @@ export const authOptions: NextAuthOptions = {
         session.accessToken = token.accessToken as string;
         session.tokenVersion = token.tokenVersion as number;
 
-        // Add role and tenant info to session
-        if (token.role) {
-          session.user.role = token.role as string;
-        }
+        // Add default tenant ID
         if (token.defaultTenantId) {
-          session.user.defaultTenantId = token.defaultTenantId as string;
+          session.user.default_tenant_id = token.defaultTenantId as string;
+        }
+
+        // Add roles array
+        if (token.roles) {
+          session.user.roles = token.roles as any[];
+        }
+
+        // Add other profile fields
+        if (token.is_active !== undefined) {
+          session.user.is_active = token.is_active as boolean;
+        }
+        if (token.last_login_at) {
+          session.user.last_login_at = token.last_login_at as string;
+        }
+        if (token.created_at) {
+          session.user.created_at = token.created_at as string;
+        }
+        if (token.default_tenant_name) {
+          session.user.default_tenant_name = token.default_tenant_name as string;
         }
       }
 

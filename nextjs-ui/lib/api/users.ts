@@ -18,7 +18,7 @@ export type RoleEnum = 'super_admin' | 'tenant_admin' | 'developer' | 'operator'
 export interface UserRoleDetail {
   role: RoleEnum;
   tenant_id: string;
-  tenant_name: string;
+  tenant_name: string | null;
 }
 
 /**
@@ -29,7 +29,7 @@ export interface UserDetail {
   email: string;
   is_active: boolean;
   default_tenant_id: string;
-  default_tenant_name: string;
+  default_tenant_name: string | null;
   roles: UserRoleDetail[];
   last_login: string | null;
   created_at: string;
@@ -62,11 +62,9 @@ export interface PasswordResetResponse {
 export interface UserCreateRequest {
   email: string;
   password: string;
-  full_name?: string;
   default_tenant_id: string;
   initial_role: RoleEnum;
-  force_password_change?: boolean;
-  is_active?: boolean;
+  send_welcome_email?: boolean;
 }
 
 /**

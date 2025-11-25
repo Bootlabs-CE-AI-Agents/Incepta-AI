@@ -1,0 +1,123 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs</epicId>
+    <storyId>31</storyId>
+    <title>Tools Page - Test Connection Feature</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-31-tools-test-connection.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer or tenant admin</asA>
+    <iWant>to test API connection before importing tools from an OpenAPI spec</iWant>
+    <soThat>I can validate credentials, network connectivity, and API availability before committing to the import</soThat>
+    <tasks>
+      <task id="1" title="Create ConnectionTestResult component" acs="3,4,9"/>
+      <task id="2" title="Add Test Connection button to ImportConfig.tsx" acs="1,2,8"/>
+      <task id="3" title="Create useTestConnection React Query mutation hook" acs="2,5"/>
+      <task id="4" title="Extend lib/api/tools.ts with testConnection function" acs="5"/>
+      <task id="5" title="Handle OAuth2 special case" acs="7"/>
+      <task id="6" title="Implement retry functionality" acs="4"/>
+      <task id="7" title="Create backend endpoint POST /api/v1/tools/test-connection" acs="5,6"/>
+      <task id="8" title="Add unit tests for ConnectionTestResult component" acs="3,4"/>
+      <task id="9" title="Add integration tests for test connection flow" acs="2,5,8"/>
+      <task id="10" title="Update ImportConfig component integration" acs="10"/>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="1" title="Test Connection Button Placement">Button below auth config, visible only when auth type selected, disabled if required fields empty</ac>
+    <ac id="2" title="Test Connection Loading State">Loading spinner, "Testing..." text, button disabled, form disabled, max 10 seconds</ac>
+    <ac id="3" title="Successful Connection Result Display">Success panel with checkmark, status code, response time, collapsible headers/body with JSON formatting</ac>
+    <ac id="4" title="Failed Connection Error Display">Error panel with error type badge, status code, user-friendly message, troubleshooting tips, retry button</ac>
+    <ac id="5" title="Test Connection API Call Behavior">Select first GET endpoint, send actual HTTP request with auth, 10s timeout, log to audit (read-only, no DB save)</ac>
+    <ac id="6" title="Test Endpoint Selection Logic">Prioritize GET endpoints without path params, fallback to POST, display tested endpoint in result</ac>
+    <ac id="7" title="OAuth2 Special Handling">Check if access token available, show error if missing, display OAuth2 warning in result</ac>
+    <ac id="8" title="Form Validation Before Test">Validate required auth fields, show inline errors, prevent API call if invalid, button disabled</ac>
+    <ac id="9" title="Responsive Layout for Test Result">Desktop full width, tablet/mobile stacked, collapsible sections, no horizontal scroll</ac>
+    <ac id="10" title="Integration with Existing Import Flow">Test result doesn't block import, button hidden after import, form data preserved</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/epics-nextjs-feature-parity-completion.md" title="Next.js Feature Parity Epic" section="Story 4.5">
+        Test Connection Feature acceptance criteria: Makes test API call to first GET endpoint, displays success/failure with response details, handles OAuth2 special case, validates before test, responsive layout
+      </doc>
+      <doc path="docs/sprint-artifacts/nextjs-story-30-tools-oauth2-scopes.md" title="Previous Story - OAuth2 Scopes" section="Learnings">
+        OAuth2 fields use .catch('').refine() for conditional validation, responsive 2-column layout, ScopeCheckboxGroup pattern (195 lines), test coverage 100%
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Technology Stack">
+        Next.js 14 with TypeScript, shadcn/ui with Tailwind CSS, React Query for server state, React Hook Form + Zod validation, FastAPI backend with RESTful endpoints under /api/v1/, 10-second timeout for external API calls
+      </doc>
+    </docs>
+    <code>
+      <file path="nextjs-ui/components/tools/ImportConfig.tsx" kind="component" lines="1-440" reason="Main import configuration form where Test Connection button will be added after OAuth2 section (~line 337)"/>
+      <file path="nextjs-ui/components/tools/ScopeCheckboxGroup.tsx" kind="component" lines="1-195" reason="Reusable component pattern from Story 30, demonstrates form integration and testing approach"/>
+      <file path="nextjs-ui/lib/api/tools.ts" kind="api-client" lines="44-56" reason="AuthConfig interface and tool API functions, need to extend with testConnection function"/>
+      <file path="src/api/openapi_tools.py" kind="backend-api" reason="Existing OpenAPI tools backend, need to add POST /test-connection endpoint"/>
+      <file path="src/api/unified_tools.py" kind="backend-api" reason="Unified tools API, may need coordination for test endpoint"/>
+    </code>
+    <dependencies>
+      <frontend>
+        <package name="react" version="^18.2.0"/>
+        <package name="next" version="^14.2.15"/>
+        <package name="react-hook-form" version="^7.x"/>
+        <package name="zod" version="^3.x"/>
+        <package name="@tanstack/react-query" version="^5.x"/>
+        <package name="shadcn/ui" note="Accordion, Dialog, Button, Input components"/>
+        <package name="react-json-view" note="For JSON syntax highlighting - TO BE INSTALLED"/>
+        <package name="tailwindcss" version="^3.x"/>
+      </frontend>
+      <backend>
+        <package name="fastapi" version="0.104+"/>
+        <package name="httpx" version="latest" note="For making test API calls with async support"/>
+        <package name="pydantic" version="2.x"/>
+      </backend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C1">All external API calls must be made from backend only (not client-side) for security</constraint>
+    <constraint id="C2">Test connection must have 10-second timeout as per architecture standards</constraint>
+    <constraint id="C3">All user actions must be logged to audit log (backend handles this)</constraint>
+    <constraint id="C4">Credentials must never be exposed in frontend logs or console</constraint>
+    <constraint id="C5">Test result does NOT block import flow - it's advisory only</constraint>
+    <constraint id="C6">OAuth2 testing requires access token to be available (cannot perform full flow)</constraint>
+    <constraint id="C7">Test endpoint selection must skip paths with required parameters or required request bodies</constraint>
+    <constraint id="C8">Minimum 80% code coverage for new components</constraint>
+    <constraint id="C9">Files must not exceed 500 lines (project standard)</constraint>
+    <constraint id="C10">Use existing form patterns from ImportConfig.tsx (React Hook Form + Zod)</constraint>
+  </constraints>
+  <interfaces>
+    <api name="POST /api/v1/tools/test-connection" kind="REST">
+      <request>{ spec: OpenAPISpec, auth_config: AuthConfig }</request>
+      <response>{ success: boolean, status_code?: number, response_time_ms: number, headers?: object, body?: string, error?: string, tested_endpoint?: string }</response>
+      <notes>Backend makes actual HTTP call to target API with 10s timeout, returns test results</notes>
+    </api>
+    <interface name="AuthConfig" kind="TypeScript">
+      <signature>type AuthConfig = { auth_type: 'none' | 'api_key' | 'bearer' | 'basic' | 'oauth2', api_key?: string, bearer_token?: string, username?: string, password?: string, oauth2_client_id?: string, oauth2_client_secret?: string, oauth2_token_url?: string, oauth2_scopes?: string[], access_token?: string }</signature>
+      <location>nextjs-ui/lib/api/tools.ts:44-56</location>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      Use React Testing Library for component tests. Use MSW (Mock Service Worker) for integration tests. Minimum 80% code coverage for new code. Test loading states, error states, and success states separately. Follow testing patterns from Story 30 (ScopeCheckboxGroup achieved 100% coverage with 21/21 tests passing).
+    </standards>
+    <locations>
+      Frontend: nextjs-ui/components/tools/__tests__/
+      Backend: tests/unit/, tests/integration/
+    </locations>
+    <ideas>
+      <test ac="1,2" desc="Test button placement, conditional rendering, loading state, and form validation"/>
+      <test ac="3" desc="Test success result display with status code, response time, collapsible headers/body, JSON formatting"/>
+      <test ac="4" desc="Test error display for different error types (401, 403, 404, 500, network, timeout) with appropriate troubleshooting tips"/>
+      <test ac="5" desc="Mock backend API to test actual test connection flow with different auth types"/>
+      <test ac="7" desc="Test OAuth2 special handling when access token missing vs present"/>
+      <test ac="8" desc="Test form validation prevents test when required fields empty"/>
+      <test ac="9" desc="Test responsive layout on mobile/tablet/desktop breakpoints"/>
+      <test ac="10" desc="Test that test result doesn't block import flow, form data preserved"/>
+    </ideas>
+  </tests>
+</story-context>

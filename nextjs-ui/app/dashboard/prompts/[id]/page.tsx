@@ -52,7 +52,7 @@ export default function PromptDetailPage() {
   const [hasChanges, setHasChanges] = useState(false);
 
   const userRole = session?.user?.role || 'viewer';
-  const canEdit = ['tenant_admin', 'developer'].includes(userRole);
+  const canEdit = ['super_admin', 'tenant_admin', 'developer'].includes(userRole);
 
   // RBAC check for Version History (AC-9: developer/admin only)
   const canViewVersionHistory = ['tenant_admin', 'developer', 'super_admin'].includes(userRole);
@@ -358,7 +358,7 @@ export default function PromptDetailPage() {
           {/* Preview Tab */}
           <Tab.Panel className="h-full overflow-auto">
             <PromptPreview
-              templateText={templateText}
+              promptText={templateText}
               variables={[]}
             />
           </Tab.Panel>

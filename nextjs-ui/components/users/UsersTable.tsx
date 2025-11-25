@@ -136,7 +136,7 @@ export function UsersTable({ users, isLoading, sorting, onSortingChange, current
         },
       },
       {
-        accessorKey: 'last_login',
+        accessorKey: 'last_login_at',
         header: ({ column }) => (
           <Button
             variant="ghost"
@@ -153,7 +153,7 @@ export function UsersTable({ users, isLoading, sorting, onSortingChange, current
             )}
           </Button>
         ),
-        cell: ({ row }) => <div className="text-sm text-muted-foreground">{formatLastLogin(row.original.last_login)}</div>,
+        cell: ({ row }) => <div className="text-sm text-muted-foreground">{formatLastLogin(row.original.last_login_at)}</div>,
       },
       {
         accessorKey: 'created_at',

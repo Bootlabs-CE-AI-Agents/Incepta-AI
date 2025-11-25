@@ -48,7 +48,7 @@ export function formatCreatedDate(date: string): string {
  */
 export function formatRoles(roles: UserRoleDetail[]): string {
   if (!roles || roles.length === 0) return 'No roles';
-  return roles.map((r) => `${roleLabels[r.role]} (${r.tenant_name})`).join(', ');
+  return roles.map((r) => `${roleLabels[r.role]} (${r.tenant_name || r.tenant_id})`).join(', ');
 }
 
 /**

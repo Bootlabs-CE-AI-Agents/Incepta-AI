@@ -139,12 +139,19 @@ async def create_prompt_template(
         409: If template name already exists for tenant
     """
     prompt_service = PromptService(db)
-    template = await prompt_service.create_custom_template(
-        tenant_id,
-        template_data,
-    )
-    logger.info(f"Created custom template: {template.id}")
-    return template
+    try:
+        template = await prompt_service.create_custom_template(
+            tenant_id,
+            template_data,
+        )
+        logger.info(f"Created custom template: {template.id}")
+        return template
+    except ValueError as e:
+        logger.warning(f"Validation error creating prompt template: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 @router.get(
@@ -215,15 +222,22 @@ async def update_prompt_template(
         404: If template not found
     """
     prompt_service = PromptService(db)
-    template = await prompt_service.update_custom_template(
-        template_id,
-        tenant_id,
-        template_data,
-    )
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    logger.info(f"Updated template: {template_id}")
-    return template
+    try:
+        template = await prompt_service.update_custom_template(
+            template_id,
+            tenant_id,
+            template_data,
+        )
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        logger.info(f"Updated template: {template_id}")
+        return template
+    except ValueError as e:
+        logger.warning(f"Validation error updating prompt template: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 @router.delete(
@@ -253,11 +267,18 @@ async def delete_prompt_template(
         404: If template not found
     """
     prompt_service = PromptService(db)
-    success = await prompt_service.delete_custom_template(template_id, tenant_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Template not found or is built-in")
-    logger.info(f"Deleted template: {template_id}")
-    return {"success": True, "message": "Template deleted"}
+    try:
+        success = await prompt_service.delete_custom_template(template_id, tenant_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Template not found or is built-in")
+        logger.info(f"Deleted template: {template_id}")
+        return {"success": True, "message": "Template deleted"}
+    except ValueError as e:
+        logger.warning(f"Validation error deleting prompt template: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 @router.post(

@@ -8,12 +8,15 @@ Provides a single API endpoint to discover tools from multiple sources
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import get_tenant_db, get_tenant_id
 from src.schemas.unified_tool import UnifiedTool
+from src.schemas.openapi_tool import TestConnectionRequest, TestConnectionResponse
 from src.services.unified_tool_service import UnifiedToolService
+from src.services.openapi_parser_service import detect_spec_version, parse_openapi_spec, extract_tool_metadata
+from src.services.mcp_tool_generator import validate_openapi_connection
 
 router = APIRouter(prefix="/api/v1", tags=["unified-tools"])
 logger = logging.getLogger(__name__)
@@ -70,3 +73,94 @@ async def list_unified_tools(
 
     logger.info(f"Returning {len(tools)} unified tools for tenant {tenant_id}")
     return tools
+
+
+@router.post("/tools/test-connection", response_model=TestConnectionResponse)
+async def test_connection(
+    request: TestConnectionRequest,
+    tenant_id: Annotated[str, Depends(get_tenant_id)],
+) -> TestConnectionResponse:
+    """
+    Test API connection with provided credentials.
+
+    Makes an actual HTTP request to the target API using configured auth to validate:
+    - Network connectivity
+    - API availability
+    - Credential validity
+
+    Strategy:
+    1. Find first GET endpoint in spec (preferring health/status endpoints)
+    2. Make test request with configured auth
+    3. Return success/failure with details (status, response time, headers, body)
+
+    Args:
+        request: TestConnectionRequest with spec and auth_config
+        tenant_id: Tenant ID from X-Tenant-ID header (for audit logging)
+
+    Returns:
+        TestConnectionResponse with test results
+
+    Example:
+        POST /api/v1/tools/test-connection
+        Headers: X-Tenant-ID: test-tenant
+        Body:
+        {
+            "spec": {...},  # OpenAPI spec
+            "auth_config": {
+                "type": "bearer",
+                "bearer_token": "token123"
+            }
+        }
+
+        Response:
+        {
+            "success": true,
+            "status_code": 200,
+            "response_time_ms": 245,
+            "headers": {...},
+            "body": "...",
+            "tested_endpoint": "GET /api/health"
+        }
+    """
+    try:
+        logger.info(f"Testing connection for tenant: {tenant_id}")
+
+        # Parse spec to extract base URL
+        spec_version = detect_spec_version(request.spec)
+        openapi = parse_openapi_spec(request.spec)
+        metadata = extract_tool_metadata(openapi, spec_version)
+        base_url = metadata.get("base_url", "")
+
+        # Validate connection
+        result = await validate_openapi_connection(request.spec, request.auth_config, base_url)
+
+        # Map result to response schema
+        response = TestConnectionResponse(
+            success=result.get("success", False),
+            status_code=result.get("status_code"),
+            response_time_ms=result.get("response_time_ms", 0),
+            headers=result.get("headers"),
+            body=result.get("response_preview"),
+            error=result.get("error_message"),
+            tested_endpoint=result.get("test_endpoint"),
+            error_type=_map_error_type(result.get("error_type", "unknown")),
+        )
+
+        logger.info(f"Connection test result for tenant {tenant_id}: success={response.success}")
+        return response
+
+    except Exception as e:
+        logger.error(f"Connection test failed for tenant {tenant_id}: {str(e)}")
+        raise HTTPException(400, str(e))
+
+
+def _map_error_type(backend_error_type: str) -> str:
+    """Map backend error types to frontend error types."""
+    error_type_map = {
+        "Timeout": "timeout",
+        "ConnectError": "network",
+        "HTTPStatusError": "server",
+        "AuthError": "auth",
+        "NoTestEndpoint": "unknown",
+    }
+    return error_type_map.get(backend_error_type, "unknown")

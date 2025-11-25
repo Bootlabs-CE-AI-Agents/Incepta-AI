@@ -14,6 +14,7 @@ import {
   HeartPulse,
   Ticket,
   Activity,
+  Users,
 } from "lucide-react";
 import { ReactNode } from "react";
 
@@ -55,6 +56,7 @@ const navigationData: NavCategory[] = [
     category: "Configuration",
     items: [
       { label: "Tenants", href: "/dashboard/tenants", icon: <Shield className="w-5 h-5" /> },
+      { label: "Users", href: "/dashboard/users", icon: <Users className="w-5 h-5" /> },
       { label: "Agents", href: "/dashboard/agents-config", icon: <Bot className="w-5 h-5" /> },
       { label: "Prompts", href: "/dashboard/prompts", icon: <MessageSquare className="w-5 h-5" /> },
       { label: "Tools", href: "/dashboard/tools", icon: <Cpu className="w-5 h-5" /> },

@@ -1,0 +1,151 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui-migration-epic</epicId>
+    <storyId>30</storyId>
+    <title>Tools Page - OAuth2 Scope Selection</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-30-tools-oauth2-scopes.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>tenant admin or developer</asA>
+    <iWant>to select specific OAuth2 scopes when configuring tool authentication</iWant>
+    <soThat>I can follow the principle of least privilege and only request the permissions my tools actually need</soThat>
+    <tasks>
+      - Task 1: Update Type Definitions (AC: #1, #5)
+      - Task 2: Update ImportConfig Schema (AC: #1, #6)
+      - Task 3: Create ScopeCheckboxGroup Component (AC: #3, #4)
+      - Task 4: Add OAuth2 Configuration Section to ImportConfig (AC: #2, #7, #8)
+      - Task 5: Update Form Submit Handler (AC: #5, #8)
+      - Task 6: Add Validation and Error Messages (AC: #6)
+      - Task 7: Create Unit Tests (AC: #1-8)
+      - Task 8: Manual QA (AC: #1-8)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-1: OAuth2 Auth Type Option - Add OAuth2 option to Authentication Type dropdown
+    AC-2: OAuth2 Configuration Fields - Display form fields (Client ID, Client Secret, Authorization URL, Token URL, Scopes)
+    AC-3: OAuth2 Scope Selection with Checkboxes - Multi-select scopes with predefined options and custom scope addition
+    AC-4: Custom Scope Addition - "+ Add Custom Scope" button with validation (pattern: [a-z_]+:[a-z_]+)
+    AC-5: OAuth2 Auth Config Data Structure - authConfig object with oauth2_* fields and oauth2_scopes string array
+    AC-6: Form Validation and Error Handling - Zod validation with appropriate error messages
+    AC-7: Responsive Layout - Single-column mobile, 2-column tablet+ for Client ID/Secret
+    AC-8: Integration with Existing Import Flow - Backward compatibility with existing auth types (none, api_key, bearer, basic)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="AI Agents - Decision Architecture" section="ADR-009: Streamlit Admin Interface">
+        Authentication: Kubernetes Ingress + basic auth (MVP), OAuth in future (line 1202)
+      </doc>
+      <doc path="docs/nextjs-ui-migration-tech-spec-v2.md" title="Next.js UI Migration with Liquid Glass Design & RBAC" section="Pre-Implementation Requirements">
+        User research completed (Story 0), design system established with Apple Liquid Glass styling
+      </doc>
+    </docs>
+    <code>
+      <artifact path="nextjs-ui/components/tools/ImportConfig.tsx" kind="component" symbol="ImportConfig" lines="1-235" reason="Existing form component for tool import configuration - needs OAuth2 auth type addition">
+        Current implementation has 4 auth types (none, api_key, bearer, basic) at line 20. OAuth2 will be added as 5th option with conditional rendering pattern matching lines 142-224.
+      </artifact>
+      <artifact path="nextjs-ui/lib/api/tools.ts" kind="types" symbol="AuthConfig" lines="43-51" reason="Interface defining authentication configuration structure - needs OAuth2 fields">
+        Current AuthConfig interface has type enum at line 44 with 4 options. Will extend to include 'oauth2' and add optional fields: oauth2_client_id, oauth2_client_secret, oauth2_auth_url, oauth2_token_url, oauth2_scopes.
+      </artifact>
+      <artifact path="nextjs-ui/components/ui/Button.tsx" kind="component" symbol="Button" reason="UI component used for form submission and custom scope addition">
+        Shared UI component from shadcn/ui design system used throughout Next.js UI
+      </artifact>
+      <artifact path="nextjs-ui/components/ui/Input.tsx" kind="component" symbol="Input" reason="UI component for text, password, and URL input fields">
+        Shared UI component from shadcn/ui design system with built-in error state styling
+      </artifact>
+      <artifact path="nextjs-ui/components/ui/Label.tsx" kind="component" symbol="Label" reason="UI component for form field labels">
+        Shared UI component from shadcn/ui design system with proper accessibility attributes
+      </artifact>
+      <artifact path="nextjs-ui/components/ui/Select.tsx" kind="component" symbol="Select" reason="UI component for authentication type dropdown">
+        Custom Select component used at line 128-138 for auth type selection
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        react-hook-form@^7.66.1 - Form state management and validation
+        @hookform/resolvers@^5.2.2 - Zod resolver for React Hook Form
+        zod@^4.1.12 - Schema validation library
+        next@14.2.15 - Next.js framework
+        react@^19.0.0 - React library
+        typescript@^6.0.3 - TypeScript compiler
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C1">React Hook Form + Zod validation pattern - All forms must use React Hook Form with zodResolver for validation (established in Stories 27-29)</constraint>
+    <constraint id="C2">Component file size ≤ 500 lines - Refactor if exceeding limit (from Story 24 patterns)</constraint>
+    <constraint id="C3">Responsive layout - Mobile-first design with Tailwind breakpoints (md:, lg:) for tablet/desktop</constraint>
+    <constraint id="C4">Accessibility WCAG 2.1 AA - ARIA labels, keyboard navigation, focus states required</constraint>
+    <constraint id="C5">Backward compatibility - New OAuth2 auth type must not break existing auth flows (none, api_key, bearer, basic)</constraint>
+    <constraint id="C6">Scope validation pattern - Custom scopes must match regex: /^[a-z_]+:[a-z_]+$/ (e.g., read:user)</constraint>
+    <constraint id="C7">Security - Client secrets must use password input type (masked in UI), OAuth2 URLs must be HTTPS</constraint>
+    <constraint id="C8">UI consistency - Use bg-gray-50 rounded-md for auth config sections matching existing patterns (lines 143, 183, 200)</constraint>
+    <constraint id="C9">Test coverage - Minimum 80% test coverage with unit tests for components and integration tests for form submission</constraint>
+    <constraint id="C10">TypeScript strict mode - All new components and types must compile with TypeScript strict mode enabled</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="AuthConfig" kind="TypeScript interface" signature="interface AuthConfig { type: 'none' | 'api_key' | 'bearer' | 'basic' | 'oauth2'; ... }" path="nextjs-ui/lib/api/tools.ts:43-51">
+      Current interface will be extended to include oauth2 in type enum and add optional OAuth2 fields:
+      - oauth2_client_id?: string
+      - oauth2_client_secret?: string
+      - oauth2_auth_url?: string
+      - oauth2_token_url?: string
+      - oauth2_scopes?: string[]
+    </interface>
+    <interface name="ImportToolsRequest" kind="TypeScript interface" signature="interface ImportToolsRequest { spec: Record<string, unknown>; selected_operations: string[]; name_prefix?: string; base_url: string; auth_config: AuthConfig; }" path="nextjs-ui/lib/api/tools.ts:58-64">
+      API request payload for importing tools - auth_config field will accept new OAuth2 configuration structure
+    </interface>
+    <interface name="importConfigSchema" kind="Zod schema" signature="z.object({ auth_type: z.enum(['none', 'api_key', 'bearer', 'basic']), ... })" path="nextjs-ui/components/tools/ImportConfig.tsx:17-27">
+      Zod validation schema for import configuration form - will be extended to include:
+      - auth_type enum with 'oauth2' option
+      - oauth2_client_id, oauth2_client_secret, oauth2_auth_url, oauth2_token_url fields with validation
+      - oauth2_scopes as z.array(z.string()).min(1)
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      Testing Framework: Jest + React Testing Library
+      Pattern: Unit tests for components, integration tests for form submission flows
+      Coverage: Minimum 80% test coverage required
+      Location: nextjs-ui/components/tools/__tests__/ directory (to be created)
+      Naming: Component tests use .test.tsx extension (e.g., ScopeCheckboxGroup.test.tsx, ImportConfig.test.tsx)
+      Best Practices from Story 29: Keep tests simple, avoid complex async retry scenarios that cause flaky failures
+    </standards>
+    <locations>
+      nextjs-ui/components/tools/__tests__/ScopeCheckboxGroup.test.tsx (to be created)
+      nextjs-ui/components/tools/__tests__/ImportConfig.test.tsx (to be extended with OAuth2 tests)
+    </locations>
+    <ideas>
+      <test-idea ac="AC-1" description="OAuth2 option appears in Authentication Type dropdown">
+        Test: Render ImportConfig, verify dropdown includes 'OAuth2' option alongside existing types
+      </test-idea>
+      <test-idea ac="AC-2" description="OAuth2 configuration fields render when selected">
+        Test: Select OAuth2 auth type, verify Client ID, Client Secret, Authorization URL, Token URL, and Scopes fields appear
+      </test-idea>
+      <test-idea ac="AC-3" description="Scope checkboxes allow multi-selection">
+        Test: Render ScopeCheckboxGroup, check multiple predefined scopes, verify selectedScopes array contains checked values
+      </test-idea>
+      <test-idea ac="AC-4" description="Custom scope addition with validation">
+        Test: Click "+ Add Custom Scope", enter valid/invalid patterns, verify scope added to list or validation error shown
+      </test-idea>
+      <test-idea ac="AC-5" description="Form submission constructs correct OAuth2 auth config">
+        Test: Fill OAuth2 form, submit, verify onSubmit called with authConfig containing oauth2_client_id, oauth2_client_secret, oauth2_auth_url, oauth2_token_url, oauth2_scopes array
+      </test-idea>
+      <test-idea ac="AC-6" description="Validation errors display for invalid/missing fields">
+        Test: Submit form with empty OAuth2 fields, verify error messages appear ("Client ID is required", "Invalid URL format", "At least 1 scope required")
+      </test-idea>
+      <test-idea ac="AC-7" description="Responsive layout renders correctly">
+        Test: Render with viewport widths (375px mobile, 768px tablet, 1440px desktop), verify grid classes applied correctly
+      </test-idea>
+      <test-idea ac="AC-8" description="Backward compatibility with existing auth types">
+        Test: Select each existing auth type (none, api_key, bearer, basic), verify form submission still works and authConfig structure correct
+      </test-idea>
+    </ideas>
+  </tests>
+</story-context>

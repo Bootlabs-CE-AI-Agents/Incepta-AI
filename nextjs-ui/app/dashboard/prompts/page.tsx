@@ -20,7 +20,7 @@ export default function PromptsPage() {
   const { data: prompts, isLoading, error } = usePrompts();
 
   const userRole = session?.user?.role || 'viewer';
-  const canEdit = ['tenant_admin', 'developer'].includes(userRole);
+  const canEdit = ['super_admin', 'tenant_admin', 'developer'].includes(userRole);
 
   if (isLoading) {
     return (

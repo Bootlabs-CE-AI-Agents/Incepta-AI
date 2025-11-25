@@ -16,7 +16,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Bot, Settings, Workflow, Layers } from 'lucide-react'
+import { BarChart3, Bot, Users, Activity, Shield } from 'lucide-react'
 
 interface NavItem {
   label: string
@@ -32,23 +32,23 @@ const mobileNavItems: NavItem[] = [
   },
   {
     label: 'Agents',
-    href: '/dashboard/agents',
+    href: '/dashboard/agents-config',
     icon: <Bot className="w-6 h-6" />,
   },
   {
-    label: 'Executions',
-    href: '/dashboard/executions',
-    icon: <Workflow className="w-6 h-6" />,
+    label: 'Users',
+    href: '/dashboard/users',
+    icon: <Users className="w-6 h-6" />,
   },
   {
-    label: 'Workflows',
-    href: '/dashboard/workflows',
-    icon: <Layers className="w-6 h-6" />,
+    label: 'Tenants',
+    href: '/dashboard/tenants',
+    icon: <Shield className="w-6 h-6" />,
   },
   {
-    label: 'Settings',
-    href: '/dashboard/settings',
-    icon: <Settings className="w-6 h-6" />,
+    label: 'History',
+    href: '/dashboard/execution-history',
+    icon: <Activity className="w-6 h-6" />,
   },
 ]
 

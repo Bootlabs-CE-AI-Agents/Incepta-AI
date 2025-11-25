@@ -87,12 +87,12 @@ class UserRoleDTO(BaseModel):
 
     Attributes:
         role: Role enum value (super_admin, tenant_admin, developer, operator, viewer)
-        tenant_id: UUID of the tenant for this role assignment
+        tenant_id: String identifier of the tenant for this role assignment
         tenant_name: Human-readable tenant name (optional, for display)
     """
 
     role: RoleEnum
-    tenant_id: UUID
+    tenant_id: str
     tenant_name: Optional[str] = None
 
     model_config = {
@@ -114,11 +114,12 @@ class UserRoleDTO(BaseModel):
 
 class UserListQueryParams(BaseModel):
     """
-    Query parameters for GET /api/users endpoint (AC-1).
+    Query parameters for GET /api/users endpoint (AC-1, AC-3).
 
-    Supports pagination and filtering by tenant, status, and role.
+    Supports pagination, filtering by tenant, status, and role, and email search.
 
     Attributes:
+        search: Filter by email (case-insensitive substring match)
         tenant_id: Filter by tenant (optional, UUID)
         is_active: Filter by active status (optional, boolean)
         role: Filter by role enum value (optional, string)
@@ -126,6 +127,7 @@ class UserListQueryParams(BaseModel):
         offset: Pagination offset (default 0)
     """
 
+    search: Optional[str] = None
     tenant_id: Optional[UUID] = None
     is_active: Optional[bool] = None
     role: Optional[RoleEnum] = None
@@ -135,6 +137,7 @@ class UserListQueryParams(BaseModel):
     model_config = {
         "json_schema_extra": {
             "example": {
+                "search": "admin",
                 "tenant_id": "123e4567-e89b-12d3-a456-426614174000",
                 "is_active": True,
                 "role": "developer",

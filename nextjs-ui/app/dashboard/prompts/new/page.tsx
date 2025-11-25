@@ -44,7 +44,7 @@ export default function NewPromptPage() {
   const [showDraftBanner, setShowDraftBanner] = useState(false);
 
   const userRole = session?.user?.role || 'viewer';
-  const canCreate = ['tenant_admin', 'developer'].includes(userRole);
+  const canCreate = ['super_admin', 'tenant_admin', 'developer'].includes(userRole);
 
   // Auto-save draft every 30 seconds (AC-6)
   const { isSaving, lastSaved, clearDraft, loadDraft } = useAutoSaveDraft({

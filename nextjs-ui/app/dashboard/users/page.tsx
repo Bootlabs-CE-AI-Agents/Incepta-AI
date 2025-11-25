@@ -20,6 +20,7 @@ import { UsersTable } from '@/components/users/UsersTable';
 import { UserFilters } from '@/components/users/UserFilters';
 import { UserSearchInput } from '@/components/users/UserSearchInput';
 import { RoleAssignmentModal } from '@/components/users/RoleAssignmentModal';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import type { RoleEnum } from '@/lib/api/users';
 import type { UserDetail } from '@/lib/api/users';
 
@@ -66,7 +67,7 @@ export default function UsersPage() {
 
   // RBAC enforcement (AC-7)
   useEffect(() => {
-    if (!authLoading && currentUser) {
+    if (!authLoading && currentUser && currentUser.roles) {
       const isSuperAdmin = currentUser.roles.some((r) => r.role === 'super_admin');
       const isTenantAdmin = currentUser.roles.some((r) => r.role === 'tenant_admin');
 
@@ -84,7 +85,7 @@ export default function UsersPage() {
   }, [authLoading, currentUser, router]);
 
   // Determine permissions
-  const isSuperAdmin = currentUser?.roles.some((r) => r.role === 'super_admin') || false;
+  const isSuperAdmin = currentUser?.roles?.some((r) => r.role === 'super_admin') || false;
 
   // Fetch users with filters (AC-1, AC-3, AC-4, AC-5, AC-6)
   const {
@@ -106,16 +107,16 @@ export default function UsersPage() {
   // In real implementation, this would come from a useTenants() hook
   const tenants = useMemo(() => {
     if (!isSuperAdmin || !usersData) return [];
-    
+
     // Extract unique tenants from users
-    const tenantMap = new Map<string, string>();
+    const tenantMap = new Map<string, string | null>();
     usersData.items.forEach((user) => {
       if (!tenantMap.has(user.default_tenant_id)) {
-        tenantMap.set(user.default_tenant_id, user.default_tenant_name);
+        tenantMap.set(user.default_tenant_id, user.default_tenant_name || user.default_tenant_id);
       }
     });
 
-    return Array.from(tenantMap.entries()).map(([id, name]) => ({ id, name }));
+    return Array.from(tenantMap.entries()).map(([id, name]) => ({ id, name: name || id }));
   }, [isSuperAdmin, usersData]);
 
   // Total pages for pagination (AC-5)
@@ -124,36 +125,41 @@ export default function UsersPage() {
   // Loading state during auth check (AC-9)
   if (authLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+      <DashboardLayout>
+        <div className="flex h-full items-center justify-center">
+          <div className="text-center">
+            <RefreshCw className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   // Error state (AC-9)
   if (isError) {
     return (
-      <div className="container mx-auto py-8">
-        <EmptyState
-          icon={<AlertCircle className="w-12 h-12 text-red-500" />}
-          title="Failed to load users"
-          description={error instanceof Error ? error.message : 'An error occurred while loading users. Please try again.'}
-          action={
-            <Button onClick={() => refetch()} variant="primary">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Retry
-            </Button>
-          }
-        />
-      </div>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <EmptyState
+            icon={<AlertCircle className="w-12 h-12 text-red-500" />}
+            title="Failed to load users"
+            description={error instanceof Error ? error.message : 'An error occurred while loading users. Please try again.'}
+            action={
+              <Button onClick={() => refetch()} variant="primary">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Retry
+              </Button>
+            }
+          />
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
       {/* Page Header (AC-1: Title + Create User button) */}
       <div className="flex items-start justify-between">
         <div>
@@ -272,6 +278,7 @@ export default function UsersPage() {
         onClose={() => setRoleModalState({ isOpen: false, user: null })}
         user={roleModalState.user}
       />
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

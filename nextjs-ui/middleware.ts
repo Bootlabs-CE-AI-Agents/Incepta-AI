@@ -22,23 +22,23 @@ const isE2EMode = process.env.E2E_TEST === 'true';
 
 export default isE2EMode
   ? function middleware(req: NextRequest) {
-      return NextResponse.next();
-    }
+    return NextResponse.next();
+  }
   : withAuth(
-      function middleware(req) {
-        // Additional middleware logic can be added here
-        // For example: role-based access control, logging, etc.
-        return NextResponse.next();
+    function middleware(req) {
+      // Additional middleware logic can be added here
+      // For example: role-based access control, logging, etc.
+      return NextResponse.next();
+    },
+    {
+      callbacks: {
+        authorized: ({ token }) => !!token,
       },
-      {
-        callbacks: {
-          authorized: ({ token }) => !!token,
-        },
-        pages: {
-          signIn: "/login",
-        },
-      }
-    );
+      pages: {
+        signIn: "/login",
+      },
+    }
+  );
 
 // Configure which routes require authentication
 export const config = {
@@ -54,6 +54,6 @@ export const config = {
      * - login (login page)
      * - / (home/landing page)
      */
-    "/((?!api/auth|api/health|api/healthz|_next/static|_next/image|favicon.ico|login|^/$).*)",
+    "/((?!api/auth|api/health|api/healthz|_next/static|_next/image|favicon.ico|login|design-preview|^/$).*)",
   ],
 };

@@ -412,7 +412,7 @@ async def list_users(
         default_tenant_name = None
         if user.default_tenant_id:
             stmt_tenant = select(TenantConfig.name).where(
-                TenantConfig.tenant_id == str(user.default_tenant_id)
+                TenantConfig.id == user.default_tenant_id
             )
             result_tenant = await db.execute(stmt_tenant)
             default_tenant_name = result_tenant.scalar_one_or_none()
@@ -498,7 +498,7 @@ async def create_user(
     roles = result.scalars().all()
 
     # Convert to UserRoleDTO
-    role_dtos = [UserRoleDTO(role=r.role, tenant_id=UUID(r.tenant_id)) for r in roles]
+    role_dtos = [UserRoleDTO(role=r.role, tenant_id=r.tenant_id) for r in roles]
 
     return UserDetailDTO(
         id=user.id,
@@ -571,7 +571,7 @@ async def update_user(
     roles = result.scalars().all()
 
     # Convert to UserRoleDTO
-    role_dtos = [UserRoleDTO(role=r.role, tenant_id=UUID(r.tenant_id)) for r in roles]
+    role_dtos = [UserRoleDTO(role=r.role, tenant_id=r.tenant_id) for r in roles]
 
     return UserDetailDTO(
         id=user.id,

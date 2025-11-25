@@ -30,7 +30,7 @@ export function VariableInputs({
 
   return (
     <div className={`space-y-3 ${className}`}>
-      <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <Label className="text-sm font-medium text-text-primary dark:text-text-secondary">
         Variables Detected ({variables.length})
       </Label>
       <div className="space-y-2">
@@ -38,7 +38,7 @@ export function VariableInputs({
           <div key={variable} className="flex items-center space-x-2">
             <Label
               htmlFor={`var-${variable}`}
-              className="text-xs text-gray-600 dark:text-gray-400 w-32 shrink-0"
+              className="text-xs text-text-secondary dark:text-text-secondary w-32 shrink-0"
             >
               {`{{${variable}}}:`}
             </Label>

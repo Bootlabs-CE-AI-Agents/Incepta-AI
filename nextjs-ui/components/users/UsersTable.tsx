@@ -211,8 +211,8 @@ export function UsersTable({ users, isLoading, sorting, onSortingChange, current
   // Loading skeleton rows (AC-8: Loading state)
   if (isLoading) {
     return (
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-max">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -241,8 +241,8 @@ export function UsersTable({ users, isLoading, sorting, onSortingChange, current
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
+    <div className="rounded-md border overflow-x-auto">
+      <Table className="min-w-max">
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>

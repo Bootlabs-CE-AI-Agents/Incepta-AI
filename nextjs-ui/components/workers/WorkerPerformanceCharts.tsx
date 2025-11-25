@@ -103,7 +103,7 @@ export function WorkerPerformanceCharts({
   // Edge case: No data available
   if (chartData.length === 0 && throughputData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400">
+      <div className="flex items-center justify-center h-64 text-text-secondary">
         No metrics data available
       </div>
     );
@@ -187,7 +187,7 @@ export function WorkerPerformanceCharts({
             </ComposedChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex items-center justify-center h-64 text-gray-400">
+          <div className="flex items-center justify-center h-64 text-text-secondary">
             {chartData.length === 0 && cpuHistory.length + memoryHistory.length > 0
               ? `Showing ${cpuHistory.length + memoryHistory.length} partial data points (worker created recently)`
               : 'No CPU/Memory history available'}
@@ -216,7 +216,7 @@ export function WorkerPerformanceCharts({
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex items-center justify-center h-24 text-gray-400 text-sm">
+          <div className="flex items-center justify-center h-24 text-text-secondary text-sm">
             No task throughput data
           </div>
         )}

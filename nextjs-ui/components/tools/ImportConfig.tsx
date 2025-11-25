@@ -235,7 +235,7 @@ export function ImportConfig({ onSubmit, isLoading = false, spec }: ImportConfig
             placeholder="e.g., jira_"
             disabled={isLoading}
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-text-secondary mt-1">
             Prefix added to operation IDs (e.g., jira_createIssue)
           </p>
           {errors.name_prefix && (
@@ -252,7 +252,7 @@ export function ImportConfig({ onSubmit, isLoading = false, spec }: ImportConfig
             placeholder="https://api.example.com/v1"
             disabled={isLoading}
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-text-secondary mt-1">
             API base URL for tool execution
           </p>
           {errors.base_url && (
@@ -280,8 +280,8 @@ export function ImportConfig({ onSubmit, isLoading = false, spec }: ImportConfig
 
       {/* API Key Auth Fields */}
       {authType === 'api_key' && (
-        <div className="space-y-3 p-4 bg-gray-50 rounded-md">
-          <p className="text-sm font-medium text-gray-700">API Key Configuration</p>
+        <div className="space-y-3 p-4 bg-white/50 dark:bg-white/5 rounded-md">
+          <p className="text-sm font-medium text-text-primary dark:text-text-secondary">API Key Configuration</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="api_key_name">Key Name</Label>
@@ -320,8 +320,8 @@ export function ImportConfig({ onSubmit, isLoading = false, spec }: ImportConfig
 
       {/* Bearer Token Auth Fields */}
       {authType === 'bearer' && (
-        <div className="space-y-3 p-4 bg-gray-50 rounded-md">
-          <p className="text-sm font-medium text-gray-700">Bearer Token Configuration</p>
+        <div className="space-y-3 p-4 bg-white/50 dark:bg-white/5 rounded-md">
+          <p className="text-sm font-medium text-text-primary dark:text-text-secondary">Bearer Token Configuration</p>
           <div>
             <Label htmlFor="bearer_token">Bearer Token</Label>
             <Input
@@ -337,8 +337,8 @@ export function ImportConfig({ onSubmit, isLoading = false, spec }: ImportConfig
 
       {/* Basic Auth Fields */}
       {authType === 'basic' && (
-        <div className="space-y-3 p-4 bg-gray-50 rounded-md">
-          <p className="text-sm font-medium text-gray-700">Basic Authentication</p>
+        <div className="space-y-3 p-4 bg-white/50 dark:bg-white/5 rounded-md">
+          <p className="text-sm font-medium text-text-primary dark:text-text-secondary">Basic Authentication</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="basic_username">Username</Label>
@@ -365,8 +365,8 @@ export function ImportConfig({ onSubmit, isLoading = false, spec }: ImportConfig
 
       {/* OAuth2 Auth Fields */}
       {authType === 'oauth2' && (
-        <div className="space-y-3 p-4 bg-gray-50 rounded-md">
-          <p className="text-sm font-medium text-gray-700">OAuth2 Configuration</p>
+        <div className="space-y-3 p-4 bg-white/50 dark:bg-white/5 rounded-md">
+          <p className="text-sm font-medium text-text-primary dark:text-text-secondary">OAuth2 Configuration</p>
 
           {/* Client ID and Secret */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -442,7 +442,7 @@ export function ImportConfig({ onSubmit, isLoading = false, spec }: ImportConfig
 
       {/* Test Connection Button */}
       {authType !== 'none' && spec && (
-        <div className="pt-4 border-t border-gray-200">
+        <div className="pt-4 border-t border-white/50 dark:border-white/20">
           <Button
             type="button"
             variant="secondary"
@@ -475,7 +475,7 @@ export function ImportConfig({ onSubmit, isLoading = false, spec }: ImportConfig
       )}
 
       {/* Submit Button */}
-      <div className="flex justify-end pt-4 border-t border-gray-200">
+      <div className="flex justify-end pt-4 border-t border-white/50 dark:border-white/20">
         <Button type="submit" disabled={!isValid || isLoading}>
           {isLoading ? 'Importing...' : 'Import Tools'}
         </Button>

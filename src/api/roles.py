@@ -20,6 +20,7 @@ from typing import Annotated, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.dependencies import get_current_active_user
@@ -210,8 +211,20 @@ async def assign_role(
     - Logs to AuditLog table
     - User must re-login to get new permissions (JWT invalidation)
     """
-    # Convert tenant_id from UUID to string (TenantConfig.tenant_id is VARCHAR)
-    tenant_id_str = str(data.tenant_id)
+    # Look up tenant by UUID to get VARCHAR tenant_id for service layer
+    from src.database.models import TenantConfig
+
+    tenant_stmt = select(TenantConfig).where(TenantConfig.id == data.tenant_id)
+    tenant_result = await db.execute(tenant_stmt)
+    tenant = tenant_result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant not found"
+        )
+
+    # Use VARCHAR tenant_id for service layer (UserTenantRole stores VARCHAR)
+    tenant_id_str = tenant.tenant_id
 
     # Check tenant scoping (AC-5)
     await _check_tenant_admin_permissions(current_user, tenant_id_str, db)

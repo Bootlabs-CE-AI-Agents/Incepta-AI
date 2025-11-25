@@ -113,7 +113,7 @@ export function OpenAPIUpload({ onFileSelect, isLoading = false }: OpenAPIUpload
             'relative border-2 border-dashed rounded-lg p-8 text-center transition-colors',
             dragActive
               ? 'border-accent-blue bg-accent-blue/5'
-              : 'border-gray-300 hover:border-accent-blue/50',
+              : 'border-white/50 dark:border-white/20 hover:border-accent-blue/50',
             isLoading && 'opacity-50 pointer-events-none'
           )}
           onDragEnter={handleDrag}
@@ -130,11 +130,11 @@ export function OpenAPIUpload({ onFileSelect, isLoading = false }: OpenAPIUpload
             disabled={isLoading}
           />
 
-          <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <Upload className="mx-auto h-12 w-12 text-text-secondary mb-4" />
 
           <label
             htmlFor="file-upload"
-            className="cursor-pointer text-sm font-medium text-gray-700"
+            className="cursor-pointer text-sm font-medium text-text-primary dark:text-text-secondary"
           >
             <span className="text-accent-blue hover:text-accent-blue/80">
               Click to browse
@@ -142,7 +142,7 @@ export function OpenAPIUpload({ onFileSelect, isLoading = false }: OpenAPIUpload
             or drag and drop
           </label>
 
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-text-secondary mt-2">
             OpenAPI spec (.json, .yaml, .yml) up to 5MB
           </p>
         </div>
@@ -153,17 +153,17 @@ export function OpenAPIUpload({ onFileSelect, isLoading = false }: OpenAPIUpload
         <div
           className={cn(
             'border rounded-lg p-4',
-            uploadedFile.error ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50'
+            uploadedFile.error ? 'border-red-300 bg-red-50' : 'border-white/50 dark:border-white/20 bg-white/50 dark:bg-white/5'
           )}
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
-              <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
+              <FileText className="h-5 w-5 text-text-secondary mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-text-primary dark:text-white">
                   {uploadedFile.file.name}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-text-secondary mt-1">
                   {(uploadedFile.file.size / 1024).toFixed(2)} KB
                 </p>
 

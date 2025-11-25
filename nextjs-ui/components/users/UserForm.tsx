@@ -252,7 +252,7 @@ export function UserForm({
           type="checkbox"
           {...register('force_password_change')}
           disabled={isLoading}
-          className="w-4 h-4 text-accent-blue border-gray-300 rounded focus:ring-accent-blue"
+          className="w-4 h-4 text-accent-blue border-white/50 dark:border-white/20 rounded focus:ring-accent-blue"
         />
         <label htmlFor="force_password_change" className="text-sm font-medium">
           Force password change on next login
@@ -266,7 +266,7 @@ export function UserForm({
           type="checkbox"
           {...register('is_active')}
           disabled={isLoading}
-          className="w-4 h-4 text-accent-blue border-gray-300 rounded focus:ring-accent-blue"
+          className="w-4 h-4 text-accent-blue border-white/50 dark:border-white/20 rounded focus:ring-accent-blue"
         />
         <label htmlFor="is_active" className="text-sm font-medium">
           Is Active
@@ -274,7 +274,7 @@ export function UserForm({
       </div>
 
       {/* Form Actions */}
-      <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+      <div className="flex justify-end gap-3 pt-6 border-t border-white/50 dark:border-white/20">
         <Button
           type="button"
           variant="ghost"

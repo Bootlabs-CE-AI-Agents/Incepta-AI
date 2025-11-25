@@ -70,7 +70,7 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
         accessorKey: 'error_type',
         header: ({ column }) => (
           <button
-            className="flex items-center gap-2 font-medium text-left hover:text-gray-900"
+            className="flex items-center gap-2 font-medium text-left hover:text-text-primary dark:hover:text-white"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             aria-label="Sort by error type"
           >
@@ -80,19 +80,19 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="w-4 h-4" aria-hidden="true" />
             ) : (
-              <ArrowUpDown className="w-4 h-4 text-gray-400" aria-hidden="true" />
+              <ArrowUpDown className="w-4 h-4 text-text-secondary" aria-hidden="true" />
             )}
           </button>
         ),
         cell: ({ getValue }) => (
-          <span className="font-medium text-gray-900">{getValue() as string}</span>
+          <span className="font-medium text-text-primary dark:text-white">{getValue() as string}</span>
         ),
       },
       {
         accessorKey: 'error_message',
         header: ({ column }) => (
           <button
-            className="flex items-center gap-2 font-medium text-left hover:text-gray-900"
+            className="flex items-center gap-2 font-medium text-left hover:text-text-primary dark:hover:text-white"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             aria-label="Sort by error message"
           >
@@ -102,13 +102,13 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="w-4 h-4" aria-hidden="true" />
             ) : (
-              <ArrowUpDown className="w-4 h-4 text-gray-400" aria-hidden="true" />
+              <ArrowUpDown className="w-4 h-4 text-text-secondary" aria-hidden="true" />
             )}
           </button>
         ),
         cell: ({ getValue }) => (
           <span
-            className="text-gray-700 truncate block max-w-md"
+            className="text-text-secondary dark:text-text-secondary truncate block max-w-md"
             title={getValue() as string}
           >
             {truncateMessage(getValue() as string)}
@@ -119,7 +119,7 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
         accessorKey: 'occurrences',
         header: ({ column }) => (
           <button
-            className="flex items-center gap-2 font-medium text-left hover:text-gray-900"
+            className="flex items-center gap-2 font-medium text-left hover:text-text-primary dark:hover:text-white"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             aria-label="Sort by occurrences"
           >
@@ -129,19 +129,19 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="w-4 h-4" aria-hidden="true" />
             ) : (
-              <ArrowUpDown className="w-4 h-4 text-gray-400" aria-hidden="true" />
+              <ArrowUpDown className="w-4 h-4 text-text-secondary" aria-hidden="true" />
             )}
           </button>
         ),
         cell: ({ getValue }) => (
-          <span className="font-semibold text-gray-900">{getValue() as number}</span>
+          <span className="font-semibold text-text-primary dark:text-white">{getValue() as number}</span>
         ),
       },
       {
         accessorKey: 'first_seen',
         header: ({ column }) => (
           <button
-            className="flex items-center gap-2 font-medium text-left hover:text-gray-900"
+            className="flex items-center gap-2 font-medium text-left hover:text-text-primary dark:hover:text-white"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             aria-label="Sort by first seen"
           >
@@ -151,19 +151,19 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="w-4 h-4" aria-hidden="true" />
             ) : (
-              <ArrowUpDown className="w-4 h-4 text-gray-400" aria-hidden="true" />
+              <ArrowUpDown className="w-4 h-4 text-text-secondary" aria-hidden="true" />
             )}
           </button>
         ),
         cell: ({ getValue }) => (
-          <span className="text-sm text-gray-600">{formatTimestamp(getValue() as string)}</span>
+          <span className="text-sm text-text-secondary">{formatTimestamp(getValue() as string)}</span>
         ),
       },
       {
         accessorKey: 'last_seen',
         header: ({ column }) => (
           <button
-            className="flex items-center gap-2 font-medium text-left hover:text-gray-900"
+            className="flex items-center gap-2 font-medium text-left hover:text-text-primary dark:hover:text-white"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             aria-label="Sort by last seen"
           >
@@ -173,19 +173,19 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="w-4 h-4" aria-hidden="true" />
             ) : (
-              <ArrowUpDown className="w-4 h-4 text-gray-400" aria-hidden="true" />
+              <ArrowUpDown className="w-4 h-4 text-text-secondary" aria-hidden="true" />
             )}
           </button>
         ),
         cell: ({ getValue }) => (
-          <span className="text-sm text-gray-600">{formatTimestamp(getValue() as string)}</span>
+          <span className="text-sm text-text-secondary">{formatTimestamp(getValue() as string)}</span>
         ),
       },
       {
         accessorKey: 'affected_executions',
         header: ({ column }) => (
           <button
-            className="flex items-center gap-2 font-medium text-left hover:text-gray-900"
+            className="flex items-center gap-2 font-medium text-left hover:text-text-primary dark:hover:text-white"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             aria-label="Sort by affected executions"
           >
@@ -195,11 +195,11 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="w-4 h-4" aria-hidden="true" />
             ) : (
-              <ArrowUpDown className="w-4 h-4 text-gray-400" aria-hidden="true" />
+              <ArrowUpDown className="w-4 h-4 text-text-secondary" aria-hidden="true" />
             )}
           </button>
         ),
-        cell: ({ getValue }) => <span className="text-gray-700">{getValue() as number}</span>,
+        cell: ({ getValue }) => <span className="text-text-secondary dark:text-text-secondary">{getValue() as number}</span>,
       },
       {
         id: 'severity',
@@ -259,13 +259,13 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="h-10 w-64 bg-gray-200 animate-pulse rounded" />
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="h-10 w-64 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
+        <div className="border border-white/50 dark:border-white/20 rounded-lg overflow-hidden">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex gap-4 p-4 border-b border-gray-100">
-              <div className="h-6 w-24 bg-gray-200 animate-pulse rounded" />
-              <div className="h-6 flex-1 bg-gray-200 animate-pulse rounded" />
-              <div className="h-6 w-16 bg-gray-200 animate-pulse rounded" />
+            <div key={i} className="flex gap-4 p-4 border-b border-white/50 dark:border-white/10">
+              <div className="h-6 w-24 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
+              <div className="h-6 flex-1 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
+              <div className="h-6 w-16 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
             </div>
           ))}
         </div>
@@ -292,8 +292,8 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
   // Empty state (AC #6)
   if (!data?.errors || data.errors.length === 0) {
     return (
-      <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-        <p className="text-gray-600">No errors found for selected time range</p>
+      <div className="text-center py-12 bg-white/50 dark:bg-white/5 rounded-lg border border-white/50 dark:border-white/20">
+        <p className="text-text-secondary">No errors found for selected time range</p>
       </div>
     );
   }
@@ -304,20 +304,20 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
       <div className="flex items-center justify-between gap-4">
         {/* Search input (AC #2: debounced) */}
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
           <input
             type="text"
             placeholder="Search errors..."
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-white/50 dark:border-white/20 rounded-md bg-white dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             aria-label="Search error messages"
           />
         </div>
 
         {/* Row count and export button */}
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600" role="status" aria-live="polite">
+          <span className="text-sm text-text-secondary" role="status" aria-live="polite">
             Showing {filteredData.length} of {data.errors.length} errors
           </span>
           <button
@@ -332,15 +332,15 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
       </div>
 
       {/* Table */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="border border-white/50 dark:border-white/20 rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-white/50 dark:divide-white/20">
+          <thead className="bg-white/50 dark:bg-white/5">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider"
                   >
                     {header.isPlaceholder
                       ? null
@@ -350,7 +350,7 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
               </tr>
             ))}
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-white/5 divide-y divide-white/50 dark:divide-white/20">
             {table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
@@ -362,7 +362,7 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
                   }
                 }}
                 tabIndex={0}
-                className="cursor-pointer hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+                className="cursor-pointer hover:bg-white/50 dark:hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
                 role="button"
                 aria-label={`View details for ${row.original.error_type}`}
               >
@@ -379,14 +379,14 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
 
       {/* Pagination (AC #2) */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
+        <div className="text-sm text-text-secondary">
           Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 border border-white/50 dark:border-white/20 rounded-md hover:bg-white/50 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             aria-label="Previous page"
           >
             Previous
@@ -394,7 +394,7 @@ export function ErrorAnalysisTable({ agentId, startDate, endDate }: ErrorAnalysi
           <button
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 border border-white/50 dark:border-white/20 rounded-md hover:bg-white/50 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             aria-label="Next page"
           >
             Next

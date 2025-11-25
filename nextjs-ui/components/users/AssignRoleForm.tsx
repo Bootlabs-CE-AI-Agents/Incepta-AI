@@ -39,17 +39,16 @@ export function AssignRoleForm({ userId }: AssignRoleFormProps) {
   const [selectedRole, setSelectedRole] = useState<RoleEnum | ''>('');
 
   // AC-6: Determine if current user is super_admin (can assign for all tenants)
-  const currentUserRole = session?.user?.role;
-  const isSuperAdmin = currentUserRole === 'super_admin';
+  const isSuperAdmin = session?.user?.roles?.some((r: any) => r.role === 'super_admin') || false;
   const currentUserTenantId = session?.user?.default_tenant_id;
 
   // AC-6: Pre-select and disable tenant dropdown for tenant_admin
   useEffect(() => {
     if (!isSuperAdmin && currentUserTenantId && tenants) {
-      // Find tenant with matching tenant_id (VARCHAR, not id UUID)
+      // Find tenant with matching id (UUID)
       const userTenant = tenants.find((t) => t.id === currentUserTenantId);
       if (userTenant) {
-        setSelectedTenantId(userTenant.tenant_id); // Set to VARCHAR tenant_id
+        setSelectedTenantId(userTenant.id); // Set to UUID id (API expects UUID)
       }
     }
   }, [isSuperAdmin, currentUserTenantId, tenants]);
@@ -61,7 +60,7 @@ export function AssignRoleForm({ userId }: AssignRoleFormProps) {
 
     assignRole(
       {
-        tenant_id: selectedTenantId, // CRITICAL: Use tenant.tenant_id (VARCHAR), not tenant.id (UUID)
+        tenant_id: selectedTenantId, // Sending tenant.id (UUID) - API expects UUID per RoleAssignmentCreate schema
         role: selectedRole as RoleEnum,
       },
       {
@@ -93,7 +92,7 @@ export function AssignRoleForm({ userId }: AssignRoleFormProps) {
           disabled={!isSuperAdmin || isFormDisabled}
           className="
             w-full px-3 py-2 rounded-md border border-border
-            bg-white dark:bg-gray-800
+            bg-white dark:bg-white/5
             text-text-primary
             focus:outline-none focus:ring-2 focus:ring-accent-blue
             disabled:opacity-50 disabled:cursor-not-allowed
@@ -107,7 +106,7 @@ export function AssignRoleForm({ userId }: AssignRoleFormProps) {
             <option disabled>Loading tenants...</option>
           ) : (
             tenants?.map((tenant) => (
-              <option key={tenant.id} value={tenant.tenant_id}>
+              <option key={tenant.id} value={tenant.id}>
                 {tenant.name}
               </option>
             ))
@@ -132,7 +131,7 @@ export function AssignRoleForm({ userId }: AssignRoleFormProps) {
           disabled={isFormDisabled}
           className="
             w-full px-3 py-2 rounded-md border border-border
-            bg-white dark:bg-gray-800
+            bg-white dark:bg-white/5
             text-text-primary
             focus:outline-none focus:ring-2 focus:ring-accent-blue
             disabled:opacity-50 disabled:cursor-not-allowed

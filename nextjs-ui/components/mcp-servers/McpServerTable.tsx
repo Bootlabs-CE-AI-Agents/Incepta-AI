@@ -41,7 +41,7 @@ export function McpServerTable({ servers, onDelete, onTest }: McpServerTableProp
   function getStatusBadge(server: MCPServer) {
     if (server.status === 'inactive') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-white/50 dark:bg-white/10 text-text-secondary">
           <AlertCircle className="h-3 w-3" />
           Inactive
         </span>
@@ -85,7 +85,7 @@ export function McpServerTable({ servers, onDelete, onTest }: McpServerTableProp
     };
 
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-700'}`}>
+      <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${colors[type as keyof typeof colors] || 'bg-white/50 dark:bg-white/10 text-text-secondary'}`}>
         {type.toUpperCase()}
       </span>
     );

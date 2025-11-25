@@ -53,14 +53,14 @@ export interface WorkerRestartDialogProps {
 function getStatusBadgeClass(status: string): string {
   switch (status) {
     case 'active':
-      return 'bg-green-500 text-white';
+      return 'bg-accent-green text-white';
     case 'idle':
-      return 'bg-yellow-500 text-black';
+      return 'bg-accent-orange text-white';
     case 'unresponsive':
     case 'stuck':
       return 'bg-red-500 text-white';
     default:
-      return 'bg-gray-500 text-white';
+      return 'bg-text-secondary text-white';
   }
 }
 
@@ -169,29 +169,29 @@ export function WorkerRestartDialog({ worker, isOpen, onClose, onConfirm }: Work
       {/* Worker Details (AC-2) */}
       <div className="space-y-3 py-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Hostname:</span>
-          <code className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+          <span className="text-sm font-medium text-text-primary dark:text-white/80">Hostname:</span>
+          <code className="text-sm bg-white/50 dark:bg-white/10 px-2 py-0.5 rounded">
             {worker.hostname}
           </code>
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
+          <span className="text-sm font-medium text-text-primary dark:text-white/80">Status:</span>
           <Badge className={statusBadgeClass}>
             {worker.status}
           </Badge>
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Current Task:</span>
-          <code className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+          <span className="text-sm font-medium text-text-primary dark:text-white/80">Current Task:</span>
+          <code className="text-sm bg-white/50 dark:bg-white/10 px-2 py-0.5 rounded">
             {currentTask}
           </code>
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Uptime:</span>
-          <span className="text-sm text-gray-600 dark:text-gray-400">{uptime}</span>
+          <span className="text-sm font-medium text-text-primary dark:text-white/80">Uptime:</span>
+          <span className="text-sm text-text-secondary dark:text-white/60">{uptime}</span>
         </div>
       </div>
 

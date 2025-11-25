@@ -67,7 +67,7 @@ export function getStatusBadge(isActive: boolean): { variant: 'success' | 'defau
   }
   return {
     variant: 'default',
-    className: 'bg-gray-400 text-white',
+    className: 'bg-white/50 dark:bg-white/20 text-text-secondary',
     label: 'Inactive',
   };
 }

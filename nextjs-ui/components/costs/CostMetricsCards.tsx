@@ -34,7 +34,7 @@ function EmptyState() {
       <div className="text-6xl mb-4" role="img" aria-label="Empty">
         📊
       </div>
-      <h2 className="text-2xl font-bold text-foreground mb-2">
+      <h2 className="text-h2 font-bold text-text-primary mb-2">
         No Cost Data Yet
       </h2>
       <p className="text-muted-foreground max-w-md text-center">

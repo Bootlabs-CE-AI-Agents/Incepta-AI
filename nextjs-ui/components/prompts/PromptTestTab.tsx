@@ -165,8 +165,8 @@ export function PromptTestTab({
     <div className="space-y-6 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
       {/* Test Configuration (AC-1) */}
       <form onSubmit={handleSubmit(onSubmit)} onKeyDown={handleKeyDown}>
-        <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        <div className="rounded-lg border border-white/50 dark:border-white/20 bg-white dark:bg-white/5 p-6">
+          <h3 className="text-sm font-semibold text-text-primary dark:text-white mb-4">
             Test Configuration
           </h3>
 
@@ -177,7 +177,7 @@ export function PromptTestTab({
                 Model
               </Label>
               {modelsLoading ? (
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <div className="flex items-center space-x-2 text-sm text-text-secondary">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>Loading models...</span>
                 </div>
@@ -185,7 +185,7 @@ export function PromptTestTab({
                 <select
                   {...register('model')}
                   id="model"
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700"
+                  className="mt-1 block w-full rounded-md border border-white/50 dark:border-white/20 bg-white dark:bg-white/5 px-3 py-2 text-sm"
                   aria-label="Select LLM model"
                 >
                   <option value="">Select a model</option>
@@ -234,7 +234,7 @@ export function PromptTestTab({
             <div>
               <Label htmlFor="temperature" className="text-sm flex justify-between">
                 <span>Temperature</span>
-                <span className="text-gray-500">{temperature.toFixed(1)}</span>
+                <span className="text-text-secondary">{temperature.toFixed(1)}</span>
               </Label>
               <input
                 {...register('temperature', { valueAsNumber: true })}
@@ -246,7 +246,7 @@ export function PromptTestTab({
                 className="mt-1 w-full"
                 aria-label="Temperature slider"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-xs text-text-secondary mt-1">
                 <span>0.0</span>
                 <span>1.0</span>
               </div>
@@ -289,7 +289,7 @@ export function PromptTestTab({
                 'Run Test'
               )}
             </Button>
-            <p className="text-xs text-gray-500 text-center">
+            <p className="text-xs text-text-secondary text-center">
               Press Ctrl+Enter to submit
             </p>
           </div>

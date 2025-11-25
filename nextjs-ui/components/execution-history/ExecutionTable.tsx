@@ -50,7 +50,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
         accessorKey: 'id',
         header: 'Execution ID',
         cell: ({ row }) => (
-          <div className="font-mono text-xs text-neutral-600 dark:text-neutral-400 truncate max-w-[120px]">
+          <div className="font-mono text-xs text-text-secondary dark:text-white/60 truncate max-w-[120px]">
             {row.original.id.slice(0, 8)}
           </div>
         ),
@@ -61,7 +61,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting()}
-            className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white transition-colors"
+            className="flex items-center gap-1 hover:text-text-primary dark:hover:text-white transition-colors"
           >
             Agent
             {column.getIsSorted() === 'asc' ? (
@@ -74,7 +74,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
           </button>
         ),
         cell: ({ row }) => (
-          <div className="font-medium text-neutral-900 dark:text-white">
+          <div className="font-medium text-text-primary dark:text-white">
             {row.original.agent_name}
           </div>
         ),
@@ -84,7 +84,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting()}
-            className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white transition-colors"
+            className="flex items-center gap-1 hover:text-text-primary dark:hover:text-white transition-colors"
           >
             Status
             {column.getIsSorted() === 'asc' ? (
@@ -107,7 +107,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting()}
-            className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white transition-colors"
+            className="flex items-center gap-1 hover:text-text-primary dark:hover:text-white transition-colors"
           >
             Duration
             {column.getIsSorted() === 'asc' ? (
@@ -120,7 +120,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
           </button>
         ),
         cell: ({ row }) => (
-          <div className="text-neutral-700 dark:text-neutral-300 tabular-nums">
+          <div className="text-text-primary dark:text-white/80 tabular-nums">
             {formatDuration(row.original.duration_ms)}
           </div>
         ),
@@ -130,7 +130,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting()}
-            className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white transition-colors"
+            className="flex items-center gap-1 hover:text-text-primary dark:hover:text-white transition-colors"
           >
             Started
             {column.getIsSorted() === 'asc' ? (
@@ -146,10 +146,10 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
           const date = new Date(row.original.started_at);
           return (
             <div className="text-sm">
-              <div className="text-neutral-900 dark:text-white">
+              <div className="text-text-primary dark:text-white">
                 {formatDistanceToNow(date, { addSuffix: true })}
               </div>
-              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+              <div className="text-xs text-text-secondary dark:text-white/60">
                 {format(date, 'MMM d, HH:mm:ss')}
               </div>
             </div>
@@ -167,7 +167,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
               e.stopPropagation();
               onRowClick(row.original);
             }}
-            className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+            className="text-text-secondary hover:text-text-primary dark:text-white/60 dark:hover:text-white"
           >
             <Eye className="h-4 w-4 mr-1" />
             View
@@ -194,7 +194,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
   if (executions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="text-neutral-400 dark:text-neutral-600 mb-2">
+        <div className="text-text-secondary dark:text-white/50 mb-2">
           <Eye className="h-12 w-12 mx-auto mb-4" />
           <p className="text-lg font-medium">No executions found</p>
           <p className="text-sm">Try adjusting your filters</p>
@@ -204,15 +204,15 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
+    <div className="overflow-x-auto rounded-lg border border-white/50 dark:border-white/20">
       <table className="w-full">
-        <thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
+        <thead className="bg-white/50 dark:bg-white/5 border-b border-white/50 dark:border-white/20">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="px-4 py-3 text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-semibold text-text-secondary dark:text-white/70 uppercase tracking-wider"
                   style={{ width: header.column.columnDef.size }}
                 >
                   {header.isPlaceholder
@@ -223,12 +223,12 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
             </tr>
           ))}
         </thead>
-        <tbody className="bg-white dark:bg-neutral-900 divide-y divide-neutral-200 dark:divide-neutral-700">
+        <tbody className="bg-white/30 dark:bg-white/5 divide-y divide-white/50 dark:divide-white/20">
           {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
               onClick={() => onRowClick(row.original)}
-              className="hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors"
+              className="hover:bg-white/50 dark:hover:bg-white/10 cursor-pointer transition-colors"
             >
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="px-4 py-3 text-sm">

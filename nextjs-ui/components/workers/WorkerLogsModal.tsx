@@ -414,7 +414,7 @@ export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalPr
                 {/* Logs Display - AC-7: Virtualized */}
                 <div
                   ref={parentRef}
-                  className="flex-1 overflow-auto bg-gray-950 rounded-md border border-border"
+                  className="flex-1 overflow-auto bg-black/90 rounded-md border border-border"
                   style={{ height: '500px' }}
                 >
                   {isLoading ? (
@@ -453,14 +453,14 @@ export function WorkerLogsModal({ hostname, isOpen, onClose }: WorkerLogsModalPr
                             }}
                           >
                             {/* Line Number - AC-2 */}
-                            <span className="text-gray-600 text-right select-none">
+                            <span className="text-text-secondary/60 text-right select-none">
                               {virtualRow.index + 1}
                             </span>
 
                             {/* Log Content - AC-2 */}
                             <div className={`break-all ${colorClass}`}>
                               {log.timestamp && (
-                                <span className="text-gray-500 mr-2">
+                                <span className="text-text-secondary/70 mr-2">
                                   [{formatLogTimestamp(log.timestamp)}]
                                 </span>
                               )}

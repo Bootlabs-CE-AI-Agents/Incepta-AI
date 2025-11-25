@@ -134,7 +134,7 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
             <button
               type="button"
               onClick={() => row.toggleExpanded()}
-              className="cursor-pointer p-1 hover:bg-gray-100 rounded"
+              className="cursor-pointer p-1 hover:bg-white/50 dark:hover:bg-white/10 rounded"
               aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
               aria-expanded={row.getIsExpanded()}
             >
@@ -168,14 +168,14 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
         accessorKey: 'agent_name',
         header: 'Agent',
         cell: ({ getValue }) => (
-          <span className="font-medium text-gray-900">{getValue() as string}</span>
+          <span className="font-medium text-text-primary dark:text-white">{getValue() as string}</span>
         ),
       },
       {
         accessorKey: 'duration_ms',
         header: ({ column }) => (
           <button
-            className="flex items-center gap-2 font-medium text-left hover:text-gray-900"
+            className="flex items-center gap-2 font-medium text-left hover:text-text-primary dark:hover:text-white"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             aria-label="Sort by execution time"
           >
@@ -185,7 +185,7 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="w-4 h-4" aria-hidden="true" />
             ) : (
-              <ArrowUpDown className="w-4 h-4 text-gray-400" aria-hidden="true" />
+              <ArrowUpDown className="w-4 h-4 text-text-secondary" aria-hidden="true" />
             )}
           </button>
         ),
@@ -212,7 +212,7 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
         accessorKey: 'start_time',
         header: ({ column }) => (
           <button
-            className="flex items-center gap-2 font-medium text-left hover:text-gray-900"
+            className="flex items-center gap-2 font-medium text-left hover:text-text-primary dark:hover:text-white"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             aria-label="Sort by start time"
           >
@@ -222,12 +222,12 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="w-4 h-4" aria-hidden="true" />
             ) : (
-              <ArrowUpDown className="w-4 h-4 text-gray-400" aria-hidden="true" />
+              <ArrowUpDown className="w-4 h-4 text-text-secondary" aria-hidden="true" />
             )}
           </button>
         ),
         cell: ({ getValue }) => (
-          <span className="text-gray-600">{formatTimestamp(getValue() as string)}</span>
+          <span className="text-text-secondary">{formatTimestamp(getValue() as string)}</span>
         ),
       },
       {
@@ -241,7 +241,7 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
         accessorKey: 'input_preview',
         header: 'Input Preview',
         cell: ({ getValue }) => (
-          <span className="text-gray-600 text-sm">{truncateText(getValue() as string, 80)}</span>
+          <span className="text-text-secondary text-sm">{truncateText(getValue() as string, 80)}</span>
         ),
       },
     ],
@@ -271,20 +271,20 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
   if (isLoading) {
     return (
       <div className="mt-6" role="status" aria-live="polite" aria-label="Loading slowest executions">
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="h-6 w-48 bg-gray-200 animate-pulse rounded" />
+        <div className="bg-white dark:bg-white/5 rounded-lg border border-white/50 dark:border-white/20 shadow-sm">
+          <div className="px-6 py-4 border-b border-white/50 dark:border-white/20">
+            <div className="h-6 w-48 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
           </div>
-          <div className="divide-y divide-gray-200">
+          <div className="divide-y divide-white/50 dark:divide-white/20">
             {[...Array(10)].map((_, i) => (
               <div key={i} className="px-6 py-4 flex items-center gap-4">
-                <div className="h-4 w-4 bg-gray-200 animate-pulse rounded" />
-                <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" />
-                <div className="h-4 w-32 bg-gray-200 animate-pulse rounded" />
-                <div className="h-4 w-24 bg-gray-200 animate-pulse rounded" />
-                <div className="h-4 w-40 bg-gray-200 animate-pulse rounded" />
-                <div className="h-4 w-16 bg-gray-200 animate-pulse rounded" />
-                <div className="flex-1 h-4 bg-gray-200 animate-pulse rounded" />
+                <div className="h-4 w-4 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
+                <div className="h-4 w-20 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
+                <div className="h-4 w-32 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
+                <div className="h-4 w-24 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
+                <div className="h-4 w-40 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
+                <div className="h-4 w-16 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
+                <div className="flex-1 h-4 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
               </div>
             ))}
           </div>
@@ -299,7 +299,7 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
       <div className="mt-6">
         <div className="bg-white rounded-lg border border-red-200 shadow-sm p-8 text-center">
           <div className="text-red-600 text-lg font-semibold mb-2">Failed to load execution data</div>
-          <p className="text-gray-600 mb-4">
+          <p className="text-text-secondary mb-4">
             There was an error fetching the slowest executions. Please try again.
           </p>
           <button
@@ -318,9 +318,9 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
   if (!data?.executions || data.executions.length === 0) {
     return (
       <div className="mt-6">
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 text-center">
-          <div className="text-gray-900 text-lg font-semibold mb-2">No slow executions found</div>
-          <p className="text-gray-600">
+        <div className="bg-white dark:bg-white/5 rounded-lg border border-white/50 dark:border-white/20 shadow-sm p-8 text-center">
+          <div className="text-text-primary dark:text-white text-lg font-semibold mb-2">No slow executions found</div>
+          <p className="text-text-secondary">
             {statusFilter !== 'all'
               ? `No ${statusFilter} executions found in the selected time range.`
               : 'No executions found in the selected time range.'}
@@ -334,16 +334,16 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
   return (
     <div className="mt-6">
       {/* Header with controls (AC #5) */}
-      <div className="bg-white rounded-t-lg border border-gray-200 border-b-0 shadow-sm px-6 py-4 flex items-center justify-between">
+      <div className="bg-white dark:bg-white/5 rounded-t-lg border border-white/50 dark:border-white/20 border-b-0 shadow-sm px-6 py-4 flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-text-primary dark:text-white">
             Slowest Executions
-            <span className="ml-2 text-sm font-normal text-gray-500" role="status" aria-live="polite">
+            <span className="ml-2 text-sm font-normal text-text-secondary" role="status" aria-live="polite">
               (Showing {table.getRowModel().rows.length} of {data.total_count})
             </span>
           </h3>
           {/* Last updated timestamp (AC #5, Task 6.4) */}
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-text-secondary mt-1">
             Last updated: {timeSinceUpdate}
             {hasExpandedRows && <span className="ml-2 text-amber-600">(Auto-refresh paused)</span>}
           </p>
@@ -352,14 +352,14 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
         <div className="flex items-center gap-4">
           {/* Status Filter (AC #5) */}
           <div className="flex items-center gap-2">
-            <label htmlFor="status-filter" className="text-sm font-medium text-gray-700">
+            <label htmlFor="status-filter" className="text-sm font-medium text-text-primary dark:text-text-secondary">
               Filter:
             </label>
             <select
               id="status-filter"
               value={statusFilter}
               onChange={(e) => handleStatusFilterChange(e.target.value as 'all' | 'success' | 'failed')}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 border border-white/50 dark:border-white/20 bg-white dark:bg-white/5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               aria-label="Filter executions by status"
             >
               <option value="all">All</option>
@@ -371,7 +371,7 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
           {/* Manual Refresh Button (AC #5) */}
           <button
             onClick={() => refetch()}
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-text-primary dark:text-text-secondary bg-white dark:bg-white/5 border border-white/50 dark:border-white/20 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-colors"
             aria-label="Refresh slowest executions data"
           >
             <RefreshCw className="w-4 h-4" />
@@ -381,16 +381,16 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
       </div>
 
       {/* Table (AC #1, #2, #3, #4) */}
-      <div className="bg-white rounded-b-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-white/5 rounded-b-lg border border-white/50 dark:border-white/20 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full" role="table" aria-label="Slowest executions table">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-white/50 dark:bg-white/5 border-b border-white/50 dark:border-white/20">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id} role="row">
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider"
                       role="columnheader"
                     >
                       {header.isPlaceholder
@@ -401,12 +401,12 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
                 </tr>
               ))}
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-white/5 divide-y divide-white/50 dark:divide-white/20">
               {table.getRowModel().rows.map((row) => (
                 <React.Fragment key={row.id}>
                   {/* Main row (AC #1, #2) */}
                   <tr
-                    className="hover:bg-gray-50"
+                    className="hover:bg-white/50 dark:hover:bg-white/10"
                     role="row"
                     aria-expanded={row.getIsExpanded()}
                   >
@@ -420,20 +420,20 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
                   {/* Expanded details row (AC #4) */}
                   {row.getIsExpanded() && (
                     <tr key={`${row.id}-expanded`}>
-                      <td colSpan={columns.length} className="px-6 py-4 bg-gray-50">
+                      <td colSpan={columns.length} className="px-6 py-4 bg-white/50 dark:bg-white/5">
                         <div className="space-y-4">
                           {/* Full Input */}
                           <div>
-                            <h4 className="text-sm font-semibold text-gray-900 mb-2">Input:</h4>
-                            <pre className="text-sm text-gray-700 bg-white border border-gray-200 rounded p-3 overflow-x-auto whitespace-pre-wrap">
+                            <h4 className="text-sm font-semibold text-text-primary dark:text-white mb-2">Input:</h4>
+                            <pre className="text-sm text-text-secondary bg-white dark:bg-white/5 border border-white/50 dark:border-white/20 rounded p-3 overflow-x-auto whitespace-pre-wrap">
                               {row.original.input_preview}
                             </pre>
                           </div>
 
                           {/* Output Preview */}
                           <div>
-                            <h4 className="text-sm font-semibold text-gray-900 mb-2">Output Preview:</h4>
-                            <pre className="text-sm text-gray-700 bg-white border border-gray-200 rounded p-3 overflow-x-auto whitespace-pre-wrap">
+                            <h4 className="text-sm font-semibold text-text-primary dark:text-white mb-2">Output Preview:</h4>
+                            <pre className="text-sm text-text-secondary bg-white dark:bg-white/5 border border-white/50 dark:border-white/20 rounded p-3 overflow-x-auto whitespace-pre-wrap">
                               {truncateText(row.original.output_preview, 200)}
                             </pre>
                           </div>
@@ -441,14 +441,14 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
                           {/* Metadata */}
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <span className="text-sm font-semibold text-gray-900">Conversation Steps:</span>
-                              <span className="ml-2 text-sm text-gray-700">
+                              <span className="text-sm font-semibold text-text-primary dark:text-white">Conversation Steps:</span>
+                              <span className="ml-2 text-sm text-text-secondary">
                                 {row.original.conversation_steps_count} steps
                               </span>
                             </div>
                             <div>
-                              <span className="text-sm font-semibold text-gray-900">Tool Calls:</span>
-                              <span className="ml-2 text-sm text-gray-700">
+                              <span className="text-sm font-semibold text-text-primary dark:text-white">Tool Calls:</span>
+                              <span className="ml-2 text-sm text-text-secondary">
                                 {row.original.tool_calls_count} invocations
                               </span>
                             </div>
@@ -485,15 +485,15 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
         </div>
 
         {/* Pagination (AC #2) */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+        <div className="px-6 py-4 border-t border-white/50 dark:border-white/20 flex items-center justify-between">
+          <div className="text-sm text-text-secondary">
             Page {page + 1} of {table.getPageCount()}
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-sm font-medium text-text-primary dark:text-text-secondary bg-white dark:bg-white/5 border border-white/50 dark:border-white/20 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               aria-label="Previous page"
             >
               Previous
@@ -501,7 +501,7 @@ export function SlowestExecutionsList({ agentId, startDate, endDate }: SlowestEx
             <button
               onClick={() => setPage((p) => Math.min(table.getPageCount() - 1, p + 1))}
               disabled={page >= table.getPageCount() - 1}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-sm font-medium text-text-primary dark:text-text-secondary bg-white dark:bg-white/5 border border-white/50 dark:border-white/20 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               aria-label="Next page"
             >
               Next

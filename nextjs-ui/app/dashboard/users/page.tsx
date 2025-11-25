@@ -163,7 +163,7 @@ export default function UsersPage() {
       {/* Page Header (AC-1: Title + Create User button) */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Users Management</h1>
+          <h1 className="text-h1 font-bold text-text-primary">Users Management</h1>
           <p className="text-muted-foreground">
             Manage user accounts, roles, and permissions
             {!isSuperAdmin && ' (scoped to your tenant)'}

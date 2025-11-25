@@ -40,7 +40,7 @@ export default function CreateMcpServerPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Create MCP Server</h1>
+            <h1 className="text-h1 font-bold text-text-primary">Create MCP Server</h1>
             <p className="text-muted-foreground mt-2">
               Configure a new Model Context Protocol server connection
             </p>

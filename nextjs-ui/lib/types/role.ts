@@ -57,5 +57,5 @@ export const ROLE_BADGE_COLORS: Record<RoleEnum, string> = {
   [RoleEnum.TENANT_ADMIN]: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
   [RoleEnum.DEVELOPER]: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
   [RoleEnum.OPERATOR]: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-  [RoleEnum.VIEWER]: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
+  [RoleEnum.VIEWER]: 'bg-white/50 text-text-secondary dark:bg-white/10 dark:text-text-secondary',
 };

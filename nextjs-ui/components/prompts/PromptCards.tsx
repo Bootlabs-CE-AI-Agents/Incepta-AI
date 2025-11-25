@@ -24,11 +24,11 @@ export function PromptCards({ prompts, canEdit }: PromptCardsProps) {
   if (prompts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <FileText className="h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <FileText className="h-12 w-12 text-text-secondary mb-4" />
+        <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-2">
           No prompts yet
         </h3>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-text-secondary mb-4">
           Create your first prompt template to get started.
         </p>
         {canEdit && (
@@ -47,7 +47,7 @@ export function PromptCards({ prompts, canEdit }: PromptCardsProps) {
         return (
           <Card key={prompt.id} className="p-6 hover:shadow-md transition-shadow">
             <div className="flex items-start justify-between mb-3">
-              <h3 className="text-lg font-semibold text-gray-900 truncate flex-1">
+              <h3 className="text-lg font-semibold text-text-primary dark:text-white truncate flex-1">
                 {prompt.name}
               </h3>
               {canEdit && (
@@ -59,11 +59,11 @@ export function PromptCards({ prompts, canEdit }: PromptCardsProps) {
               )}
             </div>
 
-            <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+            <p className="text-sm text-text-secondary mb-4 line-clamp-2">
               {prompt.description || 'No description provided'}
             </p>
 
-            <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center justify-between text-xs text-text-secondary">
               <div className="flex items-center gap-2">
                 <Badge variant="info">
                   {variables.length} variable

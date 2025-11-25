@@ -154,7 +154,7 @@ export default function NewUserPage() {
       <DashboardLayout>
         <div className="flex h-full items-center justify-center">
           <div className="text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-gray-900" />
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-white/50 border-t-primary" />
             <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
           </div>
         </div>
@@ -193,7 +193,7 @@ export default function NewUserPage() {
               Back
             </Button>
             <div>
-              <h1 className="text-3xl font-bold">Create New User</h1>
+              <h1 className="text-h1 font-bold text-text-primary">Create New User</h1>
               <p className="text-muted-foreground mt-1">
                 Add a new user account with role assignment
               </p>
@@ -303,7 +303,7 @@ export default function NewUserPage() {
                 id="send_welcome_email"
                 type="checkbox"
                 {...register('send_welcome_email')}
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-white/50 dark:border-white/20"
               />
               <Label htmlFor="send_welcome_email" className="!mb-0">
                 Send welcome email with login instructions

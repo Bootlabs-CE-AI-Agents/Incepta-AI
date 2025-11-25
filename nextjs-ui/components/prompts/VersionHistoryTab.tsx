@@ -68,7 +68,7 @@ export function VersionHistoryTab({ promptId, currentTemplateText }: VersionHist
         {[...Array(5)].map((_, i) => (
           <div
             key={i}
-            className="animate-pulse bg-gray-200 rounded-lg h-24"
+            className="animate-pulse bg-white/50 dark:bg-white/10 rounded-lg h-24"
           />
         ))}
       </div>
@@ -97,11 +97,11 @@ export function VersionHistoryTab({ promptId, currentTemplateText }: VersionHist
   if (versions.length === 0 && !debouncedSearch && !fromDate && !toDate) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-        <History className="h-16 w-16 text-gray-400 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <History className="h-16 w-16 text-text-secondary mb-4" />
+        <h3 className="text-lg font-semibold text-text-primary dark:text-white mb-2">
           No version history available
         </h3>
-        <p className="text-sm text-gray-600 max-w-md">
+        <p className="text-sm text-text-secondary max-w-md">
           Versions will be created automatically when you save changes to this prompt.
         </p>
       </div>
@@ -128,14 +128,14 @@ export function VersionHistoryTab({ promptId, currentTemplateText }: VersionHist
             </Button>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-700 whitespace-nowrap">From:</label>
+            <label className="text-sm text-text-primary dark:text-text-secondary whitespace-nowrap">From:</label>
             <Input
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
               className="flex-1"
             />
-            <label className="text-sm text-gray-700 whitespace-nowrap">To:</label>
+            <label className="text-sm text-text-primary dark:text-text-secondary whitespace-nowrap">To:</label>
             <Input
               type="date"
               value={toDate}
@@ -147,7 +147,7 @@ export function VersionHistoryTab({ promptId, currentTemplateText }: VersionHist
 
         {/* No results message */}
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-          <p className="text-gray-600">No versions match your filters</p>
+          <p className="text-text-secondary">No versions match your filters</p>
           <Button variant="link" size="sm" onClick={handleClearFilters} className="mt-2">
             Clear filters
           </Button>
@@ -175,7 +175,7 @@ export function VersionHistoryTab({ promptId, currentTemplateText }: VersionHist
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <label htmlFor="from-date" className="text-sm text-gray-700 whitespace-nowrap">
+          <label htmlFor="from-date" className="text-sm text-text-primary dark:text-text-secondary whitespace-nowrap">
             From:
           </label>
           <Input
@@ -186,7 +186,7 @@ export function VersionHistoryTab({ promptId, currentTemplateText }: VersionHist
             className="flex-1"
             aria-label="Filter from date"
           />
-          <label htmlFor="to-date" className="text-sm text-gray-700 whitespace-nowrap">
+          <label htmlFor="to-date" className="text-sm text-text-primary dark:text-text-secondary whitespace-nowrap">
             To:
           </label>
           <Input
@@ -202,46 +202,46 @@ export function VersionHistoryTab({ promptId, currentTemplateText }: VersionHist
 
       {/* Filtered count (AC-4) */}
       {(debouncedSearch || fromDate || toDate) && data && (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-text-secondary">
           Showing {versions.length} of {data.total} versions
         </p>
       )}
 
       {/* Version List Table (AC-1) - Desktop */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-white/50 dark:divide-white/20">
+          <thead className="bg-white/50 dark:bg-white/5">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Version
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Saved
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+              <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider hidden lg:table-cell">
                 Description
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Characters
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-white/5 divide-y divide-white/50 dark:divide-white/20">
             {versions.map((version) => (
-              <tr key={version.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+              <tr key={version.id} className="hover:bg-white/50 dark:hover:bg-white/10">
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-text-primary dark:text-white">
                   v{version.version_number}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary">
                   {formatDistanceToNow(new Date(version.created_at), { addSuffix: true })}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-600 hidden lg:table-cell">
+                <td className="px-4 py-3 text-sm text-text-secondary hidden lg:table-cell">
                   {version.description || '—'}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary">
                   {version.template_text.length.toLocaleString()}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium space-x-2">
@@ -273,15 +273,15 @@ export function VersionHistoryTab({ promptId, currentTemplateText }: VersionHist
         {versions.map((version) => (
           <div
             key={version.id}
-            className="bg-white border border-gray-200 rounded-lg p-4 space-y-2"
+            className="bg-white dark:bg-white/5 border border-white/50 dark:border-white/20 rounded-lg p-4 space-y-2"
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="font-semibold text-gray-900">Version {version.version_number}</p>
-                <p className="text-sm text-gray-600">
+                <p className="font-semibold text-text-primary dark:text-white">Version {version.version_number}</p>
+                <p className="text-sm text-text-secondary">
                   {formatDistanceToNow(new Date(version.created_at), { addSuffix: true })}
                 </p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-text-secondary mt-1">
                   {version.template_text.length.toLocaleString()} characters
                 </p>
               </div>
@@ -312,7 +312,7 @@ export function VersionHistoryTab({ promptId, currentTemplateText }: VersionHist
 
       {/* Pagination (AC-5) */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+        <div className="flex items-center justify-between border-t border-white/50 dark:border-white/20 pt-4">
           <Button
             variant="secondary"
             size="sm"
@@ -322,7 +322,7 @@ export function VersionHistoryTab({ promptId, currentTemplateText }: VersionHist
             <ChevronLeft className="h-4 w-4 mr-1" />
             Previous
           </Button>
-          <span className="text-sm text-gray-700">
+          <span className="text-sm text-text-primary dark:text-text-secondary">
             Page {page} of {totalPages} • {data?.total || 0} versions total
           </span>
           <Button

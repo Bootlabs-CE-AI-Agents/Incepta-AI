@@ -118,9 +118,9 @@ export function ConnectionTestResult({ result, onClose, onRetry }: ConnectionTes
           <div className="flex items-center gap-3">
             <CheckCircle className="h-6 w-6 text-accent-green flex-shrink-0" />
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Connection successful!</h3>
+              <h3 className="text-lg font-semibold text-text-primary dark:text-white">Connection successful!</h3>
               {result.tested_endpoint && (
-                <p className="text-sm text-gray-600 mt-0.5">Tested endpoint: {result.tested_endpoint}</p>
+                <p className="text-sm text-text-secondary mt-0.5">Tested endpoint: {result.tested_endpoint}</p>
               )}
             </div>
           </div>
@@ -134,11 +134,11 @@ export function ConnectionTestResult({ result, onClose, onRetry }: ConnectionTes
         {/* Status Info */}
         <div className="mt-4 flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-gray-600">Status:</span>
+            <span className="text-text-secondary">Status:</span>
             <Badge variant="success">{formatStatusCode(result.status_code)}</Badge>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-600">Response time:</span>
+            <span className="text-text-secondary">Response time:</span>
             <Badge variant="info">{result.response_time_ms}ms</Badge>
           </div>
         </div>
@@ -148,14 +148,14 @@ export function ConnectionTestResult({ result, onClose, onRetry }: ConnectionTes
           <Disclosure as="div" className="mt-4" defaultOpen={isDesktop}>
             {({ open }) => (
               <>
-                <Disclosure.Button className="flex w-full items-center justify-between rounded-lg bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+                <Disclosure.Button className="flex w-full items-center justify-between rounded-lg bg-white/50 dark:bg-white/5 px-4 py-3 text-left text-sm font-medium text-text-primary dark:text-white hover:bg-white/70 dark:hover:bg-white/10 transition-colors">
                   <span>Response Headers ({Object.keys(result.headers || {}).length})</span>
                   <ChevronDown
-                    className={cn('h-5 w-5 text-gray-500 transition-transform', open && 'rotate-180')}
+                    className={cn('h-5 w-5 text-text-secondary transition-transform', open && 'rotate-180')}
                   />
                 </Disclosure.Button>
-                <Disclosure.Panel className="mt-2 rounded-lg bg-gray-50 p-4">
-                  <pre className="text-xs text-gray-700 overflow-x-auto">
+                <Disclosure.Panel className="mt-2 rounded-lg bg-white/50 dark:bg-white/5 p-4">
+                  <pre className="text-xs text-text-primary dark:text-text-secondary overflow-x-auto">
                     {JSON.stringify(result.headers, null, 2)}
                   </pre>
                 </Disclosure.Panel>
@@ -169,19 +169,19 @@ export function ConnectionTestResult({ result, onClose, onRetry }: ConnectionTes
           <Disclosure as="div" className="mt-4" defaultOpen={isDesktop}>
             {({ open }) => (
               <>
-                <Disclosure.Button className="flex w-full items-center justify-between rounded-lg bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+                <Disclosure.Button className="flex w-full items-center justify-between rounded-lg bg-white/50 dark:bg-white/5 px-4 py-3 text-left text-sm font-medium text-text-primary dark:text-white hover:bg-white/70 dark:hover:bg-white/10 transition-colors">
                   <span>Response Body</span>
                   <ChevronDown
-                    className={cn('h-5 w-5 text-gray-500 transition-transform', open && 'rotate-180')}
+                    className={cn('h-5 w-5 text-text-secondary transition-transform', open && 'rotate-180')}
                   />
                 </Disclosure.Button>
-                <Disclosure.Panel className="mt-2 rounded-lg bg-gray-50 p-4 max-h-96 overflow-auto">
+                <Disclosure.Panel className="mt-2 rounded-lg bg-white/50 dark:bg-white/5 p-4 max-h-96 overflow-auto">
                   {jsonBody ? (
                     <JsonView value={jsonBody} displayDataTypes={false} displayObjectSize={false} />
                   ) : (
-                    <pre className="text-xs text-gray-700 whitespace-pre-wrap break-words">
+                    <pre className="text-xs text-text-primary dark:text-text-secondary whitespace-pre-wrap break-words">
                       {bodyPreview}
-                      {isTruncated && <span className="text-gray-500 italic ml-2">(truncated)</span>}
+                      {isTruncated && <span className="text-text-secondary italic ml-2">(truncated)</span>}
                     </pre>
                   )}
                 </Disclosure.Panel>
@@ -204,9 +204,9 @@ export function ConnectionTestResult({ result, onClose, onRetry }: ConnectionTes
         <div className="flex items-center gap-3">
           <XCircle className="h-6 w-6 text-red-600 flex-shrink-0" />
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Connection failed</h3>
+            <h3 className="text-lg font-semibold text-text-primary dark:text-white">Connection failed</h3>
             {result.tested_endpoint && (
-              <p className="text-sm text-gray-600 mt-0.5">Tested endpoint: {result.tested_endpoint}</p>
+              <p className="text-sm text-text-secondary mt-0.5">Tested endpoint: {result.tested_endpoint}</p>
             )}
           </div>
         </div>

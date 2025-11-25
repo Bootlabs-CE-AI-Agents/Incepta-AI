@@ -307,19 +307,19 @@ export function CommandPalette() {
       label="Global Command Menu"
       className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm"
     >
-      <div className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-2xl glass-card border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-2xl glass-card border-2 border-white/50 dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden">
         {/* Search Input */}
         <Command.Input
           value={search}
           onValueChange={setSearch}
           placeholder="Search pages, actions, or shortcuts..."
-          className="w-full px-6 py-4 text-lg bg-transparent border-none outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
+          className="w-full px-6 py-4 text-lg bg-transparent border-none outline-none placeholder:text-text-secondary dark:placeholder:text-white/50"
           autoFocus
         />
 
         {/* Results List */}
-        <Command.List className="max-h-[400px] overflow-y-auto border-t border-gray-200 dark:border-gray-700 p-2">
-          <Command.Empty className="py-12 text-center text-gray-500 dark:text-gray-400">
+        <Command.List className="max-h-[400px] overflow-y-auto border-t border-white/50 dark:border-white/20 p-2">
+          <Command.Empty className="py-12 text-center text-text-secondary dark:text-white/60">
             No results found for &quot;{search}&quot;
           </Command.Empty>
 
@@ -331,9 +331,9 @@ export function CommandPalette() {
                   key={`recent-${idx}`}
                   value={term}
                   onSelect={() => setSearch(term)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 data-[selected=true]:bg-gray-100 dark:data-[selected=true]:bg-gray-800"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer hover:bg-white/50 dark:hover:bg-white/10 data-[selected=true]:bg-white/50 dark:data-[selected=true]:bg-white/10"
                 >
-                  <Search size={18} className="text-gray-400" />
+                  <Search size={18} className="text-text-secondary" />
                   <span className="flex-1 text-sm">{term}</span>
                 </Command.Item>
               ))}
@@ -347,7 +347,7 @@ export function CommandPalette() {
               heading={group.heading}
               className="px-2 py-2"
             >
-              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <div className="px-2 py-1.5 text-xs font-semibold text-text-secondary dark:text-white/60 uppercase tracking-wider">
                 {group.heading}
               </div>
               {group.items.map((item) => {
@@ -358,22 +358,22 @@ export function CommandPalette() {
                     value={`${item.name} ${item.description} ${item.keywords.join(" ")}`}
                     onSelect={() => handleSelect(item)}
                     keywords={item.keywords}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 data-[selected=true]:bg-gray-100 dark:data-[selected=true]:bg-gray-800 transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer hover:bg-white/50 dark:hover:bg-white/10 data-[selected=true]:bg-white/50 dark:data-[selected=true]:bg-white/10 transition-colors"
                   >
                     <Icon
                       size={18}
-                      className="flex-shrink-0 text-gray-600 dark:text-gray-400"
+                      className="flex-shrink-0 text-text-secondary dark:text-white/60"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      <div className="text-sm font-medium text-text-primary dark:text-white">
                         {item.name}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <div className="text-xs text-text-secondary dark:text-white/60 truncate">
                         {item.description}
                       </div>
                     </div>
                     {item.shortcut && (
-                      <div className="ml-auto text-xs text-gray-400 dark:text-gray-500">
+                      <div className="ml-auto text-xs text-text-secondary dark:text-white/50">
                         {formatKeys(item.shortcut)}
                       </div>
                     )}
@@ -385,18 +385,18 @@ export function CommandPalette() {
         </Command.List>
 
         {/* Footer Hint */}
-        <div className="flex items-center justify-between px-4 py-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+        <div className="flex items-center justify-between px-4 py-2 text-xs text-text-secondary dark:text-white/60 border-t border-white/50 dark:border-white/20 bg-white/30 dark:bg-white/5">
           <div className="flex items-center gap-4">
             <span>
-              <kbd className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700">↑↓</kbd>{" "}
+              <kbd className="px-1.5 py-0.5 rounded bg-white/50 dark:bg-white/10">↑↓</kbd>{" "}
               to navigate
             </span>
             <span>
-              <kbd className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700">↵</kbd>{" "}
+              <kbd className="px-1.5 py-0.5 rounded bg-white/50 dark:bg-white/10">↵</kbd>{" "}
               to select
             </span>
             <span>
-              <kbd className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700">esc</kbd>{" "}
+              <kbd className="px-1.5 py-0.5 rounded bg-white/50 dark:bg-white/10">esc</kbd>{" "}
               to close
             </span>
           </div>

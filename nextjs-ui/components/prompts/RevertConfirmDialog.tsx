@@ -82,10 +82,10 @@ export function RevertConfirmDialog({
               </div>
             </div>
             <div className="flex-1">
-              <Dialog.Title className="text-lg font-semibold text-gray-900 mb-2">
+              <Dialog.Title className="text-lg font-semibold text-text-primary dark:text-white mb-2">
                 Revert to Version {version.version_number}?
               </Dialog.Title>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-text-secondary">
                 Current prompt will be saved as a new version before reverting.
                 This action cannot be undone.
               </p>
@@ -93,29 +93,29 @@ export function RevertConfirmDialog({
           </div>
 
           {/* Version Details (AC-3) */}
-          <div className="px-6 py-4 bg-gray-50 space-y-2">
+          <div className="px-6 py-4 bg-white/50 dark:bg-white/5 space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Selected Version:</span>
-              <span className="font-medium text-gray-900">v{version.version_number}</span>
+              <span className="text-text-secondary">Selected Version:</span>
+              <span className="font-medium text-text-primary dark:text-white">v{version.version_number}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Saved:</span>
-              <span className="font-medium text-gray-900">
+              <span className="text-text-secondary">Saved:</span>
+              <span className="font-medium text-text-primary dark:text-white">
                 {format(new Date(version.created_at), 'MMM dd, yyyy')}
               </span>
             </div>
             {currentPrompt && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Current will become:</span>
-                <span className="font-medium text-gray-900">
+                <span className="text-text-secondary">Current will become:</span>
+                <span className="font-medium text-text-primary dark:text-white">
                   v{(currentPrompt.updated_at ? parseInt(currentPrompt.id, 10) : 0) + 1}
                 </span>
               </div>
             )}
             {version.description && (
               <div className="text-sm">
-                <span className="text-gray-600">Description:</span>
-                <p className="font-medium text-gray-900 mt-1">{version.description}</p>
+                <span className="text-text-secondary">Description:</span>
+                <p className="font-medium text-text-primary dark:text-white mt-1">{version.description}</p>
               </div>
             )}
           </div>

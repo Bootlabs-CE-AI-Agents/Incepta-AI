@@ -87,7 +87,7 @@ export function parseLogLine(line: string): ParsedLogLine {
  * - ERROR: text-red-600
  * - WARN/WARNING: text-yellow-600
  * - INFO: text-blue-600
- * - DEBUG: text-gray-500
+ * - DEBUG: text-text-secondary
  * - Default: text-white
  *
  * @param level - Log level (ERROR, WARN, INFO, DEBUG)
@@ -99,7 +99,7 @@ export function getLogLevelColor(level: string): string {
     WARN: 'text-yellow-600',
     WARNING: 'text-yellow-600',
     INFO: 'text-blue-600',
-    DEBUG: 'text-gray-500',
+    DEBUG: 'text-text-secondary',
   };
 
   return colorMap[level.toUpperCase()] || 'text-white';

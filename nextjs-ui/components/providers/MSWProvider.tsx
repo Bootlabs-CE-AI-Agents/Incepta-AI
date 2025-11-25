@@ -59,7 +59,7 @@ export function MSWProvider({ children }: { children: React.ReactNode }) {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent-blue/20 border-t-accent-blue mx-auto mb-4"></div>
-          <p className="text-sm text-gray-600">Initializing development environment...</p>
+          <p className="text-sm text-text-secondary">Initializing development environment...</p>
         </div>
       </div>
     )

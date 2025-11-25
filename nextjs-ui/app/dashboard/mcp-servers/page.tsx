@@ -36,7 +36,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-24">
       <AlertCircle className="h-16 w-16 text-destructive mb-4" />
-      <h2 className="text-2xl font-bold text-foreground mb-2">
+      <h2 className="text-h2 font-bold text-text-primary mb-2">
         Failed to Load MCP Servers
       </h2>
       <p className="text-muted-foreground mb-6 max-w-md text-center">
@@ -144,7 +144,7 @@ export default function McpServersPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">MCP Servers</h1>
+              <h1 className="text-h1 font-bold text-text-primary">MCP Servers</h1>
               <p className="text-muted-foreground mt-2">
                 Manage Model Context Protocol server connections
               </p>
@@ -163,7 +163,7 @@ export default function McpServersPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">MCP Servers</h1>
+              <h1 className="text-h1 font-bold text-text-primary">MCP Servers</h1>
               <p className="text-muted-foreground mt-2">
                 Manage Model Context Protocol server connections
               </p>
@@ -181,7 +181,7 @@ export default function McpServersPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">MCP Servers</h1>
+            <h1 className="text-h1 font-bold text-text-primary">MCP Servers</h1>
             <p className="text-muted-foreground mt-2">
               Manage Model Context Protocol server connections
             </p>

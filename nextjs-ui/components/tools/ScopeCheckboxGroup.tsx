@@ -105,13 +105,13 @@ export function ScopeCheckboxGroup({
                 checked={isChecked}
                 onChange={(e) => handleCheckboxChange(scope, e.target.checked)}
                 disabled={disabled}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-4 w-4 rounded border-white/50 dark:border-white/20 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label={`Select ${scope} scope`}
               />
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-text-primary dark:text-text-secondary">
                 {scope}
                 {isCustom && (
-                  <span className="ml-1 text-xs text-gray-500">(custom)</span>
+                  <span className="ml-1 text-xs text-text-secondary">(custom)</span>
                 )}
               </span>
             </label>
@@ -128,7 +128,7 @@ export function ScopeCheckboxGroup({
 
       {/* Custom Scope Input */}
       {showCustomInput ? (
-        <div className="space-y-2 p-3 bg-gray-50 rounded-md border border-gray-200">
+        <div className="space-y-2 p-3 bg-white/50 dark:bg-white/5 rounded-md border border-white/50 dark:border-white/20">
           <Label htmlFor="custom_scope_input" className="text-sm">
             Custom Scope
           </Label>
@@ -178,7 +178,7 @@ export function ScopeCheckboxGroup({
               {customScopeError}
             </p>
           )}
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-text-secondary">
             Pattern: [a-z_]+:[a-z_]+ (e.g., read:user, admin:repo)
           </p>
         </div>

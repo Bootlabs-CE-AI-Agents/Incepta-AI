@@ -112,7 +112,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       // Default error UI
       return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-background-gradient-1 dark:bg-background-gradient-1 flex items-center justify-center p-4">
           <div className="max-w-2xl w-full glass-card border-2 border-red-500 dark:border-red-600 rounded-2xl p-8">
             {/* Error Icon */}
             <div className="flex justify-center mb-6">
@@ -122,19 +122,19 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </div>
 
             {/* Error Title */}
-            <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-4">
+            <h1 className="text-h2 font-bold text-center text-text-primary dark:text-white mb-4">
               Something went wrong
             </h1>
 
             {/* Error Message */}
-            <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-center text-text-secondary dark:text-text-secondary mb-6">
               We encountered an unexpected error. Our team has been notified.
             </p>
 
             {/* Error Details (Dev Mode Only) */}
             {process.env.NODE_ENV === "development" && (
-              <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700">
-                <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <div className="mb-6 p-4 bg-white/50 dark:bg-white/5 rounded-lg border border-white/50 dark:border-white/20">
+                <div className="text-sm font-semibold text-text-secondary dark:text-text-secondary mb-2">
                   Error Details (Development Only):
                 </div>
                 <div className="text-xs font-mono text-red-600 dark:text-red-400 whitespace-pre-wrap break-words">
@@ -142,10 +142,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 </div>
                 {this.state.error.stack && (
                   <details className="mt-2">
-                    <summary className="text-xs text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">
+                    <summary className="text-xs text-text-secondary dark:text-text-secondary cursor-pointer hover:text-text-primary dark:hover:text-text-primary">
                       Stack Trace
                     </summary>
-                    <pre className="mt-2 text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words">
+                    <pre className="mt-2 text-xs text-text-secondary dark:text-text-secondary whitespace-pre-wrap break-words">
                       {this.state.error.stack}
                     </pre>
                   </details>
@@ -167,7 +167,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               {/* Report Issue */}
               <button
                 onClick={this.handleReportIssue}
-                className="flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-medium rounded-lg border border-gray-300 dark:border-gray-600 transition-colors"
+                className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-white/5 hover:bg-white/70 dark:hover:bg-white/10 text-text-primary dark:text-white font-medium rounded-lg border border-white/50 dark:border-white/20 transition-colors"
               >
                 <Github size={18} />
                 Report Issue
@@ -176,7 +176,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               {/* Copy Error */}
               <button
                 onClick={this.handleCopyError}
-                className="flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-medium rounded-lg border border-gray-300 dark:border-gray-600 transition-colors"
+                className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-white/5 hover:bg-white/70 dark:hover:bg-white/10 text-text-primary dark:text-white font-medium rounded-lg border border-white/50 dark:border-white/20 transition-colors"
               >
                 <Copy size={18} />
                 Copy Error
@@ -184,7 +184,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </div>
 
             {/* Help Text */}
-            <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
+            <p className="text-center text-xs text-text-secondary dark:text-text-secondary mt-6">
               If this problem persists, please contact support with the error details.
             </p>
           </div>

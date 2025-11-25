@@ -144,7 +144,7 @@ export function PromptPreview({
             type="checkbox"
             checked={substituteVars}
             onChange={(e) => setSubstituteVars(e.target.checked)}
-            className="rounded border-gray-600 text-primary focus:ring-primary"
+            className="rounded border-white/20 text-primary focus:ring-primary"
           />
           <span className="text-text-secondary">Substitute variables with sample values</span>
         </label>
@@ -153,7 +153,7 @@ export function PromptPreview({
             type="checkbox"
             checked={renderMarkdown}
             onChange={(e) => setRenderMarkdown(e.target.checked)}
-            className="rounded border-gray-600 text-primary focus:ring-primary"
+            className="rounded border-white/20 text-primary focus:ring-primary"
           />
           <span className="text-text-secondary">Render markdown</span>
         </label>
@@ -200,7 +200,7 @@ export function PromptPreview({
                       }
                       return (
                         <code
-                          className={isInline ? 'bg-gray-800 px-1 rounded' : className}
+                          className={isInline ? 'bg-white/10 px-1 rounded' : className}
                           {...props}
                         >
                           {children}

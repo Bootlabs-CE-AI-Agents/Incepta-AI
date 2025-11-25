@@ -50,7 +50,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
   return (
     <div className="space-y-2">
       {/* Progress bar */}
-      <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+      <div className="h-2 w-full bg-white/50 dark:bg-white/10 rounded-full overflow-hidden">
         <div
           className={`h-full transition-all duration-300 ease-out ${colorClasses[strength.color]}`}
           style={{ width: `${strength.percentage}%` }}
@@ -72,7 +72,7 @@ export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicato
         </span>
 
         {/* Score indicator (e.g., "3/5") */}
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-text-secondary">
           {strength.score}/5
         </span>
       </div>

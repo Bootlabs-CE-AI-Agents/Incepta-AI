@@ -21,7 +21,7 @@ export function getSeverityLevel(occurrences: number): SeverityLevel {
  */
 export function getSeverityColor(severity: SeverityLevel): string {
   const colors = {
-    low: 'bg-gray-100 text-gray-700 border-gray-300',
+    low: 'bg-white/50 text-text-secondary border-white/50 dark:bg-white/10 dark:border-white/20',
     medium: 'bg-yellow-100 text-yellow-700 border-yellow-300',
     high: 'bg-red-100 text-red-700 border-red-300',
   };

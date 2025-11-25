@@ -173,8 +173,8 @@ export default function ToolsPage() {
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Import Tools from OpenAPI</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-h2 font-bold text-text-primary">Import Tools from OpenAPI</h1>
+        <p className="text-caption text-text-secondary mt-1">
           Upload an OpenAPI spec to automatically generate tools for agent use
         </p>
       </div>
@@ -192,7 +192,7 @@ export default function ToolsPage() {
                       ? 'border-accent-blue bg-accent-blue text-white'
                       : idx < ['upload', 'validation', 'preview', 'import'].indexOf(step)
                         ? 'border-accent-blue bg-accent-blue/10 text-accent-blue'
-                        : 'border-gray-300 bg-white text-gray-400'
+                        : 'border-white/50 bg-white/50 text-text-secondary'
                   }
                 `}
               >
@@ -203,7 +203,7 @@ export default function ToolsPage() {
                   className={`h-0.5 w-24 mx-2 ${
                     idx < ['upload', 'validation', 'preview', 'import'].indexOf(step)
                       ? 'bg-accent-blue'
-                      : 'bg-gray-300'
+                      : 'bg-white/50'
                   }`}
                 />
               )}
@@ -212,7 +212,7 @@ export default function ToolsPage() {
         </div>
         <div className="flex justify-between mt-2">
           {['Upload', 'Validate', 'Preview', 'Import'].map((label) => (
-            <span key={label} className="text-xs text-gray-600 w-24 text-center">
+            <span key={label} className="text-small text-text-secondary w-24 text-center">
               {label}
             </span>
           ))}
@@ -243,10 +243,10 @@ export default function ToolsPage() {
                 <AlertCircle className="h-6 w-6 text-accent-blue shrink-0 animate-pulse" />
               )}
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-h3 font-semibold text-text-primary mb-2">
                   {validationError ? 'Validation Failed' : 'Validating Spec...'}
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-caption text-text-secondary">
                   {validationError || 'Parsing and validating OpenAPI specification'}
                 </p>
               </div>
@@ -273,7 +273,7 @@ export default function ToolsPage() {
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            <h3 className="text-h3 font-semibold text-text-primary mb-3">
               Select Operations to Import
             </h3>
             <ToolPreview
@@ -301,7 +301,7 @@ export default function ToolsPage() {
       {step === 'import' && parsedSpec && (
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+            <h3 className="text-h3 font-semibold text-text-primary mb-3">
               Configure Import
             </h3>
             <ImportConfig

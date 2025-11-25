@@ -71,7 +71,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { payl
   const data = payload[0].payload;
 
   return (
-    <div className="bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-200">
+    <div className="bg-white/90 dark:bg-white/10 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-white/50 dark:border-white/20">
       <p className="font-semibold text-foreground mb-1">{data.name}</p>
       <p className="text-sm text-muted-foreground">
         Count: {formatLargeNumber(data.value)}

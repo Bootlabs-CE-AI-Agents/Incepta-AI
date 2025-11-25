@@ -64,13 +64,13 @@ export function SkeletonTable({
 
   return (
     <div
-      className="w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+      className="w-full overflow-hidden rounded-lg border border-white/50 dark:border-white/20"
       role="status"
       aria-label="Loading table data"
     >
       {/* Table Header Skeleton */}
       {showHeader && (
-        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-white/50 dark:bg-white/5 border-b border-white/50 dark:border-white/20 p-4">
           <div className="flex items-center gap-4">
             {widths.map((width, index) => (
               <div key={`header-${index}`} style={{ width }}>
@@ -82,11 +82,11 @@ export function SkeletonTable({
       )}
 
       {/* Table Body Skeleton (10 rows) */}
-      <div className="divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="divide-y divide-white/50 dark:divide-white/20">
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div
             key={`row-${rowIndex}`}
-            className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+            className="p-4 hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
           >
             <div className="flex items-center gap-4">
               {widths.map((width, colIndex) => (
@@ -126,13 +126,13 @@ export function SkeletonTableCompact({
 
   return (
     <div
-      className="w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+      className="w-full overflow-hidden rounded-lg border border-white/50 dark:border-white/20"
       role="status"
       aria-label="Loading table data"
     >
       {/* Table Header */}
       {showHeader && (
-        <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-2">
+        <div className="bg-white/50 dark:bg-white/5 border-b border-white/50 dark:border-white/20 p-2">
           <div className="flex items-center gap-2">
             {widths.map((width, index) => (
               <div key={`header-${index}`} style={{ width }}>
@@ -144,11 +144,11 @@ export function SkeletonTableCompact({
       )}
 
       {/* Table Body */}
-      <div className="divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="divide-y divide-white/50 dark:divide-white/20">
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div
             key={`row-${rowIndex}`}
-            className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+            className="p-2 hover:bg-white/30 dark:hover:bg-white/10 transition-colors"
           >
             <div className="flex items-center gap-2">
               {widths.map((width, colIndex) => (

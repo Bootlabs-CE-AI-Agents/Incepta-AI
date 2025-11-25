@@ -256,7 +256,7 @@ export function DailySpendChart({
       {/* Section Header with Export Button */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-foreground">
+          <h2 className="text-h2 font-bold text-text-primary">
             Daily Spend Trend (Last 30 Days)
           </h2>
           <p className="text-sm text-muted-foreground mt-1">

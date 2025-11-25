@@ -86,7 +86,7 @@ export default function NewPluginPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Add Plugin</h1>
+          <h1 className="text-h1 font-bold text-text-primary">Add Plugin</h1>
           <p className="text-muted-foreground">
             Configure a new webhook or polling plugin for external system integration
           </p>

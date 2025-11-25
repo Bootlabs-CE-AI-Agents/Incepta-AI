@@ -57,7 +57,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-24">
       <AlertCircle className="h-16 w-16 text-destructive mb-4" />
-      <h2 className="text-2xl font-bold text-foreground mb-2">
+      <h2 className="text-h2 font-bold text-text-primary mb-2">
         Failed to Load MCP Server
       </h2>
       <p className="text-muted-foreground mb-6 max-w-md text-center">
@@ -102,7 +102,7 @@ export default function McpServerDetailPage() {
                 Back
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold text-foreground">MCP Server Details</h1>
+            <h1 className="text-h1 font-bold text-text-primary">MCP Server Details</h1>
           </div>
           <LoadingState />
         </div>
@@ -122,7 +122,7 @@ export default function McpServerDetailPage() {
                 Back
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold text-foreground">MCP Server Details</h1>
+            <h1 className="text-h1 font-bold text-text-primary">MCP Server Details</h1>
           </div>
           <ErrorState onRetry={refetch} />
         </div>
@@ -142,7 +142,7 @@ export default function McpServerDetailPage() {
             </Button>
           </Link>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-foreground">{server.name}</h1>
+            <h1 className="text-h1 font-bold text-text-primary">{server.name}</h1>
             {server.description && (
               <p className="text-muted-foreground mt-2">{server.description}</p>
             )}
@@ -152,7 +152,7 @@ export default function McpServerDetailPage() {
               className={`inline-flex items-center px-3 py-1 rounded-md text-sm font-medium ${
                 server.status === 'active'
                   ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-100 text-gray-700'
+                  : 'bg-white/50 dark:bg-white/10 text-text-secondary'
               }`}
             >
               {server.status === 'active' ? 'Active' : 'Inactive'}

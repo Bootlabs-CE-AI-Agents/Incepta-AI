@@ -27,7 +27,7 @@ export default function Error({
     <div className="container mx-auto py-8">
       <div className="flex flex-col items-center justify-center py-24">
         <AlertCircle className="h-16 w-16 text-destructive mb-4" />
-        <h2 className="text-2xl font-bold text-foreground mb-2">
+        <h2 className="text-h2 font-bold text-text-primary mb-2">
           Something went wrong
         </h2>
         <p className="text-muted-foreground mb-2 max-w-md text-center">

@@ -122,12 +122,12 @@ export function Modal({
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 {title && (
-                  <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <DialogTitle className="text-lg font-semibold text-text-primary dark:text-white">
                     {title}
                   </DialogTitle>
                 )}
                 {description && (
-                  <Description className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  <Description className="mt-1 text-sm text-text-secondary dark:text-text-secondary">
                     {description}
                   </Description>
                 )}
@@ -135,17 +135,17 @@ export function Modal({
 
               {showCloseButton && (
                 <CloseButton
-                  className="ml-4 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="ml-4 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
                   aria-label="Close modal"
                 >
-                  <X size={20} className="text-gray-500 dark:text-gray-400" />
+                  <X size={20} className="text-text-secondary dark:text-text-secondary" />
                 </CloseButton>
               )}
             </div>
           )}
 
           {/* Body */}
-          <div className="text-gray-700 dark:text-gray-300">
+          <div className="text-text-secondary dark:text-text-secondary">
             {children}
           </div>
 

@@ -223,10 +223,10 @@ export default function PromptDetailPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Prompt</h1>
+          <h1 className="text-h1 font-bold text-text-primary">Edit Prompt</h1>
           {/* Auto-save indicator (AC-6) */}
           {canEdit && lastSaved && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-text-secondary">
               {isSaving ? (
                 '💾 Saving draft...'
               ) : (
@@ -271,12 +271,12 @@ export default function PromptDetailPage() {
           </div>
         </div>
       ) : (
-        <div className="mb-4 p-4 bg-gray-50 rounded-md">
+        <div className="mb-4 p-4 bg-white/50 dark:bg-white/5 rounded-md border border-white/50 dark:border-white/20">
           <h2 className="text-lg font-semibold">{prompt.name}</h2>
           {prompt.description && (
-            <p className="text-sm text-gray-600 mt-1">{prompt.description}</p>
+            <p className="text-sm text-text-secondary mt-1">{prompt.description}</p>
           )}
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-text-secondary mt-2">
             Read-only view (no edit permission)
           </p>
         </div>
@@ -284,13 +284,13 @@ export default function PromptDetailPage() {
 
       {/* Tab Navigation (AC-9) */}
       <Tab.Group selectedIndex={selectedTab} onChange={handleTabChange}>
-        <Tab.List className="flex space-x-1 border-b border-gray-200 mb-4">
+        <Tab.List className="flex space-x-1 border-b border-white/50 dark:border-white/20 mb-4">
           <Tab
             className={({ selected }) =>
               `px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                 selected
                   ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                  : 'text-text-secondary hover:text-text-primary hover:border-white/30'
               }`
             }
           >
@@ -301,7 +301,7 @@ export default function PromptDetailPage() {
               `px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                 selected
                   ? 'border-b-2 border-blue-500 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                  : 'text-text-secondary hover:text-text-primary hover:border-white/30'
               }`
             }
           >
@@ -313,7 +313,7 @@ export default function PromptDetailPage() {
                 `px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                   selected
                     ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                    : 'text-text-secondary hover:text-text-primary hover:border-white/30'
                 }`
               }
             >
@@ -326,7 +326,7 @@ export default function PromptDetailPage() {
                 `px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                   selected
                     ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                    : 'text-text-secondary hover:text-text-primary hover:border-white/30'
                 }`
               }
             >
@@ -347,8 +347,8 @@ export default function PromptDetailPage() {
                 isSubmitting={updateMutation.isPending}
               />
             ) : (
-              <div className="border border-gray-200 rounded-md p-4 bg-gray-50 h-full overflow-auto">
-                <pre className="text-sm text-gray-900 whitespace-pre-wrap font-mono">
+              <div className="border border-white/50 dark:border-white/20 rounded-md p-4 bg-white/50 dark:bg-white/5 h-full overflow-auto">
+                <pre className="text-sm text-text-primary whitespace-pre-wrap font-mono">
                   {prompt.template_text}
                 </pre>
               </div>

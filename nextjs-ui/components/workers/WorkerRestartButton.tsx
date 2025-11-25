@@ -71,7 +71,7 @@ export function WorkerRestartButton({ worker, onClick, className = '' }: WorkerR
       <div className="
         hidden group-hover:block
         absolute z-10 px-2 py-1
-        bg-gray-900 text-white text-xs rounded
+        bg-text-primary text-white text-xs rounded
         -top-8 left-1/2 -translate-x-1/2
         whitespace-nowrap
         pointer-events-none

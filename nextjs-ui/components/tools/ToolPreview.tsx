@@ -60,7 +60,7 @@ export function ToolPreview({
 
   if (operations.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-text-secondary">
         <p className="text-sm">No operations found in spec</p>
       </div>
     );
@@ -70,9 +70,9 @@ export function ToolPreview({
   const someSelected = selectedOperations.length > 0 && !allSelected;
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border border-white/50 dark:border-white/20 rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+      <div className="bg-white/50 dark:bg-white/5 px-4 py-3 border-b border-white/50 dark:border-white/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <input
@@ -82,9 +82,9 @@ export function ToolPreview({
                 if (el) el.indeterminate = someSelected;
               }}
               onChange={toggleAll}
-              className="h-4 w-4 text-accent-blue border-gray-300 rounded focus:ring-accent-blue"
+              className="h-4 w-4 text-accent-blue border-white/50 dark:border-white/20 rounded focus:ring-accent-blue"
             />
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-text-primary dark:text-text-secondary">
               {selectedOperations.length} of {operations.length} selected
             </span>
           </div>
@@ -92,20 +92,20 @@ export function ToolPreview({
       </div>
 
       {/* Table */}
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-white/50 dark:divide-white/20">
         {operations.map((operation) => {
           const isExpanded = expandedRows.has(operation.operationId);
           const isSelected = selectedOperations.includes(operation.operationId);
 
           return (
-            <div key={operation.operationId} className="bg-white hover:bg-gray-50">
+            <div key={operation.operationId} className="bg-white dark:bg-white/5 hover:bg-white/50 dark:hover:bg-white/10">
               {/* Row */}
               <div className="flex items-center px-4 py-3 gap-3">
                 <input
                   type="checkbox"
                   checked={isSelected}
                   onChange={() => toggleSelection(operation.operationId)}
-                  className="h-4 w-4 text-accent-blue border-gray-300 rounded focus:ring-accent-blue"
+                  className="h-4 w-4 text-accent-blue border-white/50 dark:border-white/20 rounded focus:ring-accent-blue"
                 />
 
                 <Button
@@ -126,17 +126,17 @@ export function ToolPreview({
                 </Badge>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-mono text-gray-900 truncate">
+                  <p className="text-sm font-mono text-text-primary dark:text-white truncate">
                     {operation.path}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">{operation.operationId}</p>
+                  <p className="text-xs text-text-secondary truncate">{operation.operationId}</p>
                 </div>
 
                 <div className="text-right">
-                  <p className="text-sm text-gray-700 truncate max-w-xs">
+                  <p className="text-sm text-text-secondary truncate max-w-xs">
                     {operation.summary || 'No summary'}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-text-secondary">
                     {operation.parameters.length} parameter(s)
                   </p>
                 </div>
@@ -144,27 +144,27 @@ export function ToolPreview({
 
               {/* Expanded Details */}
               {isExpanded && (
-                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                <div className="px-4 py-3 bg-white/50 dark:bg-white/5 border-t border-white/50 dark:border-white/20">
                   <div className="space-y-3">
                     {operation.description && (
                       <div>
-                        <p className="text-xs font-medium text-gray-700 mb-1">
+                        <p className="text-xs font-medium text-text-primary dark:text-text-secondary mb-1">
                           Description:
                         </p>
-                        <p className="text-sm text-gray-600">{operation.description}</p>
+                        <p className="text-sm text-text-secondary">{operation.description}</p>
                       </div>
                     )}
 
                     {operation.parameters.length > 0 && (
                       <div>
-                        <p className="text-xs font-medium text-gray-700 mb-2">Parameters:</p>
+                        <p className="text-xs font-medium text-text-primary dark:text-text-secondary mb-2">Parameters:</p>
                         <div className="space-y-1">
                           {operation.parameters.map((param, idx) => (
                             <div
                               key={idx}
-                              className="flex items-center gap-2 text-xs text-gray-600"
+                              className="flex items-center gap-2 text-xs text-text-secondary"
                             >
-                              <span className="font-mono bg-gray-200 px-2 py-0.5 rounded">
+                              <span className="font-mono bg-white/50 dark:bg-white/10 px-2 py-0.5 rounded">
                                 {param.name}
                               </span>
                               <Badge variant="default" size="sm">
@@ -176,7 +176,7 @@ export function ToolPreview({
                                 </Badge>
                               )}
                               {param.description && (
-                                <span className="text-gray-500">— {param.description}</span>
+                                <span className="text-text-secondary">— {param.description}</span>
                               )}
                             </div>
                           ))}

@@ -46,13 +46,13 @@ export function TestResultPanel({ result, variables, isHistorical = false }: Tes
 
   return (
     <div
-      className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+      className="rounded-lg border border-white/50 dark:border-white/20 bg-white dark:bg-white/5 p-6"
       onKeyDown={handleCopyShortcut}
       tabIndex={0}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-text-primary dark:text-white flex items-center gap-2">
           Test Result
           {isHistorical && (
             <span className="text-xs font-normal text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">
@@ -64,7 +64,7 @@ export function TestResultPanel({ result, variables, isHistorical = false }: Tes
           onClick={handleCopy}
           variant="ghost"
           size="sm"
-          className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+          className="text-text-secondary hover:text-text-primary dark:text-text-secondary dark:hover:text-white"
           aria-label="Copy response to clipboard (Ctrl+K)"
         >
           {copied ? (
@@ -78,10 +78,10 @@ export function TestResultPanel({ result, variables, isHistorical = false }: Tes
 
       {/* LLM Response with Markdown */}
       <div className="mb-4">
-        <Label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <Label className="text-xs font-medium text-text-primary dark:text-text-secondary mb-2">
           LLM Response:
         </Label>
-        <div className="max-h-96 overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+        <div className="max-h-96 overflow-y-auto rounded-md border border-white/50 dark:border-white/20 bg-white/50 dark:bg-white/5 p-4">
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <ReactMarkdown
               components={{
@@ -114,26 +114,26 @@ export function TestResultPanel({ result, variables, isHistorical = false }: Tes
 
       {/* Metrics */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+        <Label className="text-xs font-medium text-text-primary dark:text-text-secondary">
           Metrics:
         </Label>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+          <div className="flex items-center space-x-2 text-text-secondary dark:text-text-secondary">
             <span>•</span>
             <span>
               {result.usage.input_tokens} input / {result.usage.output_tokens}{' '}
               output / {result.usage.total_tokens} total tokens
             </span>
           </div>
-          <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+          <div className="flex items-center space-x-2 text-text-secondary dark:text-text-secondary">
             <span>•</span>
             <span>{result.execution_time.toFixed(1)}s execution time</span>
           </div>
-          <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+          <div className="flex items-center space-x-2 text-text-secondary dark:text-text-secondary">
             <span>•</span>
             <span>${result.cost.toFixed(4)} USD cost</span>
           </div>
-          <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
+          <div className="flex items-center space-x-2 text-text-secondary dark:text-text-secondary">
             <span>•</span>
             <span>Model: {result.model}</span>
           </div>
@@ -142,18 +142,18 @@ export function TestResultPanel({ result, variables, isHistorical = false }: Tes
 
       {/* Variables Used */}
       {variables && Object.keys(variables).length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <Label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <div className="mt-4 pt-4 border-t border-white/50 dark:border-white/20">
+          <Label className="text-xs font-medium text-text-primary dark:text-text-secondary mb-2">
             Variables Used:
           </Label>
           <div className="space-y-1">
             {Object.entries(variables).map(([key, value]) => (
               <div
                 key={key}
-                className="flex items-start space-x-2 text-xs text-gray-600 dark:text-gray-400"
+                className="flex items-start space-x-2 text-xs text-text-secondary dark:text-text-secondary"
               >
                 <span className="font-mono">{`{{${key}}}`}:</span>
-                <span className="text-gray-500 dark:text-gray-500">{value}</span>
+                <span className="text-text-secondary">{value}</span>
               </div>
             ))}
           </div>

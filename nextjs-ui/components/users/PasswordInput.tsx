@@ -57,7 +57,7 @@ export function PasswordInput({
   return (
     <div className="space-y-2">
       {/* Label */}
-      <label htmlFor={name} className="block text-sm font-medium text-gray-700">
+      <label htmlFor={name} className="block text-sm font-medium text-text-secondary">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
@@ -71,10 +71,10 @@ export function PasswordInput({
           disabled={disabled}
           placeholder={placeholder}
           className={`
-            block w-full rounded-md border-0 py-1.5 pr-10 text-gray-900 shadow-sm ring-1 ring-inset
-            placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6
-            disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
-            ${error ? 'ring-red-300 focus:ring-red-500' : 'ring-gray-300 focus:ring-indigo-600'}
+            block w-full rounded-md border-0 py-1.5 pr-10 text-text-primary shadow-sm ring-1 ring-inset
+            placeholder:text-text-secondary focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6
+            disabled:bg-white/50 dark:disabled:bg-white/5 disabled:text-text-secondary disabled:cursor-not-allowed
+            ${error ? 'ring-red-300 focus:ring-red-500' : 'ring-white/50 dark:ring-white/20 focus:ring-accent-blue'}
           `}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? `${name}-error` : undefined}
@@ -86,7 +86,7 @@ export function PasswordInput({
           type="button"
           onClick={togglePasswordVisibility}
           disabled={disabled}
-          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed"
+          className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-secondary hover:text-text-primary disabled:cursor-not-allowed"
           aria-label={showPassword ? 'Hide password' : 'Show password'}
         >
           {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}

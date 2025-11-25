@@ -40,45 +40,45 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="max-w-2xl w-full glass-card border-2 border-red-500 dark:border-red-600 rounded-2xl p-8">
         {/* Error Icon */}
         <div className="flex justify-center mb-6">
-          <div className="p-4 bg-red-100 dark:bg-red-900/20 rounded-full">
-            <AlertTriangle size={48} className="text-red-600 dark:text-red-400" />
+          <div className="p-4 bg-red-500/10 dark:bg-red-500/20 rounded-full">
+            <AlertTriangle size={48} className="text-red-500 dark:text-red-400" />
           </div>
         </div>
 
         {/* Error Title */}
-        <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-4">
+        <h1 className="text-h2 font-bold text-center text-text-primary dark:text-white mb-4">
           Something went wrong
         </h1>
 
         {/* Error Message */}
-        <p className="text-center text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-center text-text-secondary dark:text-white/70 mb-6">
           We encountered an unexpected error. Please try again.
         </p>
 
         {/* Error Details (Dev Mode Only) */}
         {process.env.NODE_ENV === "development" && (
-          <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700">
-            <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <div className="mb-6 p-4 bg-white/30 dark:bg-white/10 rounded-lg border border-white/50 dark:border-white/20">
+            <div className="text-sm font-semibold text-text-primary dark:text-white/90 mb-2">
               Error Details (Development Only):
             </div>
-            <div className="text-xs font-mono text-red-600 dark:text-red-400 whitespace-pre-wrap break-words">
+            <div className="text-xs font-mono text-red-500 dark:text-red-400 whitespace-pre-wrap break-words">
               {error.message}
             </div>
             {error.digest && (
-              <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              <div className="mt-2 text-xs text-text-secondary dark:text-white/60">
                 Error Digest: {error.digest}
               </div>
             )}
             {error.stack && (
               <details className="mt-2">
-                <summary className="text-xs text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">
+                <summary className="text-xs text-text-secondary dark:text-white/60 cursor-pointer hover:text-text-primary dark:hover:text-white/80">
                   Stack Trace
                 </summary>
-                <pre className="mt-2 text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-words max-h-64 overflow-auto">
+                <pre className="mt-2 text-xs text-text-secondary dark:text-white/60 whitespace-pre-wrap break-words max-h-64 overflow-auto">
                   {error.stack}
                 </pre>
               </details>
@@ -91,7 +91,7 @@ export default function Error({
           {/* Try Again (Reset) */}
           <button
             onClick={reset}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-accent-blue hover:bg-accent-blue/90 text-white font-medium rounded-lg transition-all duration-fast shadow-sm hover:shadow-md"
           >
             <RefreshCw size={18} />
             Try Again
@@ -100,7 +100,7 @@ export default function Error({
           {/* Go Home */}
           <button
             onClick={() => (window.location.href = "/")}
-            className="flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-medium rounded-lg border border-gray-300 dark:border-gray-600 transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-white/10 hover:bg-white/70 dark:hover:bg-white/20 text-text-primary dark:text-white font-medium rounded-lg border border-white/50 dark:border-white/20 transition-all duration-fast"
           >
             <Home size={18} />
             Go Home
@@ -108,7 +108,7 @@ export default function Error({
         </div>
 
         {/* Help Text */}
-        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-6">
+        <p className="text-center text-small text-text-secondary dark:text-white/50 mt-6">
           If this problem persists, please contact support.
         </p>
       </div>

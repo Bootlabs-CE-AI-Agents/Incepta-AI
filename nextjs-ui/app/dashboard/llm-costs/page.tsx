@@ -36,7 +36,7 @@ function ErrorState({ onRetry, error }: { onRetry: () => void; error: Error | nu
   return (
     <div className="flex flex-col items-center justify-center py-24">
       <AlertCircle className="h-16 w-16 text-destructive mb-4" />
-      <h2 className="text-2xl font-bold text-foreground mb-2">
+      <h2 className="text-h2 font-bold text-text-primary mb-2">
         Failed to Load Cost Data
       </h2>
       <p className="text-muted-foreground mb-2 max-w-md text-center">
@@ -145,7 +145,7 @@ export default function LLMCostsPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-h1 font-bold text-text-primary">
               LLM Cost Dashboard
             </h1>
             <p className="text-muted-foreground mt-1">
@@ -219,7 +219,7 @@ function TokenBreakdownSection() {
   if (isError) {
     return (
       <div className="space-y-4 mt-6">
-        <h2 className="text-2xl font-bold text-foreground">Token Breakdown</h2>
+        <h2 className="text-h2 font-bold text-text-primary">Token Breakdown</h2>
         <div className="flex flex-col items-center justify-center py-12 bg-white/75 backdrop-blur-[32px] rounded-[24px] shadow-lg border border-white/20">
           <AlertCircle className="h-12 w-12 text-destructive mb-3" />
           <h3 className="text-lg font-semibold text-foreground mb-1">
@@ -239,7 +239,7 @@ function TokenBreakdownSection() {
 
   return (
     <div className="space-y-6 mt-6">
-      <h2 className="text-2xl font-bold text-foreground">Token Breakdown</h2>
+      <h2 className="text-h2 font-bold text-text-primary">Token Breakdown</h2>
 
       {/* Date Range Selector */}
       <DateRangeSelector
@@ -281,7 +281,7 @@ function TokenBreakdownSection() {
 function BudgetUtilizationSection() {
   return (
     <div className="space-y-6 mt-6">
-      <h2 className="text-2xl font-bold text-foreground">Budget Utilization by Tenant</h2>
+      <h2 className="text-h2 font-bold text-text-primary">Budget Utilization by Tenant</h2>
       <BudgetUtilizationList />
     </div>
   );

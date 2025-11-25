@@ -57,10 +57,10 @@ export function BudgetUtilizationList({
         <div className="space-y-4">
           {/* Filter skeleton */}
           <div className="flex justify-between items-center">
-            <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-24 bg-white/50 dark:bg-white/10 rounded animate-pulse" />
             <div className="flex gap-3">
-              <div className="h-10 w-48 bg-gray-200 rounded animate-pulse" />
-              <div className="h-10 w-52 bg-gray-200 rounded animate-pulse" />
+              <div className="h-10 w-48 bg-white/50 dark:bg-white/10 rounded animate-pulse" />
+              <div className="h-10 w-52 bg-white/50 dark:bg-white/10 rounded animate-pulse" />
             </div>
           </div>
 
@@ -68,11 +68,11 @@ export function BudgetUtilizationList({
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className="border-b border-gray-200 p-4 space-y-3"
+              className="border-b border-white/50 dark:border-white/20 p-4 space-y-3"
             >
-              <div className="h-5 w-48 bg-gray-200 rounded animate-pulse" />
-              <div className="h-4 w-64 bg-gray-200 rounded animate-pulse" />
-              <div className="h-2 w-full bg-gray-200 rounded animate-pulse" />
+              <div className="h-5 w-48 bg-white/50 dark:bg-white/10 rounded animate-pulse" />
+              <div className="h-4 w-64 bg-white/50 dark:bg-white/10 rounded animate-pulse" />
+              <div className="h-2 w-full bg-white/50 dark:bg-white/10 rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -125,7 +125,7 @@ export function BudgetUtilizationList({
           className="mb-6"
         />
 
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-white/50 dark:bg-white/5 rounded-lg border border-white/50 dark:border-white/20">
           <p className="text-sm text-muted-foreground">{emptyMessage}</p>
         </div>
       </div>
@@ -146,7 +146,7 @@ export function BudgetUtilizationList({
       />
 
       {/* Tenant List */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div className="border border-white/50 dark:border-white/20 rounded-lg overflow-hidden">
         {tenants.map((tenant) => (
           <BudgetUtilizationRow key={tenant.tenant_id} tenant={tenant} />
         ))}

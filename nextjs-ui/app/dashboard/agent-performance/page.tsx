@@ -71,10 +71,10 @@ export default function AgentPerformancePage() {
   if (status === 'loading') {
     return (
       <div className="container mx-auto p-6">
-        <div className="h-10 w-64 bg-gray-200 animate-pulse rounded mb-6" />
+        <div className="h-10 w-64 bg-white/50 dark:bg-white/10 animate-pulse rounded mb-6" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-32 bg-gray-200 animate-pulse rounded" />
+            <div key={i} className="h-32 bg-white/50 dark:bg-white/10 animate-pulse rounded" />
           ))}
         </div>
       </div>
@@ -93,7 +93,7 @@ export default function AgentPerformancePage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Agent Performance Dashboard</h1>
+          <h1 className="text-h1 font-bold text-text-primary">Agent Performance Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             Monitor execution metrics, success rates, and performance trends for your agents
           </p>
@@ -152,7 +152,7 @@ export default function AgentPerformancePage() {
       {/* Error Analysis Table (Story 15) */}
       {selectedAgentId && (
         <div>
-          <h2 className="text-2xl font-bold mb-4">Error Analysis</h2>
+          <h2 className="text-h2 font-bold text-text-primary mb-4">Error Analysis</h2>
           <ErrorAnalysisTable
             agentId={selectedAgentId}
             startDate={new Date(dateRange.start)}

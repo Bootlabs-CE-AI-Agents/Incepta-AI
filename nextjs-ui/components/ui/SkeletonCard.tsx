@@ -67,7 +67,7 @@ export function SkeletonCard({
 }: SkeletonCardProps) {
   return (
     <div
-      className="glass-card p-6 border border-gray-200 dark:border-gray-700 rounded-lg"
+      className="glass-card p-6 border border-white/50 dark:border-white/20 rounded-lg"
       role="status"
       aria-label="Loading card content"
     >
@@ -110,7 +110,7 @@ export function SkeletonCard({
 
       {/* Action Buttons */}
       {showActions && (
-        <div className="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-3 pt-4 border-t border-white/50 dark:border-white/20">
           {Array.from({ length: actionButtons }).map((_, index) => (
             <SkeletonResponsive
               key={`action-${index}`}
@@ -151,7 +151,7 @@ export function SkeletonCardCompact({
 }: SkeletonCardProps) {
   return (
     <div
-      className="glass-card p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
+      className="glass-card p-4 border border-white/50 dark:border-white/20 rounded-lg"
       role="status"
       aria-label="Loading card content"
     >
@@ -183,7 +183,7 @@ export function SkeletonCardCompact({
 
       {/* Actions */}
       {showActions && (
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/50 dark:border-white/20">
           {Array.from({ length: actionButtons }).map((_, index) => (
             <SkeletonResponsive
               key={`action-${index}`}

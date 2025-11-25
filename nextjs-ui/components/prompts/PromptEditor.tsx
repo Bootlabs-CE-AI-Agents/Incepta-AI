@@ -68,7 +68,7 @@ export function PromptEditor({
 
   // Character count color based on warning level
   const charCountColor = {
-    safe: 'text-gray-400',
+    safe: 'text-text-secondary',
     warning: 'text-yellow-400',
     danger: 'text-red-400',
   }[charWarningLevel];

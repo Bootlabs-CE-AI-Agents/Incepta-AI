@@ -21,7 +21,7 @@ interface KbdProps {
 export function Kbd({ children, className = "" }: KbdProps) {
   return (
     <kbd
-      className={`inline-flex items-center justify-center px-2 py-1 min-w-[2rem] text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded shadow-sm ${className}`}
+      className={`inline-flex items-center justify-center px-2 py-1 min-w-[2rem] text-xs font-semibold text-text-primary dark:text-text-secondary bg-white/50 dark:bg-white/10 border border-white/50 dark:border-white/20 rounded shadow-sm ${className}`}
     >
       {children}
     </kbd>

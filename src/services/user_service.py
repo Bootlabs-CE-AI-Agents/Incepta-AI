@@ -239,14 +239,18 @@ class UserService:
         for role in roles:
             await db.delete(role)
 
+        # Get VARCHAR tenant_id for audit log
+        audit_tenant_id = await self._get_varchar_tenant_id(current_user.default_tenant_id, db)
+
         # Create audit log entry
         audit_log = AuditLog(
             user_id=current_user.id,
-            tenant_id=current_user.default_tenant_id,
+            tenant_id=audit_tenant_id or "unknown",
             action=AuditActionEnum.DELETE_USER,
             entity_type="User",
             entity_id=str(user_id),
-            changes={"is_active": {"old": True, "new": False}},
+            old_value={"is_active": True},
+            new_value={"is_active": False},
         )
         db.add(audit_log)
 
@@ -606,25 +610,39 @@ class UserService:
             db=db,
         )
 
+        # Look up tenant to get VARCHAR tenant_id (UserTenantRole stores VARCHAR)
+        from src.database.models import TenantConfig
+
+        tenant_stmt = select(TenantConfig.tenant_id).where(TenantConfig.id == default_tenant_id)
+        tenant_result = await db.execute(tenant_stmt)
+        tenant_id_varchar = tenant_result.scalar_one_or_none()
+
+        if not tenant_id_varchar:
+            raise ValueError("Tenant not found")
+
         # Assign initial role
         await self.assign_role(
             user_id=user.id,
-            tenant_id=str(default_tenant_id),
+            tenant_id=tenant_id_varchar,
             role=initial_role,
             db=db,
         )
 
+        # Get VARCHAR tenant_id for audit log
+        audit_tenant_id = await self._get_varchar_tenant_id(current_user.default_tenant_id, db)
+
         # Create audit log entry
         audit_log = AuditLog(
             user_id=current_user.id,
-            tenant_id=current_user.default_tenant_id,
+            tenant_id=audit_tenant_id or "unknown",
             action=AuditActionEnum.CREATE_USER,
             entity_type="User",
             entity_id=str(user.id),
-            changes={
-                "email": {"old": None, "new": email},
-                "default_tenant_id": {"old": None, "new": str(default_tenant_id)},
-                "initial_role": {"old": None, "new": initial_role.value},
+            old_value=None,
+            new_value={
+                "email": email,
+                "default_tenant_id": str(default_tenant_id),
+                "initial_role": initial_role.value,
             },
         )
         db.add(audit_log)
@@ -717,13 +735,21 @@ class UserService:
 
         # Create audit log entry (only if changes made)
         if changes:
+            # Convert changes dict to old_value/new_value format
+            old_value = {field: change["old"] for field, change in changes.items()}
+            new_value = {field: change["new"] for field, change in changes.items()}
+
+            # Get VARCHAR tenant_id for audit log
+            audit_tenant_id = await self._get_varchar_tenant_id(current_user.default_tenant_id, db)
+
             audit_log = AuditLog(
                 user_id=current_user.id,
-                tenant_id=current_user.default_tenant_id,
+                tenant_id=audit_tenant_id or "unknown",
                 action=AuditActionEnum.UPDATE_USER,
                 entity_type="User",
                 entity_id=str(user_id),
-                changes=changes,
+                old_value=old_value,
+                new_value=new_value,
             )
             db.add(audit_log)
 
@@ -771,7 +797,7 @@ class UserService:
         """
         import secrets
         import string
-        from src.database.models import AuditLog, AuditActionEnum, AuthAuditLog, AuthEventEnum
+        from src.database.models import AuditLog, AuditActionEnum
 
         user = await self.get_user_by_id(user_id, db)
         if not user:
@@ -798,31 +824,26 @@ class UserService:
             days=settings.password_expiration_days
         )
 
+        # Get VARCHAR tenant_id for audit log
+        audit_tenant_id = await self._get_varchar_tenant_id(current_user.default_tenant_id, db)
+
         # Create audit log entry
         audit_log = AuditLog(
             user_id=current_user.id,
-            tenant_id=current_user.default_tenant_id,
+            tenant_id=audit_tenant_id or "unknown",
             action=AuditActionEnum.RESET_PASSWORD,
             entity_type="User",
             entity_id=str(user_id),
-            changes={
-                "force_password_change": {"old": False, "new": True},
-                "reset_by": {"old": None, "new": str(current_user.id)},
+            old_value={
+                "force_password_change": False,
+                "reset_by": None,
+            },
+            new_value={
+                "force_password_change": True,
+                "reset_by": str(current_user.id),
             },
         )
         db.add(audit_log)
-
-        # Create auth audit log entry
-        auth_audit_log = AuthAuditLog(
-            user_id=user_id,
-            tenant_id=user.default_tenant_id,
-            event_type=AuthEventEnum.PASSWORD_RESET_ADMIN,
-            ip_address="system",  # Admin action, not user-initiated
-            user_agent="admin_api",
-            success=True,
-            metadata={"reset_by_user_id": str(current_user.id)},
-        )
-        db.add(auth_audit_log)
 
         await db.commit()
 
@@ -924,3 +945,31 @@ class UserService:
         stmt = stmt.where(User.default_tenant_id == current_user.default_tenant_id)
 
         return stmt
+
+    async def _get_varchar_tenant_id(
+        self,
+        tenant_uuid: Optional[UUID],
+        db: AsyncSession,
+    ) -> Optional[str]:
+        """
+        Convert UUID tenant_id to VARCHAR tenant_id.
+
+        Args:
+            tenant_uuid: TenantConfig.id (UUID)
+            db: Database session
+
+        Returns:
+            TenantConfig.tenant_id (VARCHAR like "default", "production") or None
+
+        Note:
+            Helper to fix UUID/VARCHAR discrepancy between User.default_tenant_id (UUID)
+            and UserTenantRole.tenant_id/AuditLog.tenant_id (VARCHAR)
+        """
+        if not tenant_uuid:
+            return None
+
+        from src.database.models import TenantConfig
+
+        stmt = select(TenantConfig.tenant_id).where(TenantConfig.id == tenant_uuid)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()

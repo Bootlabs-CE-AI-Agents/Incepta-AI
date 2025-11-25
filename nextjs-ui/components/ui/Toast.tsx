@@ -226,9 +226,9 @@ function showToast(props: ToastProps): string | number {
       <div className="flex items-start gap-3 p-4 w-full">
         <Icon size={20} className={`flex-shrink-0 ${config.iconColor}`} />
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-gray-900 dark:text-white">{message}</div>
+          <div className="font-medium text-text-primary dark:text-white">{message}</div>
           {description && (
-            <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">{description}</div>
+            <div className="mt-1 text-sm text-text-secondary dark:text-text-secondary">{description}</div>
           )}
           {action && (
             <button
@@ -236,7 +236,7 @@ function showToast(props: ToastProps): string | number {
                 action.onClick();
                 sonnerToast.dismiss(t);
               }}
-              className="mt-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="mt-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-white dark:bg-white/5 border border-white/50 dark:border-white/20 hover:bg-white/70 dark:hover:bg-white/10 transition-colors"
             >
               {action.label}
             </button>
@@ -245,10 +245,10 @@ function showToast(props: ToastProps): string | number {
         {dismissible && (
           <button
             onClick={() => sonnerToast.dismiss(t)}
-            className="flex-shrink-0 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="flex-shrink-0 p-1 rounded hover:bg-white/50 dark:hover:bg-white/10 transition-colors"
             aria-label="Dismiss notification"
           >
-            <X size={16} className="text-gray-500 dark:text-gray-400" />
+            <X size={16} className="text-text-secondary dark:text-text-secondary" />
           </button>
         )}
       </div>

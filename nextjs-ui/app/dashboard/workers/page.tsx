@@ -135,7 +135,7 @@ export default function WorkersPage() {
         {/* Header (AC-1) */}
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Worker Monitoring</h1>
+            <h1 className="text-h1 font-bold text-text-primary">Worker Monitoring</h1>
             <p className="text-muted-foreground mt-1">
               Monitor Celery worker health, status, and performance
             </p>
@@ -216,7 +216,7 @@ export default function WorkersPage() {
               <div className="flex items-center gap-3">
                 <TrendingUp className="h-6 w-6 text-primary" />
                 <div>
-                  <h2 className="text-xl font-bold text-foreground">Historical Performance</h2>
+                  <h2 className="text-h2 font-bold text-text-primary">Historical Performance</h2>
                   <p className="text-sm text-muted-foreground">View detailed performance metrics over time</p>
                 </div>
               </div>

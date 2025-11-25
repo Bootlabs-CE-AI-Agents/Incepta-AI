@@ -26,7 +26,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-24">
       <AlertCircle className="h-16 w-16 text-destructive mb-4" />
-      <h2 className="text-2xl font-bold text-foreground mb-2">
+      <h2 className="text-h2 font-bold text-text-primary mb-2">
         Failed to Load Ticket Metrics
       </h2>
       <p className="text-muted-foreground mb-6 max-w-md text-center">
@@ -49,7 +49,7 @@ function EmptyState() {
       <div className="text-6xl mb-4" role="img" aria-label="Ticket">
         🎫
       </div>
-      <h2 className="text-2xl font-bold text-foreground mb-2">
+      <h2 className="text-h2 font-bold text-text-primary mb-2">
         No Ticket Activity Yet
       </h2>
       <p className="text-muted-foreground max-w-md text-center">
@@ -102,7 +102,7 @@ export default function TicketProcessingPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-h1 font-bold text-text-primary">
                 Ticket Processing
               </h1>
               <p className="text-muted-foreground mt-2">
@@ -123,7 +123,7 @@ export default function TicketProcessingPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-h1 font-bold text-text-primary">
                 Ticket Processing
               </h1>
               <p className="text-muted-foreground mt-2">
@@ -144,7 +144,7 @@ export default function TicketProcessingPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-h1 font-bold text-text-primary">
                 Ticket Processing
               </h1>
               <p className="text-muted-foreground mt-2">
@@ -167,7 +167,7 @@ export default function TicketProcessingPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-h1 font-bold text-text-primary">
               Ticket Processing
             </h1>
             <p className="text-muted-foreground mt-2">

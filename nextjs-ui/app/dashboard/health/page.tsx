@@ -67,7 +67,7 @@ export default function HealthDashboardPage() {
       <DashboardLayout>
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold">System Health</h1>
+            <h1 className="text-h1 font-bold text-text-primary">System Health</h1>
             <p className="text-muted-foreground">
               Monitor the health status of all system components
             </p>
@@ -84,7 +84,7 @@ export default function HealthDashboardPage() {
       <DashboardLayout>
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold">System Health</h1>
+            <h1 className="text-h1 font-bold text-text-primary">System Health</h1>
             <p className="text-muted-foreground">
               Monitor the health status of all system components
             </p>
@@ -110,7 +110,7 @@ export default function HealthDashboardPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">System Health</h1>
+            <h1 className="text-h1 font-bold text-text-primary">System Health</h1>
             <p className="text-muted-foreground">
               Monitor the health status of all system components
             </p>

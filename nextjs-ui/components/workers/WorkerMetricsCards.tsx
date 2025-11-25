@@ -94,7 +94,7 @@ export function WorkerMetricsCards({ workers, loading = false }: WorkerMetricsCa
         label="Completed Tasks (All Time)"
         value={loading ? '—' : abbreviateNumber(metrics.totalCompleted)}
         loading={loading}
-        className="border-l-4 border-l-gray-500"
+        className="border-l-4 border-l-text-secondary"
       />
 
       {/* Card 4: Average Throughput (AC-2) - 1 decimal */}

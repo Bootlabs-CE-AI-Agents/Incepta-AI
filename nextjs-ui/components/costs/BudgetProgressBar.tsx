@@ -85,7 +85,7 @@ export function BudgetProgressBar({
           variant === "success" && "bg-green-500",
           variant === "warning" && "bg-yellow-500",
           variant === "destructive" && "bg-red-500",
-          variant === "neutral" && "bg-gray-300"
+          variant === "neutral" && "bg-white/50 dark:bg-white/20"
         )}
         aria-label={`Budget utilization: ${utilized.toFixed(1)}%`}
         aria-valuemin={0}

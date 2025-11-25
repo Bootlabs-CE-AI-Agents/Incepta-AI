@@ -16,7 +16,7 @@ interface WorkerConfigDetailsProps {
 export function WorkerConfigDetails({ config }: WorkerConfigDetailsProps) {
   if (!config) {
     return (
-      <div className="text-sm text-gray-400">
+      <div className="text-sm text-text-secondary">
         Worker configuration unavailable
       </div>
     );
@@ -24,11 +24,11 @@ export function WorkerConfigDetails({ config }: WorkerConfigDetailsProps) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-white">Worker Configuration</h3>
-      
+      <h3 className="text-sm font-semibold text-text-primary dark:text-white">Worker Configuration</h3>
+
       {/* System Information */}
       <div>
-        <h4 className="text-xs font-medium text-gray-400 mb-2">System Information</h4>
+        <h4 className="text-xs font-medium text-text-secondary mb-2">System Information</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <ConfigItem label="OS" value={config.os_name} />
           <ConfigItem label="Python Version" value={config.python_version} />
@@ -38,7 +38,7 @@ export function WorkerConfigDetails({ config }: WorkerConfigDetailsProps) {
 
       {/* Worker Configuration */}
       <div>
-        <h4 className="text-xs font-medium text-gray-400 mb-2">Worker Settings</h4>
+        <h4 className="text-xs font-medium text-text-secondary mb-2">Worker Settings</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <ConfigItem 
             label="Connected Queues" 
@@ -70,8 +70,8 @@ interface ConfigItemProps {
 function ConfigItem({ label, value }: ConfigItemProps) {
   return (
     <div className="flex flex-col">
-      <span className="text-xs text-gray-500 font-medium">{label}</span>
-      <span className="text-sm text-white mt-0.5">{value || 'N/A'}</span>
+      <span className="text-xs text-text-secondary font-medium">{label}</span>
+      <span className="text-sm text-text-primary dark:text-white mt-0.5">{value || 'N/A'}</span>
     </div>
   );
 }

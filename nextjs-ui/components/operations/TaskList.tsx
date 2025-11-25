@@ -37,7 +37,7 @@ const getStatusBadge = (status: QueueTask['status']) => {
     failed: 'bg-accent-red/20 text-accent-red',
     completed: 'bg-accent-green/20 text-accent-green',
   };
-  return badges[status] || 'bg-gray-200 text-gray-700';
+  return badges[status] || 'bg-white/50 dark:bg-white/10 text-text-secondary';
 };
 
 /**

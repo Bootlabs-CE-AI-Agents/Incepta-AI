@@ -77,7 +77,7 @@ export default function HealthBadge({ health, showTooltip = true }: HealthBadgeP
   // If no health data, show unknown status
   if (!health) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded bg-gray-500/10 text-gray-400">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded bg-white/50 dark:bg-white/10 text-text-secondary">
         ⚪ Unknown
       </span>
     );

@@ -27,7 +27,7 @@ export default function CreateUserError({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background-gradient-1 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full bg-white border-2 border-red-500 rounded-lg p-8">
         {/* Error Icon */}
         <div className="flex justify-center mb-6">
@@ -37,18 +37,18 @@ export default function CreateUserError({
         </div>
 
         {/* Error Title */}
-        <h1 className="text-2xl font-bold text-center text-gray-900 mb-4">
+        <h1 className="text-h2 font-bold text-center text-text-primary mb-4">
           Create User Page Error
         </h1>
 
         {/* Error Message */}
-        <p className="text-center text-gray-600 mb-6">
+        <p className="text-center text-text-secondary mb-6">
           Failed to load the Create User page. Check console for details.
         </p>
 
         {/* Error Details */}
-        <div className="mb-6 p-4 bg-gray-100 rounded-lg border border-gray-300">
-          <div className="text-sm font-semibold text-gray-700 mb-2">
+        <div className="mb-6 p-4 bg-white/50 dark:bg-white/5 rounded-lg border border-white/50 dark:border-white/20">
+          <div className="text-sm font-semibold text-text-secondary mb-2">
             Error Details:
           </div>
           <div className="text-xs font-mono text-red-600 whitespace-pre-wrap break-words">
@@ -57,16 +57,16 @@ export default function CreateUserError({
             <strong>Message:</strong> {error.message}
           </div>
           {error.digest && (
-            <div className="mt-2 text-xs text-gray-500">
+            <div className="mt-2 text-xs text-text-secondary">
               Error Digest: {error.digest}
             </div>
           )}
           {error.stack && (
             <details className="mt-2">
-              <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+              <summary className="text-xs text-text-secondary cursor-pointer hover:text-text-primary">
                 Full Stack Trace
               </summary>
-              <pre className="mt-2 text-xs text-gray-600 whitespace-pre-wrap break-words max-h-64 overflow-auto">
+              <pre className="mt-2 text-xs text-text-secondary whitespace-pre-wrap break-words max-h-64 overflow-auto">
                 {error.stack}
               </pre>
             </details>

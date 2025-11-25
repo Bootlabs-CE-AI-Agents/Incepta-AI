@@ -83,14 +83,14 @@ export function ShortcutsModal() {
     return (
       <div
         key={shortcut.id}
-        className="flex items-center justify-between py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        className="flex items-center justify-between py-3 px-4 hover:bg-white/50 dark:hover:bg-white/10 rounded-lg transition-colors"
       >
         <div className="flex-1">
-          <div className="text-sm font-medium text-gray-900 dark:text-white">
+          <div className="text-sm font-medium text-text-primary dark:text-white">
             {shortcut.description}
           </div>
           {shortcut.scope && (
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <div className="text-xs text-text-secondary dark:text-text-secondary mt-0.5">
               Available on {shortcut.scope} page
             </div>
           )}
@@ -100,7 +100,7 @@ export function ShortcutsModal() {
             <span key={idx} className="flex items-center gap-1">
               <Kbd>{key.trim()}</Kbd>
               {idx < keys.split("+").length - 1 && (
-                <span className="text-gray-400 text-xs">+</span>
+                <span className="text-text-secondary text-xs">+</span>
               )}
             </span>
           ))}
@@ -123,10 +123,10 @@ export function ShortcutsModal() {
       />
 
       {/* Modal */}
-      <div className="fixed top-[10%] left-1/2 -translate-x-1/2 z-[9999] w-full max-w-3xl glass-card border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="fixed top-[10%] left-1/2 -translate-x-1/2 z-[9999] w-full max-w-3xl glass-card border-2 border-white/50 dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/50 dark:border-white/20">
+          <h2 className="text-xl font-semibold text-text-primary dark:text-white">
             Keyboard Shortcuts
           </h2>
           <button
@@ -134,26 +134,26 @@ export function ShortcutsModal() {
               setIsOpen(false);
               setSearchQuery("");
             }}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="p-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-colors"
             aria-label="Close shortcuts modal"
           >
-            <X size={20} className="text-gray-500 dark:text-gray-400" />
+            <X size={20} className="text-text-secondary dark:text-text-secondary" />
           </button>
         </div>
 
         {/* Search Bar */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-6 py-4 border-b border-white/50 dark:border-white/20">
           <div className="relative">
             <Search
               size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
             />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search shortcuts..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+              className="w-full pl-10 pr-4 py-2 bg-white/50 dark:bg-white/5 border border-white/50 dark:border-white/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary"
               autoFocus
             />
           </div>
@@ -173,7 +173,7 @@ export function ShortcutsModal() {
 
             return (
               <div key={category}>
-                <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                <h3 className="text-sm font-semibold text-text-secondary dark:text-text-secondary uppercase tracking-wider mb-3">
                   {categoryTitle}
                 </h3>
                 <div className="space-y-1">
@@ -184,15 +184,15 @@ export function ShortcutsModal() {
           })}
 
           {filteredShortcuts.length === 0 && (
-            <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+            <div className="py-12 text-center text-text-secondary dark:text-text-secondary">
               No shortcuts found for &quot;{searchQuery}&quot;
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+        <div className="px-6 py-3 border-t border-white/50 dark:border-white/20 bg-white/50 dark:bg-white/5">
+          <div className="flex items-center justify-between text-xs text-text-secondary dark:text-text-secondary">
             <span>
               Press <Kbd>Esc</Kbd> to close
             </span>

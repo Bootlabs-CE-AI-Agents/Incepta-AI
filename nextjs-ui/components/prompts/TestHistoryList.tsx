@@ -58,8 +58,8 @@ export function TestHistoryList({ history, onViewTest }: TestHistoryListProps) {
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+    <div className="rounded-lg border border-white/50 dark:border-white/20 bg-white dark:bg-white/5 p-6">
+      <h3 className="text-sm font-semibold text-text-primary dark:text-white mb-4 flex items-center gap-2">
         <Clock className="h-4 w-4" />
         Test History (Last {history.length} Runs)
       </h3>
@@ -68,15 +68,15 @@ export function TestHistoryList({ history, onViewTest }: TestHistoryListProps) {
         {history.map((test, index) => (
           <div
             key={`${test.timestamp}-${index}`}
-            className="rounded-md border border-gray-200 bg-gray-50 p-3 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-750 dark:hover:bg-gray-700 transition-colors"
+            className="rounded-md border border-white/50 dark:border-white/20 bg-white/50 dark:bg-white/5 p-3 hover:bg-white/70 dark:hover:bg-white/10 transition-colors"
           >
             {/* Header: timestamp, model, view button */}
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-2 text-xs text-text-secondary dark:text-text-secondary">
                 <span className="font-medium">
                   {formatDistanceToNow(test.timestamp, { addSuffix: true })}
                 </span>
-                <span className="text-gray-400">•</span>
+                <span className="text-text-secondary">•</span>
                 <span className="font-mono text-xs text-blue-600 dark:text-blue-400">
                   {test.model}
                 </span>
@@ -93,22 +93,22 @@ export function TestHistoryList({ history, onViewTest }: TestHistoryListProps) {
 
             {/* User message preview (50 chars) */}
             <div className="text-xs mb-1">
-              <span className="font-medium text-gray-700 dark:text-gray-300">Message: </span>
-              <span className="text-gray-600 dark:text-gray-400 italic">
+              <span className="font-medium text-text-primary dark:text-text-secondary">Message: </span>
+              <span className="text-text-secondary dark:text-text-secondary italic">
                 "{truncateText(test.userMessage, 50)}"
               </span>
             </div>
 
             {/* Result preview (100 chars) */}
             <div className="text-xs">
-              <span className="font-medium text-gray-700 dark:text-gray-300">Result: </span>
-              <span className="text-gray-600 dark:text-gray-400">
+              <span className="font-medium text-text-primary dark:text-text-secondary">Result: </span>
+              <span className="text-text-secondary dark:text-text-secondary">
                 {truncateText(test.result.response, 100)}
               </span>
             </div>
 
             {/* Metrics (tokens, time, cost) */}
-            <div className="flex items-center gap-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-3 mt-2 text-xs text-text-secondary dark:text-text-secondary">
               <span>{test.result.usage.total_tokens} tokens</span>
               <span>•</span>
               <span>{test.result.execution_time.toFixed(2)}s</span>

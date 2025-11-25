@@ -61,7 +61,7 @@ export default function AuditLogsPage() {
       <div className="space-y-6">
         {/* Page Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Audit Logs</h1>
+          <h1 className="text-h1 font-bold text-text-primary">Audit Logs</h1>
           <p className="text-muted-foreground mt-1">
             Track authentication events and system changes
           </p>

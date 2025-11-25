@@ -26,7 +26,7 @@ export default function PromptsPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">System Prompts</h1>
+          <h1 className="text-h1 font-bold text-text-primary">System Prompts</h1>
         </div>
         <Loading size="lg" text="Loading prompts..." />
       </DashboardLayout>
@@ -49,8 +49,8 @@ export default function PromptsPage() {
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">System Prompts</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-h2 font-bold text-text-primary">System Prompts</h1>
+          <p className="text-caption text-text-secondary mt-1">
             Manage LLM prompt templates with variable substitution
           </p>
         </div>

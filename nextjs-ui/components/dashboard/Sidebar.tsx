@@ -45,23 +45,23 @@ const navigationData: NavCategory[] = [
   {
     category: "Monitoring",
     items: [
-      { label: "Dashboard", href: "/dashboard", icon: <BarChart3 className="w-5 h-5" /> },
-      { label: "System Health", href: "/dashboard/health", icon: <HeartPulse className="w-5 h-5" /> },
-      { label: "Agent Metrics", href: "/dashboard/agents", icon: <Bot className="w-5 h-5" /> },
-      { label: "Agent Performance", href: "/dashboard/agent-performance", icon: <Activity className="w-5 h-5" /> },
-      { label: "Ticket Processing", href: "/dashboard/tickets", icon: <Ticket className="w-5 h-5" /> },
+      { label: "Dashboard", href: "/dashboard", icon: <BarChart3 className="w-5 h-5 shrink-0" /> },
+      { label: "System Health", href: "/dashboard/health", icon: <HeartPulse className="w-5 h-5 shrink-0" /> },
+      { label: "Agent Metrics", href: "/dashboard/agents", icon: <Bot className="w-5 h-5 shrink-0" /> },
+      { label: "Agent Performance", href: "/dashboard/agent-performance", icon: <Activity className="w-5 h-5 shrink-0" /> },
+      { label: "Ticket Processing", href: "/dashboard/tickets", icon: <Ticket className="w-5 h-5 shrink-0" /> },
     ],
   },
   {
     category: "Configuration",
     items: [
-      { label: "Tenants", href: "/dashboard/tenants", icon: <Shield className="w-5 h-5" /> },
-      { label: "Users", href: "/dashboard/users", icon: <Users className="w-5 h-5" /> },
-      { label: "Agents", href: "/dashboard/agents-config", icon: <Bot className="w-5 h-5" /> },
-      { label: "Prompts", href: "/dashboard/prompts", icon: <MessageSquare className="w-5 h-5" /> },
-      { label: "Tools", href: "/dashboard/tools", icon: <Cpu className="w-5 h-5" /> },
-      { label: "Plugins", href: "/dashboard/plugins", icon: <Package className="w-5 h-5" /> },
-      { label: "MCP Servers", href: "/dashboard/mcp-servers", icon: <Database className="w-5 h-5" /> },
+      { label: "Tenants", href: "/dashboard/tenants", icon: <Shield className="w-5 h-5 shrink-0" /> },
+      { label: "Users", href: "/dashboard/users", icon: <Users className="w-5 h-5 shrink-0" /> },
+      { label: "Agents", href: "/dashboard/agents-config", icon: <Bot className="w-5 h-5 shrink-0" /> },
+      { label: "Prompts", href: "/dashboard/prompts", icon: <MessageSquare className="w-5 h-5 shrink-0" /> },
+      { label: "Tools", href: "/dashboard/tools", icon: <Cpu className="w-5 h-5 shrink-0" /> },
+      { label: "Plugins", href: "/dashboard/plugins", icon: <Package className="w-5 h-5 shrink-0" /> },
+      { label: "MCP Servers", href: "/dashboard/mcp-servers", icon: <Database className="w-5 h-5 shrink-0" /> },
       // Workflows page not implemented yet - hidden until implementation
       // { label: "Workflows", href: "/dashboard/workflows", icon: <Layers className="w-5 h-5" /> },
     ],
@@ -71,10 +71,10 @@ const navigationData: NavCategory[] = [
     items: [
       // Logs page not implemented yet - hidden until implementation
       // { label: "Logs", href: "/dashboard/logs", icon: <FileText className="w-5 h-5" /> },
-      { label: "Audit Trail", href: "/dashboard/audit-logs", icon: <Workflow className="w-5 h-5" /> },
-      { label: "Execution History", href: "/dashboard/execution-history", icon: <Activity className="w-5 h-5" /> },
-      { label: "Operations", href: "/dashboard/operations", icon: <Cpu className="w-5 h-5" /> },
-      { label: "Workers", href: "/dashboard/workers", icon: <Bot className="w-5 h-5" /> },
+      { label: "Audit Trail", href: "/dashboard/audit-logs", icon: <Workflow className="w-5 h-5 shrink-0" /> },
+      { label: "Execution History", href: "/dashboard/execution-history", icon: <Activity className="w-5 h-5 shrink-0" /> },
+      { label: "Operations", href: "/dashboard/operations", icon: <Cpu className="w-5 h-5 shrink-0" /> },
+      { label: "Workers", href: "/dashboard/workers", icon: <Bot className="w-5 h-5 shrink-0" /> },
       // Settings page not implemented yet - hidden until implementation
       // { label: "Settings", href: "/dashboard/settings", icon: <Settings className="w-5 h-5" /> },
     ],
@@ -93,7 +93,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:block w-64 glass-card p-6 mr-6 h-[calc(100vh-120px)] overflow-y-auto">
+    <aside className="hidden md:block w-64 shrink-0 glass-card p-6 mr-6 h-[calc(100vh-120px)] overflow-y-auto">
       <nav className="space-y-6">
         {navigationData.map((section) => (
           <div key={section.category}>

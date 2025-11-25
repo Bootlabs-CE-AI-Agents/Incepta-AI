@@ -41,7 +41,7 @@ export default function NewProviderPage() {
         </Button>
 
         <div className="glass-card p-8">
-          <h1 className="text-2xl font-bold text-text-primary mb-6">
+          <h1 className="text-h1 font-bold text-text-primary mb-6">
             Add LLM Provider
           </h1>
           <ProviderForm

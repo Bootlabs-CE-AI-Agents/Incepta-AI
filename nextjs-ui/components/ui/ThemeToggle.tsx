@@ -24,7 +24,7 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className="
         relative p-2 rounded-lg glass-card
-        hover:bg-white/50 dark:hover:bg-gray-800/50
+        hover:bg-white/50 dark:hover:bg-white/10
         transition-all duration-200
         focus:outline-none focus:ring-2 focus:ring-accent-blue/50
       "
@@ -32,12 +32,12 @@ export function ThemeToggle() {
     >
       {theme === 'light' ? (
         <Moon
-          className="h-5 w-5 text-gray-700 dark:text-gray-300 transition-transform duration-200 hover:rotate-12"
+          className="h-5 w-5 text-text-primary dark:text-text-secondary transition-transform duration-200 hover:rotate-12"
           aria-hidden="true"
         />
       ) : (
         <Sun
-          className="h-5 w-5 text-gray-700 dark:text-gray-300 transition-transform duration-200 hover:rotate-45"
+          className="h-5 w-5 text-text-primary dark:text-text-secondary transition-transform duration-200 hover:rotate-45"
           aria-hidden="true"
         />
       )}

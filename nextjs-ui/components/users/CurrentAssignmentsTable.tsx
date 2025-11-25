@@ -51,7 +51,7 @@ export function CurrentAssignmentsTable({ userId }: CurrentAssignmentsTableProps
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+            className="h-16 bg-white/50 dark:bg-white/10 rounded animate-pulse"
             aria-label="Loading role assignments"
           />
         ))}
@@ -104,7 +104,7 @@ export function CurrentAssignmentsTable({ userId }: CurrentAssignmentsTableProps
       {/* Desktop table (≥ 768px) */}
       <div className="hidden md:block overflow-hidden rounded-lg border border-border">
         <table className="min-w-full divide-y divide-border">
-          <thead className="bg-gray-50 dark:bg-gray-800">
+          <thead className="bg-white/50 dark:bg-white/5">
             <tr>
               <th
                 scope="col"
@@ -126,9 +126,9 @@ export function CurrentAssignmentsTable({ userId }: CurrentAssignmentsTableProps
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-900 divide-y divide-border">
+          <tbody className="bg-white dark:bg-white/5 divide-y divide-border">
             {roles.map((role) => (
-              <tr key={role.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              <tr key={role.id} className="hover:bg-white/50 dark:hover:bg-white/10 transition-colors">
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">
                   {role.tenant_name}
                 </td>

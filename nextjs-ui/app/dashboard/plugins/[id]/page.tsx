@@ -168,7 +168,7 @@ export default function PluginDetailPage({ params }: PluginDetailPageProps) {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{plugin.name}</h1>
+            <h1 className="text-h1 font-bold text-text-primary">{plugin.name}</h1>
             <div className="flex items-center gap-2 mt-1">
               <Badge variant={plugin.type === 'webhook' ? 'default' : 'info'}>
                 {plugin.type}

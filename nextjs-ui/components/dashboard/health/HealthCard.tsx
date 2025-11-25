@@ -75,7 +75,7 @@ export function HealthCard({ title, health, lastUpdated, icon }: HealthCardProps
           {/* Primary Metrics */}
           {health.uptime !== undefined && (
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Uptime</span>
+              <span className="text-sm text-text-secondary">Uptime</span>
               <span className="text-lg font-semibold">
                 {Math.floor(health.uptime / 3600)}h
               </span>
@@ -84,17 +84,17 @@ export function HealthCard({ title, health, lastUpdated, icon }: HealthCardProps
 
           {health.response_time_ms !== undefined && (
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Response Time</span>
+              <span className="text-sm text-text-secondary">Response Time</span>
               <span className="text-lg font-semibold">{health.response_time_ms}ms</span>
             </div>
           )}
 
           {/* Additional Details */}
           {health.details && (
-            <div className="mt-3 pt-3 border-t border-gray-200 space-y-1">
+            <div className="mt-3 pt-3 border-t border-white/50 dark:border-white/20 space-y-1">
               {Object.entries(health.details).map(([key, value]) => (
                 <div key={key} className="flex justify-between items-center text-xs">
-                  <span className="text-gray-600">
+                  <span className="text-text-secondary">
                     {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </span>
                   <span className="font-medium">{String(value)}</span>
@@ -105,7 +105,7 @@ export function HealthCard({ title, health, lastUpdated, icon }: HealthCardProps
 
           {/* Last Updated */}
           {lastUpdated && (
-            <div className="text-xs text-gray-500 mt-2">
+            <div className="text-xs text-text-secondary mt-2">
               Updated {formatDistanceToNow(new Date(lastUpdated))}
             </div>
           )}

@@ -31,7 +31,7 @@ export interface BudgetColorResult {
  * getBudgetColor(50) // { color: 'text-green-600', variant: 'success' }
  * getBudgetColor(80) // { color: 'text-yellow-600', variant: 'warning' }
  * getBudgetColor(95) // { color: 'text-red-600', variant: 'destructive' }
- * getBudgetColor(null) // { color: 'text-gray-500', variant: 'neutral' }
+ * getBudgetColor(null) // { color: 'text-text-secondary', variant: 'neutral' }
  * ```
  */
 export function getBudgetColor(
@@ -39,7 +39,7 @@ export function getBudgetColor(
 ): BudgetColorResult {
   // Handle null or zero budget cases
   if (utilizationPercentage === null || utilizationPercentage === 0) {
-    return { color: "text-gray-500", variant: "neutral" };
+    return { color: "text-text-secondary", variant: "neutral" };
   }
 
   // Apply color thresholds

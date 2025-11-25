@@ -176,12 +176,12 @@ export default function NewPromptPage() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
-            <h1 className="text-2xl font-bold text-gray-900">Create Prompt</h1>
+            <h1 className="text-h1 font-bold text-text-primary">Create Prompt</h1>
           </div>
           <div className="flex items-center gap-3">
             {/* Auto-save indicator (AC-6) */}
             {lastSaved && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-text-secondary">
                 {isSaving ? (
                   '💾 Saving draft...'
                 ) : (

@@ -80,18 +80,18 @@ export function ExecutionFilters({ filters, onFiltersChange }: ExecutionFiltersP
   );
 
   return (
-    <div className="space-y-4 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-4">
+    <div className="space-y-4 rounded-lg border border-white/50 dark:border-white/20 bg-white/50 dark:bg-white/5 p-4 glass-card">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Filter className="h-5 w-5 text-neutral-500" />
-          <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Filters</h3>
+          <Filter className="h-5 w-5 text-text-secondary" />
+          <h3 className="text-sm font-semibold text-text-primary dark:text-white">Filters</h3>
         </div>
         {hasActiveFilters && (
           <Button
             variant="ghost"
             size="sm"
             onClick={handleReset}
-            className="text-sm text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+            className="text-sm text-text-secondary hover:text-text-primary dark:text-white/60 dark:hover:text-white"
           >
             <X className="h-4 w-4 mr-1" />
             Reset
@@ -102,7 +102,7 @@ export function ExecutionFilters({ filters, onFiltersChange }: ExecutionFiltersP
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary" />
           <Input
             type="text"
             placeholder="Search executions..."
@@ -127,7 +127,7 @@ export function ExecutionFilters({ filters, onFiltersChange }: ExecutionFiltersP
 
         {/* Date From */}
         <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
+          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary pointer-events-none" />
           <Input
             type="datetime-local"
             placeholder="From date"
@@ -139,7 +139,7 @@ export function ExecutionFilters({ filters, onFiltersChange }: ExecutionFiltersP
 
         {/* Date To */}
         <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 pointer-events-none" />
+          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary pointer-events-none" />
           <Input
             type="datetime-local"
             placeholder="To date"
@@ -152,7 +152,7 @@ export function ExecutionFilters({ filters, onFiltersChange }: ExecutionFiltersP
 
       {/* Status Checkboxes */}
       <div>
-        <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-2 block">
+        <label className="text-xs font-medium text-text-primary dark:text-white/80 mb-2 block">
           Status
         </label>
         <div className="flex flex-wrap gap-2">
@@ -165,8 +165,8 @@ export function ExecutionFilters({ filters, onFiltersChange }: ExecutionFiltersP
                 onClick={() => handleStatusChange(option.value)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                   isActive
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600'
+                    ? 'bg-accent-blue text-white'
+                    : 'bg-white/50 text-text-primary hover:bg-white/70 dark:bg-white/10 dark:text-white/80 dark:hover:bg-white/20'
                 }`}
               >
                 {option.label}

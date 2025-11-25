@@ -68,25 +68,25 @@ export function VersionDiffModal({
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
           {/* Header (AC-2: Version metadata) */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/50 dark:border-white/20">
             <div>
-              <Dialog.Title className="text-lg font-semibold text-gray-900">
+              <Dialog.Title className="text-lg font-semibold text-text-primary dark:text-white">
                 Version {version.version_number} Comparison
               </Dialog.Title>
               <div className="mt-1 space-y-1">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-text-secondary">
                   Saved: {format(new Date(version.created_at), 'MMM dd, yyyy, h:mm a')}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-text-secondary">
                   Characters: {version.template_text.length.toLocaleString()}
                 </p>
                 {version.description && (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-text-secondary">
                     Description: {version.description}
                   </p>
                 )}
                 {version.created_by && (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-text-secondary">
                     Created by: {version.created_by}
                   </p>
                 )}
@@ -94,7 +94,7 @@ export function VersionDiffModal({
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-text-secondary hover:text-text-primary transition-colors"
               aria-label="Close modal"
             >
               <X className="h-6 w-6" />
@@ -105,11 +105,11 @@ export function VersionDiffModal({
           <div className="flex-1 overflow-auto px-6 py-4">
             {files.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-600">No differences found</p>
+                <p className="text-text-secondary">No differences found</p>
               </div>
             ) : (
               files.map((file, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                <div key={index} className="border border-white/50 dark:border-white/20 rounded-lg overflow-hidden">
                   {/* Diff view with side-by-side split */}
                   <Diff
                     viewType="split"
@@ -128,7 +128,7 @@ export function VersionDiffModal({
             )}
 
             {/* Legend */}
-            <div className="mt-4 flex items-center gap-6 text-xs text-gray-600">
+            <div className="mt-4 flex items-center gap-6 text-xs text-text-secondary">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-green-100 border border-green-300 rounded" />
                 <span>Added</span>
@@ -145,7 +145,7 @@ export function VersionDiffModal({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200">
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/50 dark:border-white/20">
             <Button variant="secondary" onClick={onClose}>
               Close
             </Button>

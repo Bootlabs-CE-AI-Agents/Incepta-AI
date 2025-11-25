@@ -29,12 +29,12 @@ export function DateRangeSelector({ value, onChange, onDateChange }: DateRangeSe
         {preset === 'custom' ? (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-text-primary dark:text-text-secondary mb-1">
                 Start Date
               </label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-white/50 dark:border-white/20 bg-white dark:bg-white/5 rounded-md"
                 onChange={(e) => {
                   if (onDateChange) {
                     const endDate = new Date().toISOString().split('T')[0];
@@ -44,12 +44,12 @@ export function DateRangeSelector({ value, onChange, onDateChange }: DateRangeSe
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-text-primary dark:text-text-secondary mb-1">
                 End Date
               </label>
               <input
                 type="date"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="w-full px-3 py-2 border border-white/50 dark:border-white/20 bg-white dark:bg-white/5 rounded-md"
                 defaultValue={new Date().toISOString().split('T')[0]}
                 onChange={(e) => {
                   if (onDateChange) {
@@ -61,7 +61,7 @@ export function DateRangeSelector({ value, onChange, onDateChange }: DateRangeSe
             </div>
           </div>
         ) : (
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-text-secondary">
             Showing data for the {preset === 'last_7' ? 'last 7 days' : 'last 30 days'}
           </p>
         )}

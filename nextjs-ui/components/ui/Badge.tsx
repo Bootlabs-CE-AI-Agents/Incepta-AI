@@ -30,7 +30,7 @@ export function Badge({
     "inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap";
 
   const variantStyles = {
-    default: "bg-gray-100 text-gray-700",
+    default: "bg-white/50 dark:bg-white/10 text-text-secondary",
     success: "bg-accent-green/20 text-accent-green",
     warning: "bg-accent-orange/20 text-accent-orange",
     error: "bg-red-100 text-red-700",

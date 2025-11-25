@@ -57,30 +57,30 @@ export interface TabsProps {
 
 const variantClasses = {
   pills: {
-    list: 'bg-gray-100 dark:bg-gray-800 p-1 rounded-xl space-x-1',
+    list: 'bg-white/50 dark:bg-white/5 p-1 rounded-xl space-x-1',
     tab: (selected: boolean) =>
       `rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
         selected
-          ? 'bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-400 shadow'
-          : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'
+          ? 'bg-white dark:bg-white/10 text-blue-700 dark:text-blue-400 shadow'
+          : 'text-text-secondary dark:text-text-secondary hover:bg-white/50 dark:hover:bg-white/10'
       }`,
   },
   underline: {
-    list: 'border-b border-gray-200 dark:border-gray-700 space-x-4',
+    list: 'border-b border-white/50 dark:border-white/20 space-x-4',
     tab: (selected: boolean) =>
       `px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
         selected
           ? 'border-blue-500 text-blue-700 dark:text-blue-400'
-          : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
+          : 'border-transparent text-text-secondary dark:text-text-secondary hover:text-text-primary dark:hover:text-text-primary hover:border-white/30 dark:hover:border-white/30'
       }`,
   },
   boxed: {
-    list: 'bg-gray-50 dark:bg-gray-900 p-1 rounded-lg space-x-1 border border-gray-200 dark:border-gray-700',
+    list: 'bg-white/30 dark:bg-white/5 p-1 rounded-lg space-x-1 border border-white/50 dark:border-white/20',
     tab: (selected: boolean) =>
       `rounded-md px-4 py-2 text-sm font-medium transition-all ${
         selected
-          ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm border border-gray-200 dark:border-gray-700'
-          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+          ? 'bg-white dark:bg-white/10 text-text-primary dark:text-white shadow-sm border border-white/50 dark:border-white/20'
+          : 'text-text-secondary dark:text-text-secondary hover:bg-white/50 dark:hover:bg-white/10'
       }`,
   },
 };

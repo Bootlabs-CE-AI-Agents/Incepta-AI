@@ -51,7 +51,7 @@ export function BudgetUtilizationRow({
   return (
     <div
       className={cn(
-        "border-b border-gray-200 transition-colors duration-150",
+        "border-b border-white/50 dark:border-white/20 transition-colors duration-150",
         className
       )}
     >
@@ -70,7 +70,7 @@ export function BudgetUtilizationRow({
               <span>
                 Spent: <span className="font-medium tabular-nums">{formatCurrency(tenant.current_spend)}</span>
               </span>
-              <span className="text-gray-300">|</span>
+              <span className="text-white/30 dark:text-white/30">|</span>
               <span>
                 Budget: <span className="font-medium tabular-nums">{formatCurrency(tenant.budget_limit)}</span>
               </span>
@@ -90,7 +90,7 @@ export function BudgetUtilizationRow({
       {/* TODO: Enable when backend supports agent_breakdown field */}
       {/* {isExpanded && (
         <div
-          className="bg-gray-50 px-4 py-4 animate-slideDown"
+          className="bg-white/50 dark:bg-white/5 px-4 py-4 animate-slideDown"
           role="region"
           aria-label={`Agent breakdown for ${tenant.tenant_name}`}
         >

@@ -194,7 +194,7 @@ export function CodeMirrorEditor({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         readOnly={readOnly}
-        className={`w-full min-h-[200px] p-4 bg-gray-900 text-gray-100 font-mono text-sm rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary ${className}`}
+        className={`w-full min-h-[200px] p-4 bg-surface text-text-primary font-mono text-sm rounded-md border border-white/20 focus:outline-none focus:ring-2 focus:ring-primary ${className}`}
       />
     );
   }

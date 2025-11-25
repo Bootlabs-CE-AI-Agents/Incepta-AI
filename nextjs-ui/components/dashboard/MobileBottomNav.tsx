@@ -79,7 +79,7 @@ export function MobileBottomNav() {
                   ${
                     isActive
                       ? 'bg-accent-blue text-white'
-                      : 'text-text-secondary hover:bg-white/30 dark:hover:bg-gray-800/30'
+                      : 'text-text-secondary hover:bg-white/30 dark:hover:bg-white/10'
                   }
                 `}
                 aria-current={isActive ? 'page' : undefined}

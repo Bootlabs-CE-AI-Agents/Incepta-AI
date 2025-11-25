@@ -64,7 +64,7 @@ export default function PluginsPage() {
     return (
       <DashboardLayout>
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Plugins</h1>
+          <h1 className="text-h1 font-bold text-text-primary">Plugins</h1>
         </div>
         <Card className="p-6">
           <div className="space-y-4">
@@ -93,7 +93,7 @@ export default function PluginsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Plugins</h1>
+          <h1 className="text-h1 font-bold text-text-primary">Plugins</h1>
           <p className="text-muted-foreground">
             Manage external system integrations (webhooks and polling)
           </p>

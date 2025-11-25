@@ -46,9 +46,9 @@ type SortDirection = 'asc' | 'desc';
 function getStatusBadge(status: WorkerStatusEnum): { variant: string; className: string; icon?: string } {
   switch (status) {
     case 'active':
-      return { variant: 'success', className: 'bg-green-500 text-white', icon: undefined };
+      return { variant: 'success', className: 'bg-accent-green text-white', icon: undefined };
     case 'idle':
-      return { variant: 'secondary', className: 'bg-gray-400 text-white', icon: undefined };
+      return { variant: 'secondary', className: 'bg-text-secondary text-white', icon: undefined };
     case 'unresponsive':
       return { variant: 'destructive', className: 'bg-red-500 text-white', icon: '⚠️' };
   }

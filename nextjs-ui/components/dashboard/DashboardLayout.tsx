@@ -37,7 +37,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <Header />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1">
+        <main className="flex-1 min-w-0 overflow-x-auto">
           {children}
         </main>
       </div>

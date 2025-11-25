@@ -81,10 +81,10 @@ export default function ExecutionHistoryPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">
+            <h1 className="text-h1 font-bold text-text-primary dark:text-white">
               Execution History
             </h1>
-            <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+            <p className="text-text-secondary mt-1">
               View and analyze agent execution records
             </p>
           </div>

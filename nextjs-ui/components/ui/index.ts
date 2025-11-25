@@ -19,3 +19,5 @@ export { Textarea } from "./Textarea";
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./Table";
 export { EmptyState } from "./EmptyState";
 export { ConfirmDialog } from "./ConfirmDialog";
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./Accordion";
+export { Switch } from "./switch";

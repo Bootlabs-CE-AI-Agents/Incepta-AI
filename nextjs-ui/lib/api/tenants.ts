@@ -27,7 +27,7 @@ export interface Tenant {
   description?: string;
   logo?: string;
   agent_count?: number;
-  tool_type?: string; // 'servicedesk_plus' | 'jira'
+  tool_type?: string; // 'servicedesk_plus' | 'jira' | 'none'
 
   // ServiceDesk Plus fields
   servicedesk_url?: string;
@@ -41,16 +41,22 @@ export interface Tenant {
   webhook_signing_secret?: string;
   enhancement_preferences?: EnhancementPreferences;
 
-  // Budget fields (Story 8.10)
+  // BYOK fields (Story 8.13 + Story 32)
+  byok_enabled?: boolean;
+  byok_openai_key?: string;
+  byok_anthropic_key?: string;
+  litellm_virtual_key?: string | null;
+  byok_virtual_key?: string | null;
+  byok_enabled_at?: string | null;
+
+  // Budget fields (Story 8.10 + Story 32)
   max_budget?: number;
   alert_threshold?: number;
   grace_threshold?: number;
   budget_duration?: string;
 
-  // BYOK fields (Story 8.13)
-  litellm_virtual_key?: string | null;
-  byok_virtual_key?: string | null;
-  byok_enabled_at?: string | null;
+  // Active status (Story 32)
+  is_active?: boolean;
 
   created_at: string;
   updated_at: string;

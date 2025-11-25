@@ -81,8 +81,8 @@ export const tenantSchema = z.object({
     ),
 
   tool_type: z
-    .enum(['servicedesk_plus', 'jira'])
-    .optional(),
+    .enum(['servicedesk_plus', 'jira', 'none'])
+    .default('servicedesk_plus'),
 
   // ServiceDesk Plus fields (required if tool_type='servicedesk_plus')
   servicedesk_url: z.union([z.string().length(0), z.string().url({ message: "Must be a valid URL" })]).optional(),
@@ -93,9 +93,23 @@ export const tenantSchema = z.object({
   jira_api_token: z.union([z.string().length(0), z.string().min(1)]).optional(),
   jira_project_key: z.union([z.string().length(0), z.string().min(1)]).optional(),
 
-  webhook_signing_secret: z.string().min(1, { message: "Webhook signing secret is required" }),
+  webhook_signing_secret: z.string().optional(),
 
   enhancement_preferences: enhancementPreferencesSchema.optional(),
+
+  // BYOK fields (Story 32)
+  byok_enabled: z.boolean().default(false),
+  byok_openai_key: z.string().optional(),
+  byok_anthropic_key: z.string().optional(),
+
+  // Budget fields (Story 32)
+  max_budget: z.number().min(0).max(10000).default(500),
+  alert_threshold: z.number().int().min(50).max(100).default(80),
+  grace_threshold: z.number().int().min(100).max(150).default(110),
+  budget_duration: z.enum(['30d', '60d', '90d']).default('30d'),
+
+  // Active status (Story 32)
+  is_active: z.boolean().default(true),
 }).superRefine((data, ctx) => {
   // Validate tool-specific fields based on tool_type
   const toolType = data.tool_type || 'servicedesk_plus'; // Default to servicedesk_plus
@@ -138,6 +152,45 @@ export const tenantSchema = z.object({
       });
     }
   }
+
+  // Validate BYOK fields (Story 32 AC-1)
+  if (data.byok_enabled) {
+    // At least one API key required
+    if (!data.byok_openai_key && !data.byok_anthropic_key) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one API key required when BYOK is enabled",
+        path: ['byok_enabled'],
+      });
+    }
+
+    // OpenAI key format validation
+    if (data.byok_openai_key && !data.byok_openai_key.startsWith('sk-')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "OpenAI API key must start with 'sk-'",
+        path: ['byok_openai_key'],
+      });
+    }
+
+    // Anthropic key format validation
+    if (data.byok_anthropic_key && !data.byok_anthropic_key.startsWith('sk-ant-')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Anthropic API key must start with 'sk-ant-'",
+        path: ['byok_anthropic_key'],
+      });
+    }
+  }
+
+  // Validate budget thresholds (Story 32 AC-2)
+  if (data.grace_threshold <= data.alert_threshold) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Grace threshold must be greater than alert threshold",
+      path: ['grace_threshold'],
+    });
+  }
 });
 
 /**
@@ -162,14 +215,25 @@ export const tenantUpdateSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }).optional(),
   description: z.string().optional(),
   logo: z.string().optional(),
-  tool_type: z.enum(['servicedesk_plus', 'jira']).optional(),
+  tool_type: z.enum(['servicedesk_plus', 'jira', 'none']).optional(),
   servicedesk_url: z.string().url({ message: "Must be a valid URL" }).optional(),
   servicedesk_api_key: z.string().min(1).optional(),
   jira_url: z.string().url({ message: "Must be a valid URL" }).optional(),
   jira_api_token: z.string().min(1).optional(),
   jira_project_key: z.string().min(1).optional(),
-  webhook_signing_secret: z.string().min(1).optional(),
+  webhook_signing_secret: z.string().optional(),
   enhancement_preferences: enhancementPreferencesSchema.partial().optional(),
+  // BYOK fields (Story 32)
+  byok_enabled: z.boolean().optional(),
+  byok_openai_key: z.string().optional(),
+  byok_anthropic_key: z.string().optional(),
+  // Budget fields (Story 32)
+  max_budget: z.number().min(0).max(10000).optional(),
+  alert_threshold: z.number().int().min(50).max(100).optional(),
+  grace_threshold: z.number().int().min(100).max(150).optional(),
+  budget_duration: z.enum(['30d', '60d', '90d']).optional(),
+  // Active status (Story 32)
+  is_active: z.boolean().optional(),
 });
 
 /**

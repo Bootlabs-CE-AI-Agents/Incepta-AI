@@ -190,7 +190,7 @@ describe('PasswordInput', () => {
       );
 
       const input = screen.getByLabelText(/Password/);
-      expect(input).toHaveClass('ring-gray-300', 'focus:ring-indigo-600');
+      expect(input).toHaveClass('ring-white/50', 'focus:ring-accent-blue');
     });
   });
 
@@ -364,7 +364,7 @@ describe('PasswordInput', () => {
         />
       );
 
-      const input = screen.getByLabelText('Password');
+      const input = screen.getByLabelText(/Password/);
       expect(input).toBeInTheDocument();
     });
 

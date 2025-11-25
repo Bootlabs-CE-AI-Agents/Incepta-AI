@@ -141,14 +141,14 @@ export default function ExecutionHistoryPage() {
             {data.pages > 1 && (
               <div className="flex items-center justify-between pt-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                  <span className="text-sm text-text-secondary">
                     Showing {(data.page - 1) * filters.limit! + 1} to{' '}
                     {Math.min(data.page * filters.limit!, data.total)} of {data.total} executions
                   </span>
                   <select
                     value={filters.limit}
                     onChange={(e) => handleLimitChange(Number(e.target.value))}
-                    className="ml-4 px-3 py-1.5 text-sm border border-neutral-300 dark:border-neutral-600 rounded-md bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                    className="ml-4 px-3 py-1.5 text-sm border border-white/50 dark:border-white/20 rounded-md bg-white dark:bg-white/5 text-text-primary dark:text-white"
                   >
                     <option value={25}>25 per page</option>
                     <option value={50}>50 per page</option>
@@ -187,7 +187,7 @@ export default function ExecutionHistoryPage() {
                           className={`px-3 py-1 text-sm rounded-md transition-colors ${
                             pageNum === data.page
                               ? 'bg-primary-500 text-white'
-                              : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                              : 'text-text-primary dark:text-text-secondary hover:bg-white/50 dark:hover:bg-white/10'
                           }`}
                         >
                           {pageNum}

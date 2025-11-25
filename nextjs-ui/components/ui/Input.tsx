@@ -44,6 +44,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
+            aria-required={props.required}
             aria-describedby={error ? errorId : helpText ? helpTextId : undefined}
             className={cn(
               "w-full px-4 py-2 rounded-lg bg-white/50 border border-white/50 text-text-primary placeholder-text-secondary",

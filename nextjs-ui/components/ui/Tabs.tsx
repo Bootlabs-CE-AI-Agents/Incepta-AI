@@ -61,7 +61,7 @@ const variantClasses = {
     tab: (selected: boolean) =>
       `rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
         selected
-          ? 'bg-white dark:bg-white/10 text-blue-700 dark:text-blue-400 shadow'
+          ? 'bg-white dark:bg-white/10 text-accent-blue dark:text-accent-blue shadow'
           : 'text-text-secondary dark:text-text-secondary hover:bg-white/50 dark:hover:bg-white/10'
       }`,
   },
@@ -70,7 +70,7 @@ const variantClasses = {
     tab: (selected: boolean) =>
       `px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
         selected
-          ? 'border-blue-500 text-blue-700 dark:text-blue-400'
+          ? 'border-accent-blue text-accent-blue dark:text-accent-blue'
           : 'border-transparent text-text-secondary dark:text-text-secondary hover:text-text-primary dark:hover:text-text-primary hover:border-white/30 dark:hover:border-white/30'
       }`,
   },
@@ -137,7 +137,7 @@ export function Tabs({
                 } ${
                   tab.disabled
                     ? 'opacity-50 cursor-not-allowed'
-                    : 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2'
+                    : 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-offset-2'
                 }`
               }
             >
@@ -155,7 +155,7 @@ export function Tabs({
           {tabs.map((tab) => (
             <TabPanel
               key={tab.key}
-              className="rounded-lg glass-card p-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="rounded-lg glass-card p-4 focus:outline-none focus:ring-2 focus:ring-accent-blue"
             >
               {tab.content}
             </TabPanel>

@@ -135,7 +135,7 @@ export function Modal({
 
               {showCloseButton && (
                 <CloseButton
-                  className="ml-4 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="ml-4 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-accent-blue"
                   aria-label="Close modal"
                 >
                   <X size={20} className="text-text-secondary dark:text-text-secondary" />

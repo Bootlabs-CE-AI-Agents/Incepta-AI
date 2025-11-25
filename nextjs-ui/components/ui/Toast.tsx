@@ -39,23 +39,23 @@ export interface ToastProps {
 const variantConfig = {
   success: {
     icon: CheckCircle2,
-    className: 'border-green-500 bg-green-50 dark:bg-green-900/20',
-    iconColor: 'text-green-600 dark:text-green-400',
+    className: 'border-accent-green bg-accent-green/10 dark:bg-accent-green/20',
+    iconColor: 'text-accent-green',
   },
   error: {
     icon: XCircle,
-    className: 'border-red-500 bg-red-50 dark:bg-red-900/20',
-    iconColor: 'text-red-600 dark:text-red-400',
+    className: 'border-red-500 bg-red-500/10 dark:bg-red-500/20',
+    iconColor: 'text-red-500',
   },
   warning: {
     icon: AlertCircle,
-    className: 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20',
-    iconColor: 'text-yellow-600 dark:text-yellow-400',
+    className: 'border-accent-orange bg-accent-orange/10 dark:bg-accent-orange/20',
+    iconColor: 'text-accent-orange',
   },
   info: {
     icon: Info,
-    className: 'border-blue-500 bg-blue-50 dark:bg-blue-900/20',
-    iconColor: 'text-blue-600 dark:text-blue-400',
+    className: 'border-accent-blue bg-accent-blue/10 dark:bg-accent-blue/20',
+    iconColor: 'text-accent-blue',
   },
 };
 

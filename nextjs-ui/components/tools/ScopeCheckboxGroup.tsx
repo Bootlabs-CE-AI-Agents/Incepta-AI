@@ -105,7 +105,7 @@ export function ScopeCheckboxGroup({
                 checked={isChecked}
                 onChange={(e) => handleCheckboxChange(scope, e.target.checked)}
                 disabled={disabled}
-                className="h-4 w-4 rounded border-white/50 dark:border-white/20 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="h-4 w-4 rounded border-white/50 dark:border-white/20 text-accent-blue focus:ring-2 focus:ring-accent-blue focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label={`Select ${scope} scope`}
               />
               <span className="text-sm text-text-primary dark:text-text-secondary">

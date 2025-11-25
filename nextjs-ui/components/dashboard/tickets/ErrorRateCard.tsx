@@ -82,7 +82,7 @@ export function ErrorRateCard({
             Error Rate
           </h3>
           <div className="flex items-baseline gap-2">
-            <p className={`text-4xl font-bold ${color}`} aria-label={`Error rate: ${errorRate.toFixed(1)} percent`}>
+            <p className={`text-h1 font-bold ${color}`} aria-label={`Error rate: ${errorRate.toFixed(1)} percent`}>
               {errorRate.toFixed(1)}%
             </p>
           </div>

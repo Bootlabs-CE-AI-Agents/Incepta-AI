@@ -76,7 +76,7 @@ export function ProcessingRateCard({
           <h3 className="text-sm font-medium text-muted-foreground mb-2">
             Processing Rate
           </h3>
-          <p className="text-4xl font-bold text-foreground" aria-label={`Processing rate: ${ratePerHour} tickets per hour`}>
+          <p className="text-h1 font-bold text-foreground" aria-label={`Processing rate: ${ratePerHour} tickets per hour`}>
             {ratePerHour}
           </p>
           <p className="text-sm text-muted-foreground mt-1">tickets/hour</p>

@@ -207,7 +207,7 @@ export function TestSandbox({ agentId }: TestSandboxProps) {
       {/* Empty State */}
       {!testResult && !error && !isLoading && (
         <div className="glass-card rounded-lg p-12 text-center">
-          <div className="text-4xl mb-4" role="img" aria-label="Test tube">
+          <div className="text-h1 mb-4" role="img" aria-label="Test tube">
             🧪
           </div>
           <h3 className="text-lg font-semibold text-text-primary mb-2">

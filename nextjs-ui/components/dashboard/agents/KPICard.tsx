@@ -125,7 +125,7 @@ export function KPICard({
       {/* Value */}
       <div className="flex items-baseline justify-between">
         <p
-          className="text-4xl font-bold text-foreground"
+          className="text-h1 font-bold text-foreground"
           aria-label={`${title}: ${formattedValue}`}
         >
           {loading ? (

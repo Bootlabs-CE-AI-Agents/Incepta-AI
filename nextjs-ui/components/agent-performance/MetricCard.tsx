@@ -56,7 +56,7 @@ export function MetricCard({
       </div>
 
       {/* Value */}
-      <div className={cn("text-3xl font-bold tabular-nums", colorClass)}>
+      <div className={cn("text-h3 font-bold tabular-nums", colorClass)}>
         {value}
       </div>
 

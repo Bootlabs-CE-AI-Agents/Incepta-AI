@@ -50,7 +50,7 @@ export function ProviderCard({ provider, onTest, onDelete }: ProviderCardProps) 
       {/* Header with Logo and Status */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="text-4xl" role="img" aria-label={`${provider.type} icon`}>
+          <div className="text-h1" role="img" aria-label={`${provider.type} icon`}>
             {providerIcons[provider.type] || '📦'}
           </div>
           <div>

@@ -30,7 +30,7 @@ export default function DesignPreviewPage() {
             <main className="flex-1 overflow-y-auto p-8 z-10">
                 <header className="mb-8 flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+                        <h1 className="text-h3 font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
                             Dashboard Preview
                         </h1>
                         <p className="text-white/60 mt-1">Liquid Glass Design System</p>
@@ -54,7 +54,7 @@ export default function DesignPreviewPage() {
                         <GlassCard key={i} className="p-6 flex items-start justify-between" variant="default">
                             <div>
                                 <p className="text-sm text-white/60 mb-1">{stat.label}</p>
-                                <h3 className="text-2xl font-bold">{stat.value}</h3>
+                                <h3 className="text-h2 font-bold">{stat.value}</h3>
                             </div>
                             <div className={`p-3 rounded-xl bg-white/5 ${stat.color}`}>
                                 <stat.icon className="w-5 h-5" />

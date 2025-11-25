@@ -130,7 +130,7 @@ export function BudgetDashboard({
             <DollarSign className="w-4 h-4 text-text-secondary" />
             <span className="text-sm text-text-secondary">Max Budget</span>
           </div>
-          <p className="text-2xl font-bold text-text-primary">
+          <p className="text-h2 font-bold text-text-primary">
             ${spendData.max_budget.toFixed(2)}
           </p>
         </div>
@@ -140,7 +140,7 @@ export function BudgetDashboard({
             <AlertCircle className="w-4 h-4 text-text-secondary" />
             <span className="text-sm text-text-secondary">Alert Threshold</span>
           </div>
-          <p className="text-2xl font-bold text-text-primary">
+          <p className="text-h2 font-bold text-text-primary">
             {alertThreshold}%
           </p>
         </div>
@@ -150,7 +150,7 @@ export function BudgetDashboard({
             <AlertCircle className="w-4 h-4 text-text-secondary" />
             <span className="text-sm text-text-secondary">Grace Threshold</span>
           </div>
-          <p className="text-2xl font-bold text-text-primary">
+          <p className="text-h2 font-bold text-text-primary">
             {graceThreshold}%
           </p>
         </div>
@@ -179,7 +179,7 @@ export function BudgetDashboard({
             <div className="text-sm text-text-secondary mb-1">
               Current Spend
             </div>
-            <div className="text-2xl font-bold text-text-primary">
+            <div className="text-h2 font-bold text-text-primary">
               ${spendData.current_spend.toFixed(2)}{' '}
               <span className="text-base font-normal text-text-secondary">
                 / ${spendData.max_budget.toFixed(2)}

@@ -53,7 +53,7 @@ export function CustomTooltip({ active, payload }: { active?: boolean; payload?:
       </p>
 
       {/* Amount (exact USD) */}
-      <p className="text-2xl font-bold text-foreground">
+      <p className="text-h2 font-bold text-foreground">
         {data.amountLabel}
       </p>
 

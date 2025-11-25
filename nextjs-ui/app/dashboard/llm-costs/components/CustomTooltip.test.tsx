@@ -355,7 +355,7 @@ describe('CustomTooltip', () => {
       render(<CustomTooltip active={true} payload={mockPayload} />);
 
       const amountElement = screen.getByText('$1,234.56');
-      expect(amountElement).toHaveClass('text-2xl', 'font-bold', 'text-foreground');
+      expect(amountElement).toHaveClass('text-h2', 'font-bold', 'text-foreground');
     });
 
     test('delta has correct text styling', () => {

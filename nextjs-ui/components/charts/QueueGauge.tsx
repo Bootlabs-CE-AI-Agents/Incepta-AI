@@ -75,7 +75,7 @@ export function QueueGauge({ queueDepth, maxCapacity = 200 }: QueueGaugeProps) {
         </RadialBarChart>
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-4xl font-bold" style={{ color }}>
+        <span className="text-h1 font-bold" style={{ color }}>
           {queueDepth}
         </span>
         <span className="text-sm text-muted-foreground">Jobs in Queue</span>

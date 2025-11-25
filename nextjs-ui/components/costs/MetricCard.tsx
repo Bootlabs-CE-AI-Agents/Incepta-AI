@@ -126,7 +126,7 @@ export function MetricCard({
 
       {/* Value */}
       <div className="flex items-baseline gap-3">
-        <h3 className="text-3xl font-bold text-foreground">
+        <h3 className="text-h3 font-bold text-foreground">
           {value}
         </h3>
 

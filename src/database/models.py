@@ -1003,6 +1003,30 @@ class AuthAuditLog(Base):
     )
 
 
+class AuditActionEnum(str, Enum):
+    """
+    Enum for audit log action types.
+
+    Defines the types of CRUD operations that can be logged in the audit trail.
+    """
+    CREATE_USER = "create_user"
+    UPDATE_USER = "update_user"
+    DELETE_USER = "delete_user"
+    RESET_PASSWORD = "reset_password"
+    CREATE_AGENT = "create_agent"
+    UPDATE_AGENT = "update_agent"
+    DELETE_AGENT = "delete_agent"
+    CREATE_TENANT = "create_tenant"
+    UPDATE_TENANT = "update_tenant"
+    DELETE_TENANT = "delete_tenant"
+    CREATE_TOOL = "create_tool"
+    UPDATE_TOOL = "update_tool"
+    DELETE_TOOL = "delete_tool"
+    CREATE_PROMPT = "create_prompt"
+    UPDATE_PROMPT = "update_prompt"
+    DELETE_PROMPT = "delete_prompt"
+
+
 class AuditLog(Base):
     """
     General audit log for CRUD operations tracking.

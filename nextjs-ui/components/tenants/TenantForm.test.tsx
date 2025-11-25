@@ -65,9 +65,31 @@ describe('TenantForm - Story 32', () => {
     sessionStorage.clear()
   })
 
+  /**
+   * Helper function to expand an accordion section by clicking its trigger button
+   * @param sectionName - The name of the accordion section to expand
+   */
+  const expandAccordionSection = async (sectionName: string) => {
+    const user = userEvent.setup()
+    const trigger = screen.getByRole('button', { name: new RegExp(sectionName, 'i') })
+
+    // Check if already expanded
+    const isExpanded = trigger.getAttribute('aria-expanded') === 'true'
+    if (!isExpanded) {
+      await user.click(trigger)
+      // Wait for accordion animation to complete
+      await waitFor(() => {
+        expect(trigger).toHaveAttribute('aria-expanded', 'true')
+      })
+    }
+  }
+
   describe('Story 32: BYOK Section (AC-1)', () => {
-    it('should not show API key fields when BYOK is disabled by default', () => {
+    it('should not show API key fields when BYOK is disabled by default', async () => {
       render(<TenantForm onSubmit={mockOnSubmit} />)
+
+      // Expand BYOK section
+      await expandAccordionSection('BYOK Configuration')
 
       // BYOK toggle should be off by default
       const byokToggle = screen.getByRole('switch', { name: /byok enabled toggle/i })
@@ -82,6 +104,9 @@ describe('TenantForm - Story 32', () => {
       const user = userEvent.setup()
       render(<TenantForm onSubmit={mockOnSubmit} />)
 
+      // Expand BYOK section
+      await expandAccordionSection('BYOK Configuration')
+
       // Enable BYOK
       const byokToggle = screen.getByRole('switch', { name: /byok enabled toggle/i })
       await user.click(byokToggle)
@@ -93,7 +118,7 @@ describe('TenantForm - Story 32', () => {
       })
     })
 
-    it('should display BYOK fields when defaultValues has byok_enabled=true', () => {
+    it('should display BYOK fields when defaultValues has byok_enabled=true', async () => {
       render(
         <TenantForm
           onSubmit={mockOnSubmit}
@@ -103,6 +128,9 @@ describe('TenantForm - Story 32', () => {
           }}
         />
       )
+
+      // Expand BYOK section
+      await expandAccordionSection('BYOK Configuration')
 
       // BYOK toggle should be checked
       const byokToggle = screen.getByRole('switch', { name: /byok enabled toggle/i })
@@ -116,6 +144,9 @@ describe('TenantForm - Story 32', () => {
     it('should toggle BYOK fields on and off', async () => {
       const user = userEvent.setup()
       render(<TenantForm onSubmit={mockOnSubmit} />)
+
+      // Expand BYOK section
+      await expandAccordionSection('BYOK Configuration')
 
       const byokToggle = screen.getByRole('switch', { name: /byok enabled toggle/i })
 
@@ -134,8 +165,11 @@ describe('TenantForm - Story 32', () => {
   })
 
   describe('Story 32: Budget Section (AC-2)', () => {
-    it('should display default budget values', () => {
+    it('should display default budget values', async () => {
       render(<TenantForm onSubmit={mockOnSubmit} />)
+
+      // Expand Budget section
+      await expandAccordionSection('Budget Configuration')
 
       // Default budget values from schema
       expect(screen.getByLabelText(/max budget/i)).toHaveValue(500)
@@ -143,7 +177,7 @@ describe('TenantForm - Story 32', () => {
       expect(screen.getByLabelText(/grace threshold/i)).toHaveValue(110)
     })
 
-    it('should display budget values from defaultValues', () => {
+    it('should display budget values from defaultValues', async () => {
       render(
         <TenantForm
           onSubmit={mockOnSubmit}
@@ -156,6 +190,9 @@ describe('TenantForm - Story 32', () => {
         />
       )
 
+      // Expand Budget section
+      await expandAccordionSection('Budget Configuration')
+
       expect(screen.getByLabelText(/max budget/i)).toHaveValue(1500)
       expect(screen.getByLabelText(/alert threshold/i)).toHaveValue(75)
       expect(screen.getByLabelText(/grace threshold/i)).toHaveValue(120)
@@ -165,14 +202,22 @@ describe('TenantForm - Story 32', () => {
       const user = userEvent.setup()
       render(<TenantForm onSubmit={mockOnSubmit} />)
 
-      const maxBudgetInput = screen.getByLabelText(/max budget/i)
-      await user.clear(maxBudgetInput)
+      // Expand Budget section
+      await expandAccordionSection('Budget Configuration')
+
+      const maxBudgetInput = screen.getByLabelText(/max budget/i) as HTMLInputElement
+
+      // Focus, select all, and delete before typing new value
+      await user.click(maxBudgetInput)
+      await user.keyboard('{Control>}a{/Control}{Backspace}')
       await user.type(maxBudgetInput, '2000')
 
-      expect(maxBudgetInput).toHaveValue(2000)
+      await waitFor(() => {
+        expect(maxBudgetInput).toHaveValue(2000)
+      })
     })
 
-    it('should show budget currency formatting', () => {
+    it('should show budget currency formatting', async () => {
       render(
         <TenantForm
           onSubmit={mockOnSubmit}
@@ -182,19 +227,25 @@ describe('TenantForm - Story 32', () => {
         />
       )
 
+      // Expand Budget section
+      await expandAccordionSection('Budget Configuration')
+
       // Check if currency formatting text is present (actual format: "Current: $1,500.50")
       expect(screen.getByText(/\$1,500\.50/i)).toBeInTheDocument()
     })
   })
 
   describe('Story 32: Tool Configuration (AC-3)', () => {
-    it('should show ServiceDesk fields when tool_type is servicedesk_plus', () => {
+    it('should show ServiceDesk fields when tool_type is servicedesk_plus', async () => {
       render(
         <TenantForm
           onSubmit={mockOnSubmit}
           defaultValues={{ tool_type: 'servicedesk_plus' }}
         />
       )
+
+      // Expand Tool Configuration section
+      await expandAccordionSection('Tool Configuration')
 
       expect(screen.getByLabelText(/servicedesk plus url/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/servicedesk plus api key/i)).toBeInTheDocument()
@@ -203,6 +254,9 @@ describe('TenantForm - Story 32', () => {
     it('should show Jira fields when tool_type is jira', async () => {
       const user = userEvent.setup()
       render(<TenantForm onSubmit={mockOnSubmit} />)
+
+      // Expand Tool Configuration section
+      await expandAccordionSection('Tool Configuration')
 
       // Change tool type to Jira
       const toolTypeSelect = screen.getByLabelText(/tool type/i)
@@ -222,6 +276,9 @@ describe('TenantForm - Story 32', () => {
       const user = userEvent.setup()
       render(<TenantForm onSubmit={mockOnSubmit} />)
 
+      // Expand Tool Configuration section
+      await expandAccordionSection('Tool Configuration')
+
       // Change tool type to None
       const toolTypeSelect = screen.getByLabelText(/tool type/i)
       await user.selectOptions(toolTypeSelect, 'none')
@@ -236,10 +293,14 @@ describe('TenantForm - Story 32', () => {
   describe('Story 32: Webhook Secret Generator (AC-4)', () => {
     it('should generate webhook secret when button clicked', async () => {
       const user = userEvent.setup()
-      render(<TenantForm onSubmit={mockOnSubmit} />)
+      const { container } = render(<TenantForm onSubmit={mockOnSubmit} />)
+
+      // Expand Webhook Configuration section
+      await expandAccordionSection('Webhook Configuration')
 
       const generateButton = screen.getByRole('button', { name: /generate webhook secret/i })
-      const webhookInput = screen.getByLabelText(/webhook signing secret/i)
+      // Find input by name attribute since label doesn't have htmlFor
+      const webhookInput = container.querySelector('input[name="webhook_signing_secret"]') as HTMLInputElement
 
       // Initial value should be empty
       expect(webhookInput).toHaveValue('')
@@ -250,7 +311,7 @@ describe('TenantForm - Story 32', () => {
       // Should populate webhook secret
       await waitFor(() => {
         expect(webhookInput).not.toHaveValue('')
-        expect((webhookInput as HTMLInputElement).value.length).toBeGreaterThan(20)
+        expect(webhookInput.value.length).toBeGreaterThan(20)
       })
 
       // Should show success toast
@@ -261,10 +322,13 @@ describe('TenantForm - Story 32', () => {
       const user = userEvent.setup()
 
       // Mock clipboard API
-      Object.assign(navigator, {
-        clipboard: {
-          writeText: jest.fn().mockResolvedValue(undefined),
+      const mockWriteText = jest.fn().mockResolvedValue(undefined)
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {
+          writeText: mockWriteText,
         },
+        writable: true,
+        configurable: true,
       })
 
       render(
@@ -274,19 +338,25 @@ describe('TenantForm - Story 32', () => {
         />
       )
 
+      // Expand Webhook Configuration section
+      await expandAccordionSection('Webhook Configuration')
+
       const copyButton = screen.getByRole('button', { name: /copy webhook secret/i })
       await user.click(copyButton)
 
       await waitFor(() => {
-        expect(navigator.clipboard.writeText).toHaveBeenCalledWith('test-secret-123')
+        expect(mockWriteText).toHaveBeenCalledWith('test-secret-123')
         expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('copied'))
       })
     })
   })
 
   describe('Story 32: Enhancement Preferences Dual-Mode (AC-5)', () => {
-    it('should start in simple form mode by default', () => {
+    it('should start in simple form mode by default', async () => {
       render(<TenantForm onSubmit={mockOnSubmit} />)
+
+      // Expand Enhancement Preferences section
+      await expandAccordionSection('Enhancement Preferences')
 
       // Simple form fields should be visible
       expect(screen.getByLabelText(/max enhancement length/i)).toBeInTheDocument()
@@ -300,6 +370,9 @@ describe('TenantForm - Story 32', () => {
     it('should switch to JSON editor mode when toggle clicked', async () => {
       const user = userEvent.setup()
       render(<TenantForm onSubmit={mockOnSubmit} />)
+
+      // Expand Enhancement Preferences section
+      await expandAccordionSection('Enhancement Preferences')
 
       const toggleButton = screen.getByRole('button', { name: /switch to json editor/i })
       await user.click(toggleButton)
@@ -317,6 +390,9 @@ describe('TenantForm - Story 32', () => {
       const user = userEvent.setup()
       render(<TenantForm onSubmit={mockOnSubmit} />)
 
+      // Expand Enhancement Preferences section
+      await expandAccordionSection('Enhancement Preferences')
+
       const toggleButton = screen.getByRole('button', { name: /switch to json editor/i })
       await user.click(toggleButton)
 
@@ -328,6 +404,9 @@ describe('TenantForm - Story 32', () => {
     it('should preserve data when switching between modes', async () => {
       const user = userEvent.setup()
       render(<TenantForm onSubmit={mockOnSubmit} />)
+
+      // Expand Enhancement Preferences section
+      await expandAccordionSection('Enhancement Preferences')
 
       // Modify values in simple form
       const maxLengthInput = screen.getByLabelText(/max enhancement length/i)
@@ -347,6 +426,9 @@ describe('TenantForm - Story 32', () => {
     it('should show error when switching from JSON mode with invalid JSON', async () => {
       const user = userEvent.setup()
       render(<TenantForm onSubmit={mockOnSubmit} />)
+
+      // Expand Enhancement Preferences section
+      await expandAccordionSection('Enhancement Preferences')
 
       // Switch to JSON mode
       const toggleButton = screen.getByRole('button', { name: /switch to json editor/i })
@@ -416,7 +498,7 @@ describe('TenantForm - Story 32', () => {
       expect(screen.getByText(/webhook configuration/i)).toBeInTheDocument()
       expect(screen.getByText(/enhancement preferences/i)).toBeInTheDocument()
       expect(screen.getByText(/byok configuration/i)).toBeInTheDocument()
-      expect(screen.getByText(/budget & limits/i)).toBeInTheDocument()
+      expect(screen.getByText(/budget configuration/i)).toBeInTheDocument()
     })
 
     it('should have Basic Information section expanded by default', () => {
@@ -452,11 +534,18 @@ describe('TenantForm - Story 32', () => {
   })
 
   describe('Story 32: Accessibility (AC-10)', () => {
-    it('should have proper ARIA labels for all switches', () => {
+    it('should have proper ARIA labels for all switches', async () => {
       render(<TenantForm onSubmit={mockOnSubmit} />)
 
-      expect(screen.getByRole('switch', { name: /byok enabled toggle/i })).toBeInTheDocument()
+      // Active status toggle is in Basic Information (expanded by default)
       expect(screen.getByRole('switch', { name: /active status toggle/i })).toBeInTheDocument()
+
+      // BYOK toggle requires expanding BYOK section
+      await expandAccordionSection('BYOK Configuration')
+      expect(screen.getByRole('switch', { name: /byok enabled toggle/i })).toBeInTheDocument()
+
+      // Include monitoring toggle requires expanding Enhancement Preferences
+      await expandAccordionSection('Enhancement Preferences')
       expect(screen.getByRole('switch', { name: /include monitoring data toggle/i })).toBeInTheDocument()
     })
 
@@ -473,6 +562,9 @@ describe('TenantForm - Story 32', () => {
     it('should support keyboard navigation for generate secret button', async () => {
       const user = userEvent.setup()
       render(<TenantForm onSubmit={mockOnSubmit} />)
+
+      // Expand Webhook Configuration section
+      await expandAccordionSection('Webhook Configuration')
 
       const generateButton = screen.getByRole('button', { name: /generate webhook secret/i })
 
@@ -516,7 +608,7 @@ describe('TenantForm - Story 32', () => {
     it('should disable submit button when isLoading is true', () => {
       render(<TenantForm onSubmit={mockOnSubmit} isLoading={true} mode="create" />)
 
-      const submitButton = screen.getByRole('button', { name: /creating/i })
+      const submitButton = screen.getByRole('button', { name: /create tenant/i })
       expect(submitButton).toBeDisabled()
     })
   })

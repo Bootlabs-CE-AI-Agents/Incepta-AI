@@ -23,7 +23,7 @@ import type { RoleEnum } from '@/lib/api/users';
 
 /**
  * Password strength validation rules (matching backend validation)
- * 1. At least 8 characters
+ * 1. At least 12 characters
  * 2. Contains uppercase letter
  * 3. Contains lowercase letter
  * 4. Contains number
@@ -31,7 +31,7 @@ import type { RoleEnum } from '@/lib/api/users';
  */
 const passwordSchema = z
   .string()
-  .min(8, 'Password must be at least 8 characters')
+  .min(12, 'Password must be at least 12 characters')
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
   .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
   .regex(/[0-9]/, 'Password must contain at least one number')
@@ -130,7 +130,7 @@ export default function NewUserPage() {
 
   // Password strength checks
   const passwordChecks = {
-    length: passwordValue.length >= 8,
+    length: passwordValue.length >= 12,
     uppercase: /[A-Z]/.test(passwordValue),
     lowercase: /[a-z]/.test(passwordValue),
     number: /[0-9]/.test(passwordValue),
@@ -244,7 +244,7 @@ export default function NewUserPage() {
                 <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-2">
                   <p className="text-sm font-medium">Password Requirements:</p>
                   <div className="grid grid-cols-1 gap-1">
-                    <PasswordCheck met={passwordChecks.length} label="At least 8 characters" />
+                    <PasswordCheck met={passwordChecks.length} label="At least 12 characters" />
                     <PasswordCheck met={passwordChecks.uppercase} label="One uppercase letter (A-Z)" />
                     <PasswordCheck met={passwordChecks.lowercase} label="One lowercase letter (a-z)" />
                     <PasswordCheck met={passwordChecks.number} label="One number (0-9)" />

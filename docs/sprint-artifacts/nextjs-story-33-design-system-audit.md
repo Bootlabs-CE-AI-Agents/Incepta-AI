@@ -1,6 +1,6 @@
 # Story nextjs-story-33: Design System Audit & Fix
 
-Status: completed
+Status: ready-for-review
 
 ## Story
 

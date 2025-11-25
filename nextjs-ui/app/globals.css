@@ -72,4 +72,91 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  /* AC-2: Keyboard Navigation - Focus Indicators */
+  /* Standard focus outline for all interactive elements */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+  }
+
+  /* AC-2: Focus indicator contrast - high contrast fallback */
+  @media (prefers-contrast: more) {
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid #000;
+      outline-offset: 2px;
+    }
+  }
+
+  /* AC-7: Motion - Respect prefers-reduced-motion for all animations */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* AC-5: Screen Reader - visually hide skip link but keep accessible */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* AC-5: Make skip link visible on focus */
+  .sr-only:focus,
+  .sr-only-focus-visible:focus-visible {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  /* AC-10: Ensure minimum touch target size on mobile */
+  @media (pointer: coarse) {
+    button,
+    a,
+    [role="button"],
+    [role="link"] {
+      min-height: 44px;
+      min-width: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  /* AC-1: High contrast mode support */
+  @media (prefers-contrast: more) {
+    body {
+      background-color: #ffffff;
+      color: #000000;
+    }
+
+    button, a, input {
+      border: 1px solid #000;
+    }
+  }
 }

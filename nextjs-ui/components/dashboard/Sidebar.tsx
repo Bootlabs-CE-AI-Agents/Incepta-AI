@@ -93,8 +93,8 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:block w-64 shrink-0 glass-card p-6 mr-6 h-[calc(100vh-120px)] overflow-y-auto">
-      <nav className="space-y-6">
+    <aside className="hidden md:block w-64 shrink-0 glass-card p-6 mr-6 h-[calc(100vh-120px)] overflow-y-auto" role="complementary" aria-label="Main Navigation">
+      <nav className="space-y-6" aria-label="Navigation Sections">
         {navigationData.map((section) => (
           <div key={section.category}>
             <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">
@@ -112,6 +112,7 @@ export function Sidebar() {
                           ? "bg-accent-blue text-white shadow-md"
                           : "text-text-primary hover:bg-white/50"
                       }`}
+                      aria-current={isActive ? "page" : undefined}
                     >
                       {item.icon}
                       <span className="text-sm font-medium">{item.label}</span>

@@ -35,6 +35,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
+        {/* AC-8: Skip to Main Content Link for Accessibility */}
+        <a
+          href="#main"
+          className="sr-only-focus-visible sr-only fixed top-0 left-0 z-50 bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Skip to main content
+        </a>
         <PageLoader />
         <OfflineBanner />
         <MSWProvider>

@@ -210,7 +210,125 @@ async def dispose_db() -> None:
     Raises:
         Exception: If disposal fails
     """
-    global _async_engine
+    global _async_engine, _litellm_async_engine
     if _async_engine is not None:
         await _async_engine.dispose()
         _async_engine = None
+    if _litellm_async_engine is not None:
+        await _litellm_async_engine.dispose()
+        _litellm_async_engine = None
+
+
+# =============================================================================
+# LiteLLM Database Session (Story 8.16 - Cost Dashboard)
+# =============================================================================
+# LiteLLM uses a separate database (litellm_db) for spend tracking.
+# These sessions are used for read-only cost queries.
+
+# Global LiteLLM async engine instance (lazy initialized)
+_litellm_async_engine = None
+
+
+def get_litellm_async_engine():
+    """
+    Get or create the LiteLLM database async engine.
+
+    Creates an async engine for LiteLLM spend tracking queries.
+    This connects to the litellm_db database, not the main ai_agents database.
+
+    Returns:
+        AsyncEngine: SQLAlchemy async engine for LiteLLM database, or None if not configured
+
+    Note:
+        Returns None if litellm_database_url is not configured in settings.
+        This allows graceful degradation when LiteLLM is not deployed.
+    """
+    global _litellm_async_engine
+
+    if _litellm_async_engine is None:
+        settings = _get_settings()
+
+        if settings is None or not settings.litellm_database_url:
+            return None
+
+        _litellm_async_engine = create_async_engine(
+            settings.litellm_database_url,
+            echo=settings.environment == "development",
+            pool_size=5,  # Smaller pool for read-only cost queries
+            pool_pre_ping=True,
+            pool_recycle=3600,
+        )
+
+    return _litellm_async_engine
+
+
+# Global LiteLLM async session maker (lazy initialized)
+_litellm_async_session_maker = None
+
+
+def get_litellm_async_session_maker():
+    """
+    Get or create the LiteLLM async session maker.
+
+    Returns:
+        async_sessionmaker: SQLAlchemy async session factory for LiteLLM, or None if not configured
+    """
+    global _litellm_async_session_maker
+
+    if _litellm_async_session_maker is None:
+        engine = get_litellm_async_engine()
+        if engine is None:
+            return None
+
+        _litellm_async_session_maker = async_sessionmaker(
+            engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+            autocommit=False,
+            autoflush=False,
+        )
+
+    return _litellm_async_session_maker
+
+
+async def get_litellm_session() -> AsyncGenerator[AsyncSession, None]:
+    """
+    FastAPI dependency for LiteLLM database session.
+
+    Provides an async SQLAlchemy session for LiteLLM cost queries.
+    This session connects to the litellm_db database.
+
+    Usage:
+        @router.get("/costs")
+        async def get_costs(
+            litellm_db: AsyncSession = Depends(get_litellm_session)
+        ):
+            result = await litellm_db.execute(select(LiteLLMSpendLog))
+            return result.scalars().all()
+
+    Yields:
+        AsyncSession: Database session for LiteLLM queries
+
+    Raises:
+        HTTPException: If LiteLLM database is not configured
+    """
+    from fastapi import HTTPException
+
+    session_maker = get_litellm_async_session_maker()
+
+    if session_maker is None:
+        raise HTTPException(
+            status_code=503,
+            detail="LiteLLM database not configured. Cost tracking unavailable.",
+        )
+
+    async with session_maker() as session:
+        try:
+            yield session
+            # Read-only queries, but commit in case of any metadata updates
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()

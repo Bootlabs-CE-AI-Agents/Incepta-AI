@@ -10,12 +10,12 @@ import { gotoAndWaitForReady, waitForDashboardHeader } from './helpers'
  */
 
 test.describe('Accessibility Audit', () => {
-  test('System Health dashboard has no accessibility violations', async ({ page }) => {
-    // Navigate to health dashboard and wait for MSW to initialize
-    await gotoAndWaitForReady(page, '/dashboard/health')
+  test('Dashboard overview has no accessibility violations', async ({ page }) => {
+    // Navigate to main dashboard and wait for MSW to initialize
+    await gotoAndWaitForReady(page, '/dashboard')
 
     // Wait for page to fully load
-    await waitForDashboardHeader(page, 'System Health')
+    await waitForDashboardHeader(page, 'Dashboard')
 
     // Run axe accessibility scan
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -42,12 +42,12 @@ test.describe('Accessibility Audit', () => {
     expect(accessibilityScanResults.violations).toEqual([])
   })
 
-  test('Ticket Processing dashboard has no accessibility violations', async ({ page }) => {
-    // Navigate to ticket processing dashboard and wait for MSW to initialize
-    await gotoAndWaitForReady(page, '/dashboard/tickets')
+  test('Operations dashboard has no accessibility violations', async ({ page }) => {
+    // Navigate to operations dashboard and wait for MSW to initialize
+    await gotoAndWaitForReady(page, '/dashboard/operations')
 
     // Wait for page to fully load
-    await waitForDashboardHeader(page, 'Ticket Processing')
+    await waitForDashboardHeader(page, 'Operations')
 
     // Run axe accessibility scan
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -76,9 +76,9 @@ test.describe('Accessibility Audit', () => {
   })
 
   test('all dashboards support keyboard navigation', async ({ page }) => {
-    // Navigate to health dashboard and wait for MSW to initialize
-    await gotoAndWaitForReady(page, '/dashboard/health')
-    await waitForDashboardHeader(page, 'System Health')
+    // Navigate to dashboard and wait for MSW to initialize
+    await gotoAndWaitForReady(page, '/dashboard')
+    await waitForDashboardHeader(page, 'Dashboard')
 
     // Press Tab to navigate through focusable elements
     await page.keyboard.press('Tab')
@@ -96,9 +96,9 @@ test.describe('Accessibility Audit', () => {
   })
 
   test('all dashboards have proper heading hierarchy', async ({ page }) => {
-    // Navigate to health dashboard and wait for MSW to initialize
-    await gotoAndWaitForReady(page, '/dashboard/health')
-    await waitForDashboardHeader(page, 'System Health')
+    // Navigate to dashboard and wait for MSW to initialize
+    await gotoAndWaitForReady(page, '/dashboard')
+    await waitForDashboardHeader(page, 'Dashboard')
 
     // Check heading hierarchy (h1 -> h2 -> h3, no skipping levels)
     await page.locator('h1, h2, h3, h4, h5, h6').all()
@@ -123,9 +123,9 @@ test.describe('Accessibility Audit', () => {
   test('all images have alt text', async ({ page }) => {
     // Navigate to dashboards
     const pages = [
-      { url: '/dashboard/health', title: 'System Health' },
+      { url: '/dashboard', title: 'Dashboard' },
       { url: '/dashboard/agents', title: 'Agent Metrics' },
-      { url: '/dashboard/tickets', title: 'Ticket Processing' },
+      { url: '/dashboard/operations', title: 'Operations' },
     ]
 
     for (const { url, title } of pages) {
@@ -146,9 +146,9 @@ test.describe('Accessibility Audit', () => {
   })
 
   test('color contrast meets WCAG AA standards', async ({ page }) => {
-    // Navigate to health dashboard and wait for MSW to initialize
-    await gotoAndWaitForReady(page, '/dashboard/health')
-    await waitForDashboardHeader(page, 'System Health')
+    // Navigate to dashboard and wait for MSW to initialize
+    await gotoAndWaitForReady(page, '/dashboard')
+    await waitForDashboardHeader(page, 'Dashboard')
 
     // Run axe to check color contrast
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -189,9 +189,9 @@ test.describe('Accessibility Audit', () => {
   test('ARIA attributes are used correctly', async ({ page }) => {
     // Navigate to dashboards
     const pages = [
-      { url: '/dashboard/health', title: 'System Health' },
+      { url: '/dashboard', title: 'Dashboard' },
       { url: '/dashboard/agents', title: 'Agent Metrics' },
-      { url: '/dashboard/tickets', title: 'Ticket Processing' },
+      { url: '/dashboard/operations', title: 'Operations' },
     ]
 
     for (const { url, title } of pages) {

@@ -202,6 +202,55 @@ async def list_agents(
 
 
 @router.get(
+    "/options",
+    summary="Get Agent Options for Dropdowns",
+    description="Get lightweight list of all agents (id, name) for filter dropdowns. "
+    "Returns all agents regardless of status, ordered by name.",
+)
+async def get_agent_options(
+    tenant_id: Annotated[str, Depends(get_tenant_id)],
+    db: Annotated[AsyncSession, Depends(get_tenant_db)],
+    agent_service: Annotated[AgentService, Depends(get_agent_service)],
+) -> list[dict]:
+    """
+    Get simplified agent list for dropdown filters.
+
+    Returns minimal agent data (id, name) for use in filter dropdowns.
+    Includes all agents regardless of status, sorted alphabetically.
+
+    Args:
+        tenant_id: Current tenant ID (from dependency)
+        db: Tenant-aware database session
+        agent_service: Agent service instance
+
+    Returns:
+        list[dict]: List of {id: str, name: str} objects sorted by name
+
+    Example:
+        [{"id": "123e4567-...", "name": "Agent A"}, {"id": "987fcdeb-...", "name": "Agent B"}]
+    """
+    try:
+        # Get all agents without status filter, max 1000 for dropdown
+        result = await agent_service.get_agents(
+            tenant_id=tenant_id,
+            skip=0,
+            limit=1000,
+            status_filter=None,
+            name_search=None,
+            db=db,
+        )
+        # Transform to simplified format for dropdown
+        # Note: result["items"] contains AgentResponse objects, use attribute access
+        return [{"id": str(agent.id), "name": agent.name} for agent in result["items"]]
+    except Exception as e:
+        logger.error(f"Error getting agent options: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get agent options",
+        )
+
+
+@router.get(
     "/tool-usage-stats",
     summary="Get Tool Usage Statistics",
     description="Get count of agents using each tool for UI display.",

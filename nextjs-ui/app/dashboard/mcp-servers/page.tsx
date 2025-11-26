@@ -2,87 +2,72 @@
  * MCP Servers List Page
  *
  * Displays all MCP servers with filtering, CRUD operations, and connection testing.
+ *
+ * Features:
+ * - Loading skeleton while fetching
+ * - Error state with retry
+ * - Confirmation dialog for delete
+ * - Toast notifications for success/error
+ *
+ * Reference: Story 35 AC-1 (Loading States), AC-2 (Error States), AC-7 (Confirmations)
  */
 
 'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Plus, AlertCircle, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Plus, Server } from 'lucide-react';
+import { Button, Skeleton, ErrorState, EmptyState, ConfirmDialog } from '@/components/ui';
+import { toast } from '@/components/ui/Toast';
 import { McpServerTable } from '@/components/mcp-servers/McpServerTable';
 import { useMCPServers, useDeleteMCPServer, useTestMCPServerConnection } from '@/lib/hooks/useMCPServers';
-import { toast } from 'sonner';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 
 /**
- * Loading State Component
+ * Loading skeleton for MCP servers list
  */
-function LoadingState() {
+function McpServersLoadingSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-white/50 rounded w-1/4" />
-        <div className="h-64 bg-white/50 rounded" />
-      </div>
-    </div>
-  );
-}
-
-/**
- * Error State Component
- */
-function ErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-24">
-      <AlertCircle className="h-16 w-16 text-destructive mb-4" />
-      <h2 className="text-h2 font-bold text-text-primary mb-2">
-        Failed to Load MCP Servers
-      </h2>
-      <p className="text-muted-foreground mb-6 max-w-md text-center">
-        We couldn&apos;t fetch the MCP servers data. Please check your connection and try again.
-      </p>
-      <Button onClick={onRetry} className="gap-2">
-        <RefreshCw className="h-4 w-4" />
-        Retry
-      </Button>
-    </div>
-  );
-}
-
-/**
- * Confirm Delete Dialog
- */
-function ConfirmDeleteDialog({
-  isOpen,
-  serverName,
-  onConfirm,
-  onCancel,
-}: {
-  isOpen: boolean;
-  serverName: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="glass-card p-6 max-w-md w-full mx-4">
-        <h3 className="text-lg font-semibold text-text-primary mb-2">
-          Delete MCP Server
-        </h3>
-        <p className="text-text-secondary mb-6">
-          Are you sure you want to delete <strong>{serverName}</strong>? This action cannot be undone.
-        </p>
-        <div className="flex items-center justify-end gap-3">
-          <Button variant="secondary" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={onConfirm} className="bg-destructive hover:bg-destructive/90">
-            Delete
-          </Button>
+    <div className="space-y-6" aria-busy="true" aria-label="Loading MCP servers">
+      {/* Header skeleton */}
+      <div className="flex items-center justify-between">
+        <div>
+          <Skeleton className="h-8 w-36 mb-2" />
+          <Skeleton className="h-4 w-72" />
         </div>
+        <Skeleton className="h-10 w-32" />
+      </div>
+
+      {/* Table skeleton */}
+      <div className="glass-card overflow-hidden">
+        {/* Table header */}
+        <div className="p-4 border-b border-white/10">
+          <div className="flex gap-4">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        </div>
+        {/* Table rows */}
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="p-4 border-b border-white/5">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-10 w-10 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-64" />
+              </div>
+              <Skeleton className="h-6 w-16 rounded-full" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-8 w-8" />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -92,7 +77,7 @@ function ConfirmDeleteDialog({
  * MCP Servers List Page
  */
 export default function McpServersPage() {
-  const { data: servers, isLoading, isError, refetch } = useMCPServers();
+  const { data: servers, isLoading, isError, error, refetch } = useMCPServers();
   const deleteMutation = useDeleteMCPServer();
   const testMutation = useTestMCPServerConnection();
 
@@ -115,14 +100,18 @@ export default function McpServersPage() {
    */
   const confirmDelete = async () => {
     if (serverToDelete) {
-      try {
-        await deleteMutation.mutateAsync(serverToDelete.id);
-        toast.success(`Deleted ${serverToDelete.name}`);
-      } catch {
-        // Error toast handled by mutation
-      }
-      setDeleteDialogOpen(false);
-      setServerToDelete(null);
+      deleteMutation.mutate(serverToDelete.id, {
+        onSuccess: () => {
+          toast.success(`"${serverToDelete.name}" deleted successfully`);
+          setDeleteDialogOpen(false);
+          setServerToDelete(null);
+        },
+        onError: (err) => {
+          toast.error('Failed to delete server', {
+            description: err instanceof Error ? err.message : 'Please try again.',
+          });
+        },
+      });
     }
   };
 
@@ -130,33 +119,40 @@ export default function McpServersPage() {
    * Handle test connection
    */
   const handleTest = async (id: string) => {
-    try {
-      await testMutation.mutateAsync({ server_id: id });
-    } catch {
-      // Error toast handled by mutation
-    }
+    const server = servers?.find((s) => s.id === id);
+    const serverName = server?.name || 'server';
+
+    testMutation.mutate(
+      { server_id: id },
+      {
+        onSuccess: (data) => {
+          if (data.status === 'healthy') {
+            toast.success(`Connection to "${serverName}" successful`);
+          } else {
+            toast.warning(`Connection to "${serverName}" unhealthy`, {
+              description: data.error || 'Server may be unavailable.',
+            });
+          }
+        },
+        onError: (err) => {
+          toast.error(`Failed to test "${serverName}"`, {
+            description: err instanceof Error ? err.message : 'Connection test failed.',
+          });
+        },
+      }
+    );
   };
 
-  // Loading state
+  // Loading state with skeleton
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-h1 font-bold text-text-primary">MCP Servers</h1>
-              <p className="text-muted-foreground mt-2">
-                Manage Model Context Protocol server connections
-              </p>
-            </div>
-          </div>
-          <LoadingState />
-        </div>
+        <McpServersLoadingSkeleton />
       </DashboardLayout>
     );
   }
 
-  // Error state
+  // Error state with retry
   if (isError) {
     return (
       <DashboardLayout>
@@ -169,7 +165,13 @@ export default function McpServersPage() {
               </p>
             </div>
           </div>
-          <ErrorState onRetry={refetch} />
+          <ErrorState
+            title="Failed to load MCP servers"
+            description="We couldn't load the MCP servers list. Please check your connection and try again."
+            error={error instanceof Error ? error : null}
+            onRetry={() => refetch()}
+            showDetails={process.env.NODE_ENV === 'development'}
+          />
         </div>
       </DashboardLayout>
     );
@@ -194,22 +196,43 @@ export default function McpServersPage() {
           </Link>
         </div>
 
-        {/* MCP Servers Table */}
-        <McpServerTable
-          servers={servers || []}
-          onDelete={handleDelete}
-          onTest={handleTest}
-        />
+        {/* MCP Servers Table or Empty State */}
+        {!servers || servers.length === 0 ? (
+          <EmptyState
+            type="servers"
+            title="No MCP servers configured"
+            description="Add your first Model Context Protocol server to extend agent capabilities"
+            action={
+              <Link href="/dashboard/mcp-servers/new">
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Server
+                </Button>
+              </Link>
+            }
+          />
+        ) : (
+          <McpServerTable
+            servers={servers}
+            onDelete={handleDelete}
+            onTest={handleTest}
+          />
+        )}
 
         {/* Delete Confirmation Dialog */}
-        <ConfirmDeleteDialog
+        <ConfirmDialog
           isOpen={deleteDialogOpen}
-          serverName={serverToDelete?.name || ''}
-          onConfirm={confirmDelete}
-          onCancel={() => {
+          onClose={() => {
             setDeleteDialogOpen(false);
             setServerToDelete(null);
           }}
+          onConfirm={confirmDelete}
+          title="Delete MCP Server"
+          description={`Are you sure you want to delete "${serverToDelete?.name}"? This action cannot be undone and agents using this server will lose access to its tools.`}
+          confirmLabel="Delete"
+          confirmVariant="danger"
+          isLoading={deleteMutation.isPending}
+          type="delete"
         />
       </div>
     </DashboardLayout>

@@ -25,14 +25,15 @@ class ExecutionDetailResponse(BaseModel):
         id: Execution record UUID (globally unique)
         agent_id: UUID of the agent that was executed
         tenant_id: Tenant identifier for multi-tenant isolation
-        input_data: Test payload (webhook data or trigger parameters)
-        output_data: Execution trace with step-by-step details
-        status: Execution status (success/failed)
-        execution_time: Total execution duration in milliseconds
-        created_at: Timestamp when execution was created
-        updated_at: Timestamp when execution was last updated (nullable)
+        input: Test payload (webhook data or trigger parameters)
+        output: Execution trace with step-by-step details
+        status: Execution status (completed/failed/etc)
+        duration_ms: Total execution duration in milliseconds
+        started_at: Timestamp when execution was created (ISO 8601)
+        completed_at: Timestamp when execution finished (ISO 8601, nullable)
         error_message: Error details if execution failed (nullable)
-        task_id: Celery task ID for correlation with webhook response (nullable)
+        metadata: Execution metadata (user_id, correlation_id, etc)
+        logs: Execution log entries (nullable)
     """
 
     model_config = ConfigDict(
@@ -41,22 +42,26 @@ class ExecutionDetailResponse(BaseModel):
 
     id: UUID = Field(..., description="Execution record ID (globally unique)")
     agent_id: UUID = Field(..., description="Agent ID that was executed")
+    agent_name: str = Field(..., description="Agent name for display")
     tenant_id: str = Field(..., description="Tenant identifier for isolation")
-    input_data: dict = Field(..., description="Test payload or trigger parameters")
-    output_data: dict = Field(
+    input: dict = Field(..., description="Test payload or trigger parameters")
+    output: dict = Field(
         ..., description="Execution trace with step-by-step execution details"
     )
-    status: str = Field(..., description="Execution status: success or failed")
-    execution_time: int = Field(
+    status: str = Field(..., description="Execution status: completed, failed, etc")
+    duration_ms: int = Field(
         ..., description="Total execution duration in milliseconds"
     )
-    created_at: datetime = Field(..., description="Execution creation timestamp")
-    updated_at: Optional[datetime] = Field(
-        default=None, description="Last update timestamp (nullable)"
+    started_at: str = Field(..., description="Execution start timestamp (ISO 8601)")
+    completed_at: Optional[str] = Field(
+        default=None, description="Execution completion timestamp (ISO 8601, nullable)"
     )
     error_message: Optional[str] = Field(
         default=None, description="Error message if execution failed (nullable)"
     )
-    task_id: Optional[str] = Field(
-        default=None, description="Celery task ID for correlation with webhook response (nullable)"
+    metadata: dict = Field(
+        default_factory=dict, description="Execution metadata (user_id, correlation_id, etc)"
+    )
+    logs: list = Field(
+        default_factory=list, description="Execution log entries"
     )

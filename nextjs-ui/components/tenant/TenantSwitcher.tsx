@@ -6,6 +6,7 @@ import { Listbox } from "@headlessui/react";
 import { ChevronDown, Check, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTenantStore, type Tenant } from "@/lib/stores/useTenantStore";
+import { TenantAvatar } from "@/components/ui/TenantAvatar";
 
 interface UserRole {
   role: string;
@@ -89,9 +90,14 @@ export function TenantSwitcher() {
   return (
     <Listbox value={selectedTenant} onChange={setSelectedTenant}>
       <div className="relative">
-        <Listbox.Button className="glass-card w-64 px-4 py-2 flex items-center justify-between hover:shadow-lg transition-shadow duration-moderate cursor-pointer">
-          <div className="flex flex-col items-start">
-            <span className="text-sm font-medium text-text-primary">
+        <Listbox.Button className="glass-card w-64 px-4 py-2 flex items-center gap-3 hover:shadow-lg transition-shadow duration-moderate cursor-pointer">
+          <TenantAvatar
+            name={selectedTenant.name}
+            logo={selectedTenant.logo}
+            size="md"
+          />
+          <div className="flex flex-col items-start flex-1 min-w-0">
+            <span className="text-sm font-medium text-text-primary truncate w-full">
               {selectedTenant.name}
             </span>
             {userRole && (
@@ -100,7 +106,7 @@ export function TenantSwitcher() {
               </span>
             )}
           </div>
-          <ChevronDown className="w-4 h-4 text-text-secondary" />
+          <ChevronDown className="w-4 h-4 text-text-secondary shrink-0" />
         </Listbox.Button>
 
         <Listbox.Options className="absolute mt-2 w-64 glass-card shadow-lg max-h-80 overflow-auto focus:outline-none z-50">
@@ -130,15 +136,20 @@ export function TenantSwitcher() {
                   key={tenant.id}
                   value={tenant}
                   className={({ active }) =>
-                    `flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors duration-fast ${
+                    `flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors duration-fast ${
                       active ? "bg-white/50" : ""
                     }`
                   }
                 >
                   {({ selected }) => (
                     <>
+                      <TenantAvatar
+                        name={tenant.name}
+                        logo={tenant.logo}
+                        size="sm"
+                      />
                       <span
-                        className={`text-sm ${
+                        className={`flex-1 text-sm truncate ${
                           selected
                             ? "font-semibold text-accent-blue"
                             : "font-medium text-text-primary"
@@ -147,7 +158,7 @@ export function TenantSwitcher() {
                         {tenant.name}
                       </span>
                       {selected && (
-                        <Check className="w-4 h-4 text-accent-blue" />
+                        <Check className="w-4 h-4 text-accent-blue shrink-0" />
                       )}
                     </>
                   )}

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agents Platform - Design Direction Comparison</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+        /* Direction Selector */
+        .direction-tab {
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        .direction-tab:hover { background: rgba(255,255,255,0.1); }
+        .direction-tab.active {
+            background: white;
+            color: #1f2937;
+            font-weight: 600;
+        }
+
+        /* ============================================
+           DIRECTION 1: EVOLVED LIQUID GLASS (FIXED)
+           ============================================ */
+        .dir1-bg {
+            background: linear-gradient(135deg, #fff5f7 0%, #f0f9ff 50%, #fefce8 100%);
+            background-size: 200% 200%;
+            animation: meshShift 20s ease infinite;
+        }
+        @keyframes meshShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .dir1-card {
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(255, 255, 255, 1);
+            border-radius: 20px;
+            backdrop-filter: blur(24px) saturate(180%);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
+            transition: all 0.3s ease;
+        }
+        .dir1-card-interactive:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+        /* KPI cards get subtle entrance animation - forms do NOT */
+        .dir1-kpi {
+            animation: fadeSlideIn 0.5s ease-out;
+        }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .dir1-sidebar {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+        }
+
+        /* ============================================
+           DIRECTION 2: MODERN MINIMAL (LINEAR STYLE)
+           ============================================ */
+        .dir2-bg {
+            background: #fafafa;
+        }
+        .dir2-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            transition: all 0.15s ease;
+        }
+        .dir2-card-interactive:hover {
+            border-color: #d1d5db;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+        .dir2-sidebar {
+            background: #f9fafb;
+            border-right: 1px solid #e5e7eb;
+        }
+        .dir2-accent { color: #2563eb; }
+        .dir2-btn-primary {
+            background: #18181b;
+            color: white;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+        }
+        .dir2-btn-primary:hover {
+            background: #27272a;
+        }
+
+        /* ============================================
+           DIRECTION 3: HYBRID (MODERN + STRATEGIC GLASS)
+           With Fluid Animated Background
+           ============================================ */
+        .dir3-bg {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        /* Fluid animated orbs container */
+        .dir3-fluid-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            filter: blur(80px) saturate(150%);
+            opacity: 0.6;
+        }
+        /* Animated gradient orbs */
+        .dir3-orb {
+            position: absolute;
+            border-radius: 50%;
+            mix-blend-mode: hard-light;
+        }
+        .dir3-orb-1 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, transparent 70%);
+            top: -100px;
+            left: -100px;
+            animation: orbFloat1 25s ease-in-out infinite;
+        }
+        .dir3-orb-2 {
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.7) 0%, transparent 70%);
+            top: 50%;
+            right: -80px;
+            animation: orbFloat2 30s ease-in-out infinite;
+        }
+        .dir3-orb-3 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.6) 0%, transparent 70%);
+            bottom: -80px;
+            left: 30%;
+            animation: orbFloat3 35s ease-in-out infinite;
+        }
+        .dir3-orb-4 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.5) 0%, transparent 70%);
+            top: 30%;
+            left: 20%;
+            animation: orbFloat4 28s ease-in-out infinite;
+        }
+        @keyframes orbFloat1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(80px, 40px) scale(1.1); }
+            50% { transform: translate(40px, 80px) scale(0.95); }
+            75% { transform: translate(-20px, 30px) scale(1.05); }
+        }
+        @keyframes orbFloat2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-60px, -40px) scale(1.08); }
+            66% { transform: translate(-30px, 50px) scale(0.92); }
+        }
+        @keyframes orbFloat3 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(-50px, -30px) scale(1.05); }
+            50% { transform: translate(40px, -60px) scale(0.98); }
+            75% { transform: translate(60px, 20px) scale(1.1); }
+        }
+        @keyframes orbFloat4 {
+            0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            50% { transform: translate(50px, 30px) rotate(180deg) scale(1.15); }
+        }
+        .dir3-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 1;
+        }
+        .dir3-card-interactive:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        /* Glass ONLY for KPI/highlight cards - now reveals fluid bg */
+        .dir3-glass-highlight {
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 16px;
+            backdrop-filter: blur(20px) saturate(150%);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1);
+            transition: all 0.25s ease;
+            position: relative;
+            z-index: 1;
+        }
+        .dir3-glass-highlight:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 1);
+        }
+        .dir3-sidebar {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(226, 232, 240, 0.8);
+            position: relative;
+            z-index: 2;
+        }
+        .dir3-gradient-accent {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        }
+        .dir3-main-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Common Styles */
+        .preview-container {
+            height: 600px;
+            overflow: hidden;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .nav-item {
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.15s ease;
+        }
+        .kpi-value { font-size: 28px; font-weight: 700; }
+        .kpi-label { font-size: 13px; color: #6b7280; }
+
+        /* Comparison Grid */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        @media (max-width: 1200px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-8">
+    <!-- Header -->
+    <div class="max-w-7xl mx-auto mb-8">
+        <h1 class="text-3xl font-bold mb-2">AI Agents Platform - Design Direction Comparison</h1>
+        <p class="text-gray-400 mb-6">Compare three design approaches for your platform. Each shows the same content with different visual treatment.</p>
+
+        <!-- Direction Tabs -->
+        <div class="flex gap-2 mb-8 flex-wrap">
+            <button onclick="showDirection('all')" class="direction-tab active" id="tab-all">All Directions</button>
+            <button onclick="showDirection('dir1')" class="direction-tab" id="tab-dir1">1. Evolved Liquid Glass</button>
+            <button onclick="showDirection('dir2')" class="direction-tab" id="tab-dir2">2. Modern Minimal</button>
+            <button onclick="showDirection('dir3')" class="direction-tab" id="tab-dir3">3. Hybrid (Recommended)</button>
+        </div>
+    </div>
+
+    <!-- Comparison Grid -->
+    <div class="max-w-7xl mx-auto comparison-grid" id="comparison-grid">
+
+        <!-- ==========================================
+             DIRECTION 1: EVOLVED LIQUID GLASS
+             ========================================== -->
+        <div class="direction-preview" id="preview-dir1">
+            <div class="mb-4">
+                <span class="inline-block px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm font-medium mb-2">Direction 1</span>
+                <h2 class="text-xl font-semibold">Evolved Liquid Glass</h2>
+                <p class="text-gray-400 text-sm">Glassmorphism fixed - animations only on KPIs, subtle hover</p>
+            </div>
+            <div class="preview-container dir1-bg">
+                <div class="flex h-full">
+                    <!-- Sidebar -->
+                    <div class="w-56 dir1-sidebar p-4 flex flex-col">
+                        <div class="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                            </div>
+                            AI Agents
+                        </div>
+                        <div class="space-y-1">
+                            <div class="nav-item bg-blue-500 text-white">
+                                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                                Dashboard
+                            </div>
+                            <div class="nav-item text-gray-600 hover:bg-white/50">
+                                <i data-lucide="bot" class="w-4 h-4"></i>
+                                Agents
+                            </div>
+                            <div class="nav-item text-gray-600 hover:bg-white/50">
+                                <i data-lucide="cpu" class="w-4 h-4"></i>
+                                Tools
+                            </div>
+                            <div class="nav-item text-gray-600 hover:bg-white/50">
+                                <i data-lucide="database" class="w-4 h-4"></i>
+                                MCP Servers
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="flex-1 p-6 overflow-auto">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Dashboard</h2>
+
+                        <!-- KPI Cards - These get animation -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="dir1-card dir1-card-interactive dir1-kpi p-5" style="animation-delay: 0.1s">
+                                <div class="kpi-label">Active Agents</div>
+                                <div class="kpi-value text-gray-800">12</div>
+                                <div class="text-sm text-green-600 mt-1">+2 this week</div>
+                            </div>
+                            <div class="dir1-card dir1-card-interactive dir1-kpi p-5" style="animation-delay: 0.2s">
+                                <div class="kpi-label">Executions Today</div>
+                                <div class="kpi-value text-gray-800">847</div>
+                                <div class="text-sm text-blue-600 mt-1">94% success</div>
+                            </div>
+                        </div>
+
+                        <!-- Form Section - NO animation, solid feel -->
+                        <div class="dir1-card p-5">
+                            <h3 class="font-semibold text-gray-800 mb-4">Quick Agent Setup</h3>
+                            <div class="space-y-3">
+                                <input type="text" placeholder="Agent Name" class="form-input bg-white/60 border border-white/80 text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <select class="form-input bg-white/60 border border-white/80 text-gray-800">
+                                    <option>Select LLM Provider</option>
+                                    <option>OpenAI GPT-4</option>
+                                    <option>Anthropic Claude</option>
+                                </select>
+                                <button class="w-full py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                    Create Agent
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 p-4 bg-gray-800 rounded-lg">
+                <h4 class="font-medium text-sm mb-2">Key Characteristics:</h4>
+                <ul class="text-sm text-gray-400 space-y-1">
+                    <li>+ Animated gradient background</li>
+                    <li>+ Glass blur on all cards</li>
+                    <li>+ KPI cards animate on load</li>
+                    <li>+ Forms are static (no bounce)</li>
+                    <li>- Can feel "busy" visually</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             DIRECTION 2: MODERN MINIMAL
+             ========================================== -->
+        <div class="direction-preview" id="preview-dir2">
+            <div class="mb-4">
+                <span class="inline-block px-3 py-1 bg-gray-500/20 text-gray-300 rounded-full text-sm font-medium mb-2">Direction 2</span>
+                <h2 class="text-xl font-semibold">Modern Minimal</h2>
+                <p class="text-gray-400 text-sm">Linear/Vercel style - clean, fast, professional</p>
+            </div>
+            <div class="preview-container dir2-bg">
+                <div class="flex h-full">
+                    <!-- Sidebar -->
+                    <div class="w-56 dir2-sidebar p-4 flex flex-col">
+                        <div class="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
+                                <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                            </div>
+                            AI Agents
+                        </div>
+                        <div class="space-y-1">
+                            <div class="nav-item bg-gray-100 text-gray-900 font-medium">
+                                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                                Dashboard
+                            </div>
+                            <div class="nav-item text-gray-600 hover:bg-gray-100">
+                                <i data-lucide="bot" class="w-4 h-4"></i>
+                                Agents
+                            </div>
+                            <div class="nav-item text-gray-600 hover:bg-gray-100">
+                                <i data-lucide="cpu" class="w-4 h-4"></i>
+                                Tools
+                            </div>
+                            <div class="nav-item text-gray-600 hover:bg-gray-100">
+                                <i data-lucide="database" class="w-4 h-4"></i>
+                                MCP Servers
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="flex-1 p-6 overflow-auto">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h2>
+
+                        <!-- KPI Cards -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="dir2-card dir2-card-interactive p-5">
+                                <div class="kpi-label">Active Agents</div>
+                                <div class="kpi-value text-gray-900">12</div>
+                                <div class="text-sm text-green-600 mt-1">+2 this week</div>
+                            </div>
+                            <div class="dir2-card dir2-card-interactive p-5">
+                                <div class="kpi-label">Executions Today</div>
+                                <div class="kpi-value text-gray-900">847</div>
+                                <div class="text-sm dir2-accent mt-1">94% success</div>
+                            </div>
+                        </div>
+
+                        <!-- Form Section -->
+                        <div class="dir2-card p-5">
+                            <h3 class="font-semibold text-gray-900 mb-4">Quick Agent Setup</h3>
+                            <div class="space-y-3">
+                                <input type="text" placeholder="Agent Name" class="form-input bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-gray-900 focus:border-transparent">
+                                <select class="form-input bg-white border border-gray-200 text-gray-900">
+                                    <option>Select LLM Provider</option>
+                                    <option>OpenAI GPT-4</option>
+                                    <option>Anthropic Claude</option>
+                                </select>
+                                <button class="w-full py-2.5 dir2-btn-primary font-medium">
+                                    Create Agent
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 p-4 bg-gray-800 rounded-lg">
+                <h4 class="font-medium text-sm mb-2">Key Characteristics:</h4>
+                <ul class="text-sm text-gray-400 space-y-1">
+                    <li>+ Clean, distraction-free</li>
+                    <li>+ Fast performance (no blur)</li>
+                    <li>+ Timeless, professional look</li>
+                    <li>+ Great for data-heavy screens</li>
+                    <li>- Less visual "wow" factor</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             DIRECTION 3: HYBRID (RECOMMENDED)
+             With Fluid Animated Background
+             ========================================== -->
+        <div class="direction-preview" id="preview-dir3">
+            <div class="mb-4">
+                <span class="inline-block px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm font-medium mb-2">Direction 3 - Recommended</span>
+                <h2 class="text-xl font-semibold">Hybrid: Modern + Strategic Glass + Fluid Animation</h2>
+                <p class="text-gray-400 text-sm">Clean base, glass for KPIs, subtle animated orbs behind glass panes</p>
+            </div>
+            <div class="preview-container dir3-bg">
+                <!-- Fluid Animated Background Orbs -->
+                <div class="dir3-fluid-bg">
+                    <div class="dir3-orb dir3-orb-1"></div>
+                    <div class="dir3-orb dir3-orb-2"></div>
+                    <div class="dir3-orb dir3-orb-3"></div>
+                    <div class="dir3-orb dir3-orb-4"></div>
+                </div>
+
+                <div class="flex h-full relative">
+                    <!-- Sidebar -->
+                    <div class="w-56 dir3-sidebar p-4 flex flex-col">
+                        <div class="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg dir3-gradient-accent flex items-center justify-center">
+                                <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                            </div>
+                            AI Agents
+                        </div>
+                        <div class="space-y-1">
+                            <div class="nav-item bg-blue-50 text-blue-700 font-medium">
+                                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                                Dashboard
+                            </div>
+                            <div class="nav-item text-gray-600 hover:bg-gray-50">
+                                <i data-lucide="bot" class="w-4 h-4"></i>
+                                Agents
+                            </div>
+                            <div class="nav-item text-gray-600 hover:bg-gray-50">
+                                <i data-lucide="cpu" class="w-4 h-4"></i>
+                                Tools
+                            </div>
+                            <div class="nav-item text-gray-600 hover:bg-gray-50">
+                                <i data-lucide="database" class="w-4 h-4"></i>
+                                MCP Servers
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="flex-1 p-6 overflow-auto dir3-main-content">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h2>
+
+                        <!-- KPI Cards - GLASS EFFECT reveals fluid bg animation -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="dir3-glass-highlight p-5">
+                                <div class="kpi-label">Active Agents</div>
+                                <div class="kpi-value text-gray-900">12</div>
+                                <div class="text-sm text-green-600 mt-1">+2 this week</div>
+                            </div>
+                            <div class="dir3-glass-highlight p-5">
+                                <div class="kpi-label">Executions Today</div>
+                                <div class="kpi-value text-gray-900">847</div>
+                                <div class="text-sm text-blue-600 mt-1">94% success</div>
+                            </div>
+                        </div>
+
+                        <!-- Form Section - SOLID (no glass, stable) -->
+                        <div class="dir3-card p-5">
+                            <h3 class="font-semibold text-gray-900 mb-4">Quick Agent Setup</h3>
+                            <div class="space-y-3">
+                                <input type="text" placeholder="Agent Name" class="form-input bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <select class="form-input bg-white border border-gray-200 text-gray-900">
+                                    <option>Select LLM Provider</option>
+                                    <option>OpenAI GPT-4</option>
+                                    <option>Anthropic Claude</option>
+                                </select>
+                                <button class="w-full py-2.5 dir3-gradient-accent text-white rounded-lg font-medium hover:opacity-90 transition-opacity">
+                                    Create Agent
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 p-4 bg-gray-800 rounded-lg border border-blue-500/30">
+                <h4 class="font-medium text-sm mb-2 text-blue-400">Key Characteristics:</h4>
+                <ul class="text-sm text-gray-400 space-y-1">
+                    <li>+ Fluid animated orbs = futuristic feel</li>
+                    <li>+ Glass KPIs reveal moving background</li>
+                    <li>+ Subtle 25-35s animations = not distracting</li>
+                    <li>+ Forms are solid & stable (no animation)</li>
+                    <li>+ Modern AI aesthetic without being gimmicky</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Decision Section -->
+    <div class="max-w-7xl mx-auto mt-12 p-8 bg-gray-800 rounded-2xl">
+        <h2 class="text-2xl font-bold mb-4">Make Your Decision</h2>
+        <p class="text-gray-400 mb-6">Based on your goal of "Modern & Innovative" for an enterprise B2B AI platform:</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="p-6 bg-gray-700/50 rounded-xl">
+                <h3 class="font-semibold mb-2">Direction 1: Evolved Liquid Glass</h3>
+                <p class="text-sm text-gray-400 mb-4">Best if you want maximum visual impact and your users appreciate "premium" aesthetics.</p>
+                <div class="text-sm">
+                    <span class="text-yellow-400">Risk:</span> May feel dated by late 2025
+                </div>
+            </div>
+            <div class="p-6 bg-gray-700/50 rounded-xl">
+                <h3 class="font-semibold mb-2">Direction 2: Modern Minimal</h3>
+                <p class="text-sm text-gray-400 mb-4">Best for maximum professionalism and if your users prioritize efficiency over aesthetics.</p>
+                <div class="text-sm">
+                    <span class="text-yellow-400">Risk:</span> May feel "generic"
+                </div>
+            </div>
+            <div class="p-6 bg-blue-900/30 rounded-xl border border-blue-500/30">
+                <h3 class="font-semibold mb-2 text-blue-400">Direction 3: Hybrid + Fluid Animation (Recommended)</h3>
+                <p class="text-sm text-gray-400 mb-4">Professional base + subtle animated orbs that reveal through glass panes for futuristic AI feel.</p>
+                <div class="text-sm space-y-1">
+                    <div><span class="text-green-400">Why:</span> Perfect balance of professional & innovative</div>
+                    <div><span class="text-purple-400">New:</span> Fluid orbs animate (25-35s cycles) behind glass</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Direction switching
+        function showDirection(dir) {
+            // Update tabs
+            document.querySelectorAll('.direction-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('tab-' + dir).classList.add('active');
+
+            // Show/hide previews
+            const grid = document.getElementById('comparison-grid');
+
+            if (dir === 'all') {
+                grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                document.querySelectorAll('.direction-preview').forEach(p => p.style.display = 'block');
+            } else {
+                grid.style.gridTemplateColumns = '1fr';
+                document.querySelectorAll('.direction-preview').forEach(p => {
+                    p.style.display = p.id === 'preview-' + dir ? 'block' : 'none';
+                });
+            }
+        }
+
+        // Responsive grid
+        function updateGrid() {
+            const grid = document.getElementById('comparison-grid');
+            if (window.innerWidth < 1200 && document.querySelector('.direction-tab.active').id === 'tab-all') {
+                grid.style.gridTemplateColumns = '1fr';
+            }
+        }
+        window.addEventListener('resize', updateGrid);
+    </script>
+</body>
+</html>

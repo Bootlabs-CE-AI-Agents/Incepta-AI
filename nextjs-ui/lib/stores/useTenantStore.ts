@@ -17,8 +17,11 @@ import { persist } from 'zustand/middleware';
 
 export interface Tenant {
   id: string;
+  tenant_id?: string;
   name: string;
   slug: string;
+  logo?: string;
+  is_active?: boolean;
 }
 
 interface TenantStore {

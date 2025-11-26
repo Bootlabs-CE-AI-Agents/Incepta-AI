@@ -1,0 +1,335 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>34</epicId>
+    <storyId>34</storyId>
+    <title>Accessibility (A11y) Compliance - WCAG 2.1 AA</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-34-accessibility-wcag.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user with accessibility needs</asA>
+    <iWant>the application to meet WCAG 2.1 AA standards</iWant>
+    <soThat>I can use it with assistive technologies</soThat>
+    <tasks>
+      <task id="1" title="Set Up Accessibility Testing Tools">
+        <objective>AC: #1,5,8,9</objective>
+        <subtasks>
+          <subtask id="1.1">Install axe DevTools browser extension</subtask>
+          <subtask id="1.2">Install WAVE accessibility extension</subtask>
+          <subtask id="1.3">Set up Lighthouse accessibility audit</subtask>
+          <subtask id="1.4">Install NVDA (Windows) or test VoiceOver setup (Mac)</subtask>
+          <subtask id="1.5">Create accessibility audit checklist template</subtask>
+        </subtasks>
+      </task>
+      <task id="2" title="Audit & Fix Color Contrast">
+        <objective>AC: #1</objective>
+        <subtasks>
+          <subtask id="2.1">Run contrast check on all text elements (use axe/WAVE)</subtask>
+          <subtask id="2.2">Document all contrast violations by page</subtask>
+          <subtask id="2.3">Fix low-contrast text colors (text-gray-600 → text-gray-700, etc.)</subtask>
+          <subtask id="2.4">Verify focus indicator contrast (3:1 minimum)</subtask>
+          <subtask id="2.5">Test in light and dark modes (if applicable)</subtask>
+          <subtask id="2.6">Verify all fixes meet WCAG 2.1 AA</subtask>
+        </subtasks>
+      </task>
+      <task id="3" title="Audit & Fix Keyboard Navigation">
+        <objective>AC: #2</objective>
+        <subtasks>
+          <subtask id="3.1">Tab through each page and document focus order</subtask>
+          <subtask id="3.2">Identify any keyboard traps or unreachable elements</subtask>
+          <subtask id="3.3">Fix tab order issues (use tabIndex only when necessary)</subtask>
+          <subtask id="3.4">Add focus indicators to all interactive elements (ring/outline CSS)</subtask>
+          <subtask id="3.5">Test modal focus trapping (focus should loop within modal)</subtask>
+          <subtask id="3.6">Test Escape key closes modals</subtask>
+          <subtask id="3.7">Verify all buttons and links functional with keyboard</subtask>
+        </subtasks>
+      </task>
+      <task id="4" title="Audit & Fix Form Labels">
+        <objective>AC: #3</objective>
+      </task>
+      <task id="5" title="Audit & Fix ARIA Labels & Semantic HTML">
+        <objective>AC: #4</objective>
+      </task>
+      <task id="6" title="Screen Reader Testing">
+        <objective>AC: #5</objective>
+      </task>
+      <task id="7" title="Focus Indicators & Visual Design">
+        <objective>AC: #6</objective>
+      </task>
+      <task id="8" title="Motion & Animation Accessibility">
+        <objective>AC: #7</objective>
+      </task>
+      <task id="9" title="Implement Navigation Accessibility Features">
+        <objective>AC: #8</objective>
+      </task>
+      <task id="10" title="Accessible Empty & Error States">
+        <objective>AC: #9</objective>
+      </task>
+      <task id="11" title="Mobile & Touch Accessibility">
+        <objective>AC: #10</objective>
+      </task>
+      <task id="12" title="Comprehensive Accessibility Audit">
+        <objective>AC: All</objective>
+      </task>
+      <task id="13" title="Final Verification & Testing">
+        <objective>AC: All</objective>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-1" title="Color Contrast Compliance">
+      <description>All text meets WCAG 2.1 AA minimum:
+      - Normal text (body, labels): 4.5:1 contrast ratio minimum
+      - Large text (18pt+): 3:1 contrast ratio minimum
+      - Graphical elements and UI components: 3:1 contrast ratio minimum
+      - Focus indicators: 3:1 contrast against adjacent colors</description>
+    </criterion>
+    <criterion id="AC-2" title="Keyboard Navigation & Accessibility">
+      <description>All interactive elements keyboard accessible with logical tab order, visible focus indicators, and no keyboard traps. Form submission possible with Enter key. Modals properly trap focus.</description>
+    </criterion>
+    <criterion id="AC-3" title="Form Labels & Association">
+      <description>All input fields have properly associated labels via htmlFor attribute. Required fields marked with aria-required. Error messages associated with aria-describedby. No placeholder-only labels. Form instructions programmatically associated.</description>
+    </criterion>
+    <criterion id="AC-4" title="ARIA Labels & Semantic HTML">
+      <description>Icon-only buttons have aria-label or aria-labelledby. Images have descriptive alt text. Semantic HTML used correctly (nav, main, section, article). Heading hierarchy follows logical order. List items use proper elements. Data tables have proper structure. Form inputs have proper role and state attributes.</description>
+    </criterion>
+    <criterion id="AC-5" title="Screen Reader Support">
+      <description>Page structure, navigation landmarks, and interactive elements announced correctly. Dynamic content updates announced. Error and success messages announced. Page loading state announced.</description>
+    </criterion>
+    <criterion id="AC-6" title="Focus Indicators & Visual Feedback">
+      <description>Focus indicators visible on all interactive elements with 2px minimum width, sufficient contrast (3:1 minimum), and not blocked by other elements. Consistent focus outline style across app.</description>
+    </criterion>
+    <criterion id="AC-7" title="Motion & Animation Accessibility">
+      <description>CSS prefers-reduced-motion: reduce honored. Auto-playing animations can be paused. No content flashing more than 3 times per second. Animation not required to use features.</description>
+    </criterion>
+    <criterion id="AC-8" title="Accessible Navigation Features">
+      <description>Skip-to-main-content link present and functional. Landmark regions properly used. Breadcrumb trails announced correctly. Sidebar menu structure and state announced. Current page indicator announced with aria-current="page".</description>
+    </criterion>
+    <criterion id="AC-9" title="Empty & Error States Accessibility">
+      <description>Empty state messaging clear and helpful. Error messages displayed both visually and programmatically. Error message describes problem and solution. Success messages announced when appropriate. Loading state announced.</description>
+    </criterion>
+    <criterion id="AC-10" title="Responsive & Touch Accessibility">
+      <description>Touch targets minimum 44x44 CSS pixels with adequate spacing. No hover-only functionality. Zoom functionality not disabled. Text resizable without loss of functionality (up to 200%).</description>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics-nextjs-feature-parity-completion.md</path>
+        <title>Epic 5: UI/UX Consistency & Cleanup - Story 5.2 Accessibility</title>
+        <section>Story 5.2: Accessibility (A11y) Compliance - WCAG 2.1 AA</section>
+        <snippet>Detailed acceptance criteria for accessibility including color contrast, keyboard navigation, form labels, ARIA labels, screen reader support, focus indicators, motion/animation, and navigation features. Provides prerequisite context that Story 33 (Design System Audit) must be completed first.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-33-design-system-audit.md</path>
+        <title>Story 33: Design System Audit (Prerequisite - Status: APPROVED)</title>
+        <section>Design System Consistency - Focus Indicators and Color Tokens</section>
+        <snippet>Previous story that established consistent design system including focus indicator styles, color tokens in tailwind.config.ts, and uniform component styling. This story builds on those foundations for accessibility compliance.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>System Architecture</title>
+        <section>Next.js UI Architecture</section>
+        <snippet>High-level architecture documentation for the AI Agents platform, including Next.js UI structure and design patterns.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-wireframes-mcp-tool-discovery.md</path>
+        <title>UX Wireframes - MCP Tool Discovery</title>
+        <section>UI/UX Design Patterns</section>
+        <snippet>UX design documentation that may contain patterns relevant to accessible navigation and layout design.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>nextjs-ui/components/ui/</path>
+        <kind>component-library</kind>
+        <description>shadcn/ui base components that need accessibility audit and updates. All components should have proper ARIA labels, focus states, and keyboard navigation support.</description>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/app/</path>
+        <kind>pages</kind>
+        <description>All application pages that require accessibility audit including keyboard navigation, screen reader testing, color contrast verification, and focus indicator testing.</description>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/app/globals.css</path>
+        <kind>stylesheet</kind>
+        <description>Global styles including focus indicators, prefers-reduced-motion support, and accessible color definitions.</description>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/tailwind.config.ts</path>
+        <kind>configuration</kind>
+        <symbol>tailwind config</symbol>
+        <description>Tailwind CSS configuration containing design tokens established in Story 33. May need accessibility-specific tokens added (focus colors, high-contrast mode, etc.)</description>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/</path>
+        <kind>component-directory</kind>
+        <description>Component directories including: agents, charts, dashboard, forms, llm-providers, mcp-servers, operations, prompts, providers, tenants, tools, ui. All components require accessibility audit.</description>
+      </artifact>
+    </code>
+    <dependencies>
+      <dependency>
+        <name>Next.js</name>
+        <version>14.2.15</version>
+        <kind>framework</kind>
+        <notes>Core framework for the UI. Supports accessibility features through Next.js Image optimization and accessibility utilities.</notes>
+      </dependency>
+      <dependency>
+        <name>React</name>
+        <version>18.3.1</version>
+        <kind>library</kind>
+        <notes>Frontend library. Use semantic HTML and proper ARIA attributes in React components.</notes>
+      </dependency>
+      <dependency>
+        <name>Tailwind CSS</name>
+        <version>3.4.14</version>
+        <kind>css-framework</kind>
+        <notes>Utility-first CSS framework. Provides accessibility utilities: sr-only, focus:outline, etc. Design tokens from Story 33 are stored here.</notes>
+      </dependency>
+      <dependency>
+        <name>TypeScript</name>
+        <version>5.6.3</version>
+        <kind>language</kind>
+        <notes>Type safety for React components and interfaces.</notes>
+      </dependency>
+      <dependency>
+        <name>@headlessui/react</name>
+        <version>2.2.9</version>
+        <kind>ui-library</kind>
+        <notes>Unstyled, accessible React components. Provides good foundation for keyboard navigation and ARIA attributes.</notes>
+      </dependency>
+      <dependency>
+        <name>lucide-react</name>
+        <version>0.462.0</version>
+        <kind>icon-library</kind>
+        <notes>Icon library used throughout app. Icon-only buttons using lucide-react icons require aria-label attributes.</notes>
+      </dependency>
+      <dependency>
+        <name>react-hook-form</name>
+        <version>7.66.1</version>
+        <kind>form-library</kind>
+        <notes>Form state management. Must ensure proper label association with htmlFor and aria-describedby for error messages.</notes>
+      </dependency>
+      <dependency>
+        <name>sonner</name>
+        <version>2.0.7</version>
+        <kind>notification-library</kind>
+        <notes>Toast notifications. Ensure error/success messages are announced to screen readers with proper ARIA attributes.</notes>
+      </dependency>
+      <dependency>
+        <name>recharts</name>
+        <version>3.3.0</version>
+        <kind>charting-library</kind>
+        <notes>Data visualization. Charts need proper alt text or aria-label for screen reader accessibility.</notes>
+      </dependency>
+      <dependency>
+        <name>@tanstack/react-query</name>
+        <version>5.62.2</version>
+        <kind>data-fetching</kind>
+        <notes>Data fetching library. Loading and error states must have proper aria-busy and aria-live attributes.</notes>
+      </dependency>
+      <dependency>
+        <name>@storybook/addon-a11y</name>
+        <version>10.0.8</version>
+        <kind>testing-tool</kind>
+        <notes>Storybook accessibility addon for automated a11y testing in component development.</notes>
+      </dependency>
+      <dependency>
+        <name>axe-core</name>
+        <version>4.11.0</version>
+        <kind>testing-tool</kind>
+        <notes>Accessibility testing library. Use axe-core for automated accessibility audits.</notes>
+      </dependency>
+      <dependency>
+        <name>@axe-core/playwright</name>
+        <version>4.11.0</version>
+        <kind>testing-tool</kind>
+        <notes>Playwright integration with axe-core for E2E accessibility testing.</notes>
+      </dependency>
+      <dependency>
+        <name>@playwright/test</name>
+        <version>1.56.1</version>
+        <kind>testing-framework</kind>
+        <notes>E2E testing framework for keyboard navigation and interaction testing.</notes>
+      </dependency>
+      <dependency>
+        <name>jest</name>
+        <version>30.2.0</version>
+        <kind>testing-framework</kind>
+        <notes>Unit testing framework for component and accessibility unit tests.</notes>
+      </dependency>
+      <dependency>
+        <name>@testing-library/react</name>
+        <version>16.3.0</version>
+        <kind>testing-library</kind>
+        <notes>Testing utilities for React components. Supports testing keyboard interactions and accessibility.</notes>
+      </dependency>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Follow Next.js best practices and React component patterns</constraint>
+    <constraint>Use existing design system tokens from tailwind.config.ts (Story 33)</constraint>
+    <constraint>Use semantic HTML (nav, main, section, article)</constraint>
+    <constraint>Use Tailwind accessibility utilities (sr-only, focus:outline)</constraint>
+    <constraint>Reuse focus indicator styles established in Story 33</constraint>
+    <constraint>Components should use htmlFor on labels and proper aria attributes</constraint>
+    <constraint>Must comply with WCAG 2.1 AA standards across all pages</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Component Library (shadcn/ui)</name>
+      <kind>React component library</kind>
+      <path>nextjs-ui/components/ui/</path>
+      <description>Base UI components that need accessibility audit and updates</description>
+    </interface>
+    <interface>
+      <name>Page Structure</name>
+      <kind>File-based routing</kind>
+      <path>nextjs-ui/app/</path>
+      <description>All app pages need accessibility audit (keyboard nav, screen reader testing, etc.)</description>
+    </interface>
+    <interface>
+      <name>Global CSS</name>
+      <kind>Tailwind CSS configuration</kind>
+      <path>nextjs-ui/app/globals.css</path>
+      <description>Global styles, focus indicators, and accessibility utilities</description>
+    </interface>
+    <interface>
+      <name>Tailwind Configuration</name>
+      <kind>Tailwind config</kind>
+      <path>nextjs-ui/tailwind.config.ts</path>
+      <description>Design tokens and accessibility-specific configuration</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Accessibility testing combines automated tools (axe DevTools, WAVE, Lighthouse) with manual testing (keyboard navigation, screen reader testing with NVDA/VoiceOver, contrast verification, mobile touch target testing). Follow WCAG 2.1 AA guidelines and use tools to catch ~40-50% of issues, then conduct thorough manual testing on critical pages.
+    </standards>
+    <locations>
+      - Automated audits: Chrome DevTools Lighthouse tab (built-in)
+      - Manual testing: Required on all pages before completion
+      - Integration tests: nextjs-ui/tests/ (if E2E tests use Playwright or Cypress with accessibility plugins)
+      - Accessibility resources: WCAG 2.1 Guidelines (https://www.w3.org/WAI/WCAG21/quickref/), ARIA Authoring Practices (https://www.w3.org/WAI/ARIA/apg/)
+    </locations>
+    <ideas>
+      - AC-1 (Contrast): Audit all text with axe/WAVE; verify 4.5:1 normal text, 3:1 large text and focus indicators
+      - AC-2 (Keyboard): Tab through all pages; verify logical tab order, visible focus, no traps; test Enter for form submission and Escape for modal close
+      - AC-3 (Forms): Check all inputs have htmlFor labels; verify required fields marked aria-required; test error message association with aria-describedby
+      - AC-4 (ARIA/HTML): Verify icon buttons have aria-label; check images have alt text or role="presentation"; verify semantic HTML (nav, main, section) and heading hierarchy
+      - AC-5 (Screen Reader): Test with NVDA/VoiceOver; verify page structure, landmarks, and interactive element announcements; test dynamic content live regions if needed
+      - AC-6 (Focus): Verify 2px focus outline with 3:1 contrast on all interactive elements; check not obscured by overflow
+      - AC-7 (Motion): Test prefers-reduced-motion CSS media query; verify animations can be paused; check no flashing >3 times/second
+      - AC-8 (Navigation): Verify skip-to-main link; check landmark regions (header, nav, main, aside, footer); test breadcrumb and menu structure with screen reader; verify aria-current="page"
+      - AC-9 (States): Verify empty state, error, success messages announced with aria-live or aria-describedby; test loading state with aria-busy="true"
+      - AC-10 (Mobile): Verify 44x44px touch targets with adequate spacing; test zoom not disabled; verify text resizable to 200% without loss of functionality
+    </ideas>
+  </tests>
+</story-context>

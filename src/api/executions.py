@@ -118,7 +118,6 @@ async def list_executions(
         # Apply search filter
         if search:
             search_conditions = [
-                AgentTestExecution.agent_name.ilike(f"%{search}%"),
                 cast(AgentTestExecution.id, String).ilike(f"%{search}%"),
             ]
             conditions.append(or_(*search_conditions))
@@ -132,20 +131,26 @@ async def list_executions(
         offset = (page - 1) * limit
         total_pages = (total + limit - 1) // limit if total > 0 else 0
 
-        # Fetch paginated results
+        # Fetch paginated results with agent details
+        from src.database.models import Agent
+
         query = (
-            select(AgentTestExecution)
+            select(AgentTestExecution, Agent.name.label("agent_name"))
+            .outerjoin(Agent, AgentTestExecution.agent_id == Agent.id)
             .where(and_(*conditions))
             .order_by(AgentTestExecution.created_at.desc())
             .offset(offset)
             .limit(limit)
         )
         result = await db.execute(query)
-        executions = result.scalars().all()
+        rows = result.all()
 
         # Format response
         execution_list = []
-        for execution in executions:
+        for row in rows:
+            execution = row[0]
+            agent_name = row[1] or "Unknown"
+
             # Extract duration from execution_time JSON field
             duration_ms = None
             if execution.execution_time:
@@ -154,13 +159,13 @@ async def list_executions(
             execution_list.append({
                 "id": str(execution.id),
                 "agent_id": str(execution.agent_id) if execution.agent_id else "",
-                "agent_name": execution.agent_name or "Unknown",
+                "agent_name": agent_name,
                 "tenant_id": str(execution.tenant_id),
                 "status": execution.status or "unknown",
                 "duration_ms": duration_ms,
                 "started_at": execution.created_at.isoformat() if execution.created_at else "",
                 "completed_at": execution.created_at.isoformat() if execution.created_at else None,
-                "error_message": execution.error_message,
+                "error_message": None,
             })
 
         logger.info(f"Listed {len(execution_list)} executions for tenant {tenant_id} (page {page})")
@@ -241,14 +246,25 @@ async def get_execution_details(
         HTTPException(500): If database query fails
     """
     try:
+        from src.database.models import Agent
+
         # Defense-in-depth: Include tenant_id in WHERE clause to prevent SQL-level access
         # This provides an extra security layer beyond application-level checks
-        stmt = select(AgentTestExecution).where(
+        stmt = select(AgentTestExecution, Agent.name.label("agent_name")).outerjoin(
+            Agent, AgentTestExecution.agent_id == Agent.id
+        ).where(
             AgentTestExecution.id == execution_id,
             AgentTestExecution.tenant_id == tenant_id,
         )
         result = await db.execute(stmt)
-        execution = result.scalar_one_or_none()
+        row = result.one_or_none()
+
+        if row is None:
+            execution = None
+            agent_name = None
+        else:
+            execution = row[0]
+            agent_name = row[1] or "Unknown"
 
         # If not found with tenant filter, check if execution exists for different tenant
         # This distinguishes 404 (not found) from 403 (forbidden) per AC4
@@ -290,17 +306,22 @@ async def get_execution_details(
         response_data = {
             "id": execution.id,
             "agent_id": execution.agent_id,
+            "agent_name": agent_name,
             "tenant_id": execution.tenant_id,
-            "input_data": mask_sensitive_data(execution.payload),
-            "output_data": mask_sensitive_data(execution.execution_trace),
+            "input": mask_sensitive_data(execution.payload),
+            "output": mask_sensitive_data(execution.execution_trace),
             "status": normalized_status,
-            "execution_time": total_duration_ms,
-            "created_at": execution.created_at,
-            "updated_at": None,  # AgentTestExecution doesn't have updated_at field
+            "duration_ms": total_duration_ms,
+            "started_at": execution.created_at.isoformat(),
+            "completed_at": execution.created_at.isoformat() if execution.created_at else None,
             "error_message": (
                 execution.errors.get("message") if execution.errors else None
             ),
-            "task_id": execution.task_id,  # Celery task ID for correlation
+            "metadata": {
+                "task_id": execution.task_id,
+                "correlation_id": execution.task_id,  # Use task_id as correlation_id
+            },
+            "logs": [],  # AgentTestExecution doesn't have structured logs yet
         }
 
         logger.info(

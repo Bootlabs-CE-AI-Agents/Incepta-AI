@@ -60,6 +60,12 @@ class Settings(BaseSettings):
         le=100,
     )
 
+    # LiteLLM Database Configuration (Story 8.16 - Cost Dashboard)
+    litellm_database_url: Optional[str] = Field(
+        default=None,
+        description="LiteLLM PostgreSQL connection string for cost tracking queries",
+    )
+
     # Redis Configuration
     redis_url: str = Field(
         ...,

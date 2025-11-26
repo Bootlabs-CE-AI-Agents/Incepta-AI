@@ -31,16 +31,19 @@ export interface AgentExecution {
 /**
  * Execution Detail (includes input/output/metadata)
  */
-export interface ExecutionDetail extends AgentExecution {
+export interface ExecutionDetail {
+  id: string;
+  agent_id: string;
+  agent_name: string;
+  tenant_id: string;
+  status: ExecutionStatus;
+  duration_ms: number;
+  started_at: string; // ISO 8601
+  completed_at: string | null; // ISO 8601
+  error_message: string | null;
   input: Record<string, unknown>;
   output: Record<string, unknown> | null;
-  metadata: {
-    user_id?: string;
-    correlation_id?: string;
-    retry_count?: number;
-    triggered_by?: string;
-    [key: string]: unknown;
-  };
+  metadata: Record<string, unknown>;
   logs: ExecutionLogEntry[];
 }
 

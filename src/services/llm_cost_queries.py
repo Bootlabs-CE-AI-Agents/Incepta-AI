@@ -5,6 +5,10 @@ Low-level database queries for LiteLLM spend tracking.
 Handles raw SQL/SQLAlchemy operations for cost data retrieval.
 
 CRITICAL: ALL queries MUST filter by tenant_id for security.
+
+Note: This module uses TWO database connections:
+- db: Main database (ai_agents) for tenant/agent lookups
+- litellm_db: LiteLLM database (litellm_db) for spend log queries
 """
 
 import logging
@@ -32,9 +36,16 @@ logger = logging.getLogger(__name__)
 class CostQueryBuilder:
     """Helper class for building cost queries."""
 
-    def __init__(self, db: AsyncSession):
-        """Initialize query builder."""
+    def __init__(self, db: AsyncSession, litellm_db: AsyncSession):
+        """
+        Initialize query builder.
+
+        Args:
+            db: Main database session for tenant/agent lookups
+            litellm_db: LiteLLM database session for spend log queries
+        """
         self.db = db
+        self.litellm_db = litellm_db
 
     async def get_total_spend(
         self,
@@ -53,7 +64,7 @@ class CostQueryBuilder:
             )
             if tenant_id:
                 stmt = stmt.where(LiteLLMSpendLog.end_user == str(tenant_id))
-            result = await self.db.execute(stmt)
+            result = await self.litellm_db.execute(stmt)
             return float(result.scalar())
         except Exception as e:
             logger.error(f"Error calculating total spend: {e}", exc_info=True)
@@ -85,7 +96,7 @@ class CostQueryBuilder:
                 .limit(limit)
             )
 
-            result = await self.db.execute(stmt)
+            result = await self.litellm_db.execute(stmt)
             rows = result.all()
 
             tenant_dtos = []
@@ -160,7 +171,7 @@ class CostQueryBuilder:
                 .limit(limit)
             )
 
-            result = await self.db.execute(stmt)
+            result = await self.litellm_db.execute(stmt)
             rows = result.all()
 
             agent_dtos = []
@@ -219,7 +230,7 @@ class CostQueryBuilder:
             if tenant_id:
                 stmt = stmt.where(LiteLLMSpendLog.end_user == str(tenant_id))
 
-            result = await self.db.execute(stmt)
+            result = await self.litellm_db.execute(stmt)
             rows = result.all()
 
             return [
@@ -267,7 +278,7 @@ class CostQueryBuilder:
             if tenant_id:
                 stmt = stmt.where(LiteLLMSpendLog.end_user == str(tenant_id))
 
-            result = await self.db.execute(stmt)
+            result = await self.litellm_db.execute(stmt)
             rows = result.all()
 
             breakdown_dtos = []
@@ -322,7 +333,7 @@ class CostQueryBuilder:
             if tenant_id:
                 stmt = stmt.where(LiteLLMSpendLog.end_user == str(tenant_id))
 
-            result = await self.db.execute(stmt)
+            result = await self.litellm_db.execute(stmt)
             rows = result.all()
 
             daily_dtos = []
@@ -380,7 +391,7 @@ class CostQueryBuilder:
                         LiteLLMSpendLog.request_tags.contains([f"agent:{agent_name}"])
                     )
 
-            result = await self.db.execute(stmt)
+            result = await self.litellm_db.execute(stmt)
             logs = result.scalars().all()
 
             detail_dtos = []

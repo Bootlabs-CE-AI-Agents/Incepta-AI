@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>nextjs-ui</epicId>
+    <storyId>35</storyId>
+    <title>Loading States &amp; Error Handling - Consistent Patterns</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-35-loading-error-consistency.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user interacting with the dashboard</asA>
+    <iWant>loading states and error messages to follow consistent patterns (skeletons, boundaries, retry logic)</iWant>
+    <soThat>I understand what's happening and can recover from failures without frustration</soThat>
+    <tasks>
+      - Task 1: Design &amp; Document Loading &amp; Error Patterns (AC: #1-10)
+      - Task 2: Implement Skeleton Screen Component (AC: #1, #4, #10)
+      - Task 3: Implement Error Boundary Components (AC: #2, #4, #8)
+      - Task 4: Implement API Error Handling &amp; Retry Logic (AC: #3, #4, #6)
+      - Task 5: Implement Toast Notification System (AC: #3, #6)
+      - Task 6: Implement Confirmation Dialogs (AC: #7)
+      - Task 7: Implement Empty States (AC: #5, #4)
+      - Task 8: Apply Loading States to Existing Pages (AC: #1, #10)
+      - Task 9: Apply Error Boundaries to Pages (AC: #2, #4)
+      - Task 10: Apply Error Handling to Forms (AC: #9)
+      - Task 11: Apply Toast Notifications to Actions (AC: #3, #6)
+      - Task 12: Documentation &amp; Accessibility Audit (AC: #4)
+      - Task 13: Component Tests for Loading &amp; Error States (AC: #1-10)
+      - Task 14: Integration with Existing Pages (AC: #1-10)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-1">Consistent Loading State UI Components - Skeleton screens with min 200ms/max 5s timing, progress indicators, aria-busy announcements, prefers-reduced-motion respect, WCAG AA contrast</criterion>
+    <criterion id="AC-2">Error Boundary Components - React error catching at page/section/component levels, user-friendly messages, technical details in dev mode, retry buttons, graceful degradation</criterion>
+    <criterion id="AC-3">API Error Handling with Retry Logic - Network/4xx/5xx/timeout messages, exponential backoff for 429/503, max 3 retries, manual retry button, toast notifications</criterion>
+    <criterion id="AC-4">Accessibility of Loading &amp; Error States - Immediate announcements, role=alert, aria-live, keyboard navigation, visible focus, clear messages, aria-busy management</criterion>
+    <criterion id="AC-5">Empty States - "No items found" messages with suggestions/CTA buttons, distinct from error states, screen reader announcements, examples for agents/history/logs</criterion>
+    <criterion id="AC-6">Toast Notifications - Success/Error/Info variants, 5s auto-dismiss, max 3 visible with queuing, top-right fixed position, aria-live=polite, descriptive messages</criterion>
+    <criterion id="AC-7">Confirmation Dialogs for Destructive Actions - Modal with title/description, Cancel default focus, Tab focus trapping, Esc key close, keyboard accessible buttons</criterion>
+    <criterion id="AC-8">Consistent Error Messages &amp; Tone - User-focused language, actionable next steps, distinction between user/system/network errors, recovery actions included</criterion>
+    <criterion id="AC-9">Form Validation &amp; Error Display - Inline errors next to fields, aria-describedby association, specific messages, red border/icon styling, error cleared on input, aria-invalid on fields</criterion>
+    <criterion id="AC-10">Data Loading Indicators in Tables &amp; Lists - Skeleton rows during load, pagination state indicators, smooth transitions without page jumps, focus preserved, data-loaded announcements</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <artifact>
+        <path>docs/nextjs-ui-migration-tech-spec-v2.md</path>
+        <title>Next.js UI Migration Technical Specification v2</title>
+        <section>Story 6: Polish &amp; UX - Loading States &amp; Error Handling</section>
+        <snippet>Comprehensive tech spec for Next.js UI migration defining Story 35 requirements for loading states, error handling, form validation, empty states, and accessibility patterns following WCAG 2.1 AA (Story 34 standards)</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/architecture.md</path>
+        <title>AI Agents - Decision Architecture</title>
+        <section>Frontend error handling &amp; observability</section>
+        <snippet>Architecture document covering frontend error handling, logging, and observability strategies. Notes: Admin UI uses Streamlit (Epic 6), Next.js UI (Epic 8) handles all dashboard pages with error boundaries and loading states</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/sprint-artifacts/nextjs-story-34-accessibility-wcag.md</path>
+        <title>Story 34: Accessibility (WCAG 2.1 AA) - Completed Learnings</title>
+        <section>Focus indicator patterns, accessibility testing approach, screen reader patterns, dark mode support, prefers-reduced-motion support</section>
+        <snippet>Previous story established WCAG 2.1 AA standards. Reuse: focus indicators (2px min, 3:1 contrast), accessibility testing tools (axe-core, WAVE, Playwright), aria-busy pattern for loading, aria-live for dynamic updates, modal focus-trapping for dialogs, label association for forms</snippet>
+      </artifact>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>nextjs-ui/components/ui/Skeleton.tsx</path>
+        <kind>component</kind>
+        <symbol>Skeleton</symbol>
+        <reason>Reusable skeleton screen component for loading placeholders. Supports animation, prefers-reduced-motion, configurable dimensions. Used by SkeletonCard, SkeletonTable, and all page loading states</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/ui/Toast.tsx</path>
+        <kind>component</kind>
+        <symbol>Toast</symbol>
+        <reason>Toast notification component for success/error/info messages. Auto-dismisses after 5s, supports actions. Managed by ToastProvider and useToast hook</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/ui/ConfirmDialog.tsx</path>
+        <kind>component</kind>
+        <symbol>ConfirmDialog</symbol>
+        <reason>Accessible confirmation dialog for destructive actions. Implements focus trapping, Esc key close, keyboard navigation. Used by delete/reset/clear operations</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/ui/EmptyState.tsx</path>
+        <kind>component</kind>
+        <symbol>EmptyState</symbol>
+        <reason>Empty state component for list/page with no data. Displays icon, message, optional CTA button. Distinct from error states and loading states</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/ui/Loading.tsx</path>
+        <kind>component</kind>
+        <symbol>Loading</symbol>
+        <reason>Page-level loading spinner with aria-busy and "Loading..." announcement. Used for initial page loads</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/loading/SkeletonCard.tsx</path>
+        <kind>component</kind>
+        <symbol>SkeletonCard</symbol>
+        <reason>Composite skeleton component for dashboard metric cards. Matches final content layout with title/value skeletons</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/loading/SkeletonTable.tsx</path>
+        <kind>component</kind>
+        <symbol>SkeletonTable</symbol>
+        <reason>Composite skeleton component for table rows. Configurable row count, matches table column widths</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/error-boundary/OfflineBanner.tsx</path>
+        <kind>component</kind>
+        <symbol>OfflineBanner</symbol>
+        <reason>Network error indicator. Shows when offline, allows retry connection. Placed at top of page</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/ui/PageLoader.tsx</path>
+        <kind>component</kind>
+        <symbol>PageLoader</symbol>
+        <reason>Page-level loading wrapper with skeleton fallback. Used on all dashboard pages during data fetch</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/hooks/use-toast.ts</path>
+        <kind>hook</kind>
+        <symbol>useToast</symbol>
+        <reason>Hook to trigger toast notifications. Provides: toast.success(), toast.error(), toast.info() methods. Manages toast queue and auto-dismiss</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/providers/ToastProvider.tsx</path>
+        <kind>provider</kind>
+        <symbol>ToastProvider</symbol>
+        <reason>Context provider for toast notifications. Wraps entire app in layout.tsx. Manages toast state, stacking (max 3 visible), queuing</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/forms/FormField.tsx</path>
+        <kind>component</kind>
+        <symbol>FormField</symbol>
+        <reason>Form field wrapper with error display. Shows inline error messages below field, associates error with field via aria-describedby, marks field aria-invalid</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/components/ui/Table.tsx</path>
+        <kind>component</kind>
+        <symbol>Table, TableHeader, TableBody, TableRow, TableCell</symbol>
+        <reason>Base table component for data display. Supports loading states (shows skeleton rows) and empty states. Used by AgentsTable, TenantsTable, AuditTable, etc</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <ecosystem name="npm">
+        <package name="react">^18.3.1</package>
+        <package name="react-dom">^18.3.1</package>
+        <package name="next">14.2.15</package>
+        <package name="@tanstack/react-query">^5.62.2 - Server state management, handles loading/error states for API calls</package>
+        <package name="react-hook-form">^7.66.1 - Form state management for validation error display</package>
+        <package name="sonner">^2.0.7 - Toast notification library (integrated with useToast hook)</package>
+        <package name="lucide-react">^0.462.0 - Icons for loading spinners, error messages, empty states</package>
+        <package name="zod">^4.1.12 - Schema validation for form fields</package>
+        <package name="framer-motion">^11.11.17 - Animation library for skeleton shimmer effect, toast transitions</package>
+        <package name="tailwindcss">^3.4.14 - Styling with prefers-reduced-motion utilities</package>
+        <package name="clsx">^2.1.1 - Conditional class name management</package>
+      </ecosystem>
+      <note>Dev Dependencies: @testing-library/react, @playwright/test for component and E2E testing. axe-core, axe-playwright for accessibility audits</note>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="c-1">Accessibility: All loading/error states must follow WCAG 2.1 AA standards from Story 34 (4.5:1 contrast for text, 3:1 for UI, visible focus indicators)</constraint>
+    <constraint id="c-2">Skeleton Animation: Must respect prefers-reduced-motion media query - static skeleton (no shimmer) when user prefers reduced motion</constraint>
+    <constraint id="c-3">Loading Timing: Min 200ms to avoid flicker, max 5s before timeout error. Skeleton should show during all data fetches</constraint>
+    <constraint id="c-4">Error Boundary Scope: Page-level catches all page errors, section-level for card/panel errors, component-level for specific features. Ensures graceful degradation</constraint>
+    <constraint id="c-5">Retry Logic: Max 3 automatic retries for transient errors (429, 503). Manual retry button available for all errors. Exponential backoff: 1s, 2s, 4s</constraint>
+    <constraint id="c-6">Focus Management: Error messages and confirmation dialogs must trap focus and manage tab order. Escape key closes modals. Default focus on Cancel (safer)</constraint>
+    <constraint id="c-7">Toast Stacking: Max 3 visible toasts, additional toasts queued. Auto-dismiss after 5s or manual close. Announced to screen readers (aria-live=polite for success/info, aria-live=assertive for error)</constraint>
+    <constraint id="c-8">Form Validation: Client-side validation errors shown inline next to field. Server-side validation errors trigger toast + disable submit. Errors clear on input change</constraint>
+    <constraint id="c-9">Dark Mode: All loading skeletons, error states, empty states must have sufficient contrast in both light and dark themes</constraint>
+    <constraint id="c-10">Testing Requirements: 80%+ test coverage for new components. axe-core automated scans (0 violations target). Keyboard-only navigation test. Screen reader testing with NVDA/VoiceOver</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Skeleton Component Props</name>
+      <kind>React Component Interface</kind>
+      <signature>interface SkeletonProps { width?: string | number; height?: string | number; className?: string; animate?: boolean; }</signature>
+      <path>nextjs-ui/components/ui/Skeleton.tsx</path>
+      <notes>Reusable skeleton with configurable dimensions and animation. Respects prefers-reduced-motion</notes>
+    </interface>
+    <interface>
+      <name>Toast Hook</name>
+      <kind>React Hook</kind>
+      <signature>const useToast = () => { success: (message: string) => void; error: (message: string) => void; info: (message: string) => void; }</signature>
+      <path>nextjs-ui/hooks/use-toast.ts</path>
+      <notes>Used throughout app to show notifications. Integrated with API error handler</notes>
+    </interface>
+    <interface>
+      <name>Error Boundary Component</name>
+      <kind>React Component</kind>
+      <signature>ErrorBoundary wraps components, catches errors, shows fallback UI with Retry button</signature>
+      <path>nextjs-ui/components/error-boundary/ (to be created)</path>
+      <notes>Three variants: PageErrorBoundary, SectionErrorBoundary, ComponentErrorBoundary. Dev mode shows technical details</notes>
+    </interface>
+    <interface>
+      <name>Confirmation Dialog</name>
+      <kind>React Component</kind>
+      <signature>ConfirmDialog with title, description, onConfirm, onCancel handlers. Focus trapping, Esc close, keyboard navigation</signature>
+      <path>nextjs-ui/components/ui/ConfirmDialog.tsx</path>
+      <notes>Used for delete/reset/clear operations. Default focus on Cancel button</notes>
+    </interface>
+    <interface>
+      <name>EmptyState Component</name>
+      <kind>React Component</kind>
+      <signature>EmptyState with icon, title, description, action button. Different variants for no-data, no-results, error-placeholder</signature>
+      <path>nextjs-ui/components/ui/EmptyState.tsx</path>
+      <notes>Displayed when data.length === 0 and not loading/error. Distinct visual styling from errors</notes>
+    </interface>
+    <interface>
+      <name>React Query Integration</name>
+      <kind>Data Fetching Pattern</kind>
+      <signature>useQuery/useMutation hooks handle loading/error states. Errors trigger error toast. Retry button in UI calls refetch()</signature>
+      <path>nextjs-ui/hooks/useAgents.ts, useLLMCostSummary.ts, etc (existing)</path>
+      <notes>All data fetches use React Query. Error handling middleware maps API errors to user-friendly messages</notes>
+    </interface>
+    <interface>
+      <name>API Error Mapping</name>
+      <kind>Error Handler Middleware</kind>
+      <signature>mapErrorToMessage(error: Error | APIError): string. Handles network, 4xx, 5xx, timeout errors</signature>
+      <path>nextjs-ui/lib/ (to be created: api-error-handler.ts)</path>
+      <notes>Centralized error message mapping. Network error, 401 (session expired), 403 (permission denied), 404 (not found), 429 (rate limited), 500+ (server error), timeout</notes>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest + React Testing Library for unit/integration tests. Playwright for E2E tests.
+      Accessibility: axe-core for automated a11y scanning (target: 0 violations). Manual screen reader testing (NVDA/VoiceOver) for loading/error announcements.
+      Coverage target: 80%+ for new components (Skeleton, Toast, ConfirmDialog, EmptyState, ErrorBoundary).
+      Patterns: Test component rendering, user interactions (click, keyboard), async state management, accessibility attributes.
+    </standards>
+
+    <locations>
+      nextjs-ui/__tests__/ - Component unit tests
+      nextjs-ui/components/**/*.test.tsx - Co-located component tests
+      nextjs-ui/e2e/ - Playwright E2E tests
+      nextjs-ui/tests/ - Integration tests
+    </locations>
+
+    <ideas>
+      Unit Tests:
+      - Skeleton: renders with correct dimensions, respects prefers-reduced-motion (static), doesn't announce in accessibility tree
+      - Toast: renders success/error/info types, auto-dismisses after duration, multiple toasts stack correctly (max 3), accessibility attributes present
+      - ConfirmDialog: renders with title/description/buttons, Esc closes dialog, Tab traps focus, default focus on Cancel, onConfirm/onCancel callbacks fire
+      - EmptyState: renders icon/message/button, button callback works, distinct from loading/error states
+      - ErrorBoundary: catches render errors, displays fallback UI, Retry button resets error, dev mode shows technical details
+
+      Integration Tests:
+      - API call fails → error toast shows → retry button works → retry succeeds
+      - Form submission fails (client validation) → error message shows inline → user fixes input → error clears
+      - Form submission fails (server validation) → error toast shows + submit disabled → user corrects + retry succeeds
+      - Destructive action → confirmation dialog shows → user cancels → action not executed
+      - Destructive action → confirmation dialog shows → user confirms → action executes
+
+      E2E Tests (Playwright):
+      - Page loads → skeleton shows → content loads → skeleton hidden (verify aria-busy removed)
+      - Table sorts/filters → loading indicator shows → data updates → announce "data loaded"
+      - List paginated → page button shows loading state → next page loads → data updates
+      - User navigates away → pending requests cancelled (cleanup)
+      - Dark mode: skeleton has sufficient contrast in dark theme
+      - prefers-reduced-motion: skeleton animation disabled, toast transitions still work
+
+      Accessibility Tests:
+      - Keyboard navigation: Tab through all interactive elements, Esc closes modals, Enter activates buttons
+      - Screen reader: "Loading..." announcement on aria-busy, error message announced with role=alert, toast announced with aria-live, empty state message announced
+      - Contrast: all error/loading text meets WCAG AA (4.5:1 normal, 3:1 UI/large)
+      - Focus indicators: visible 2px min, 3:1 contrast on all buttons (Retry, Cancel, Confirm, Close)
+    </ideas>
+  </tests>
+</story-context>

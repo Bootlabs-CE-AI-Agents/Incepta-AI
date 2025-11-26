@@ -14,14 +14,65 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { ProviderGrid } from '@/components/llm-providers/ProviderGrid';
-import { Button, ConfirmDialog, Loading } from '@/components/ui';
+import { Button, ConfirmDialog, Skeleton, ErrorState, EmptyState } from '@/components/ui';
+import { toast } from '@/components/ui/Toast';
 import { useLLMProviders, useDeleteLLMProvider } from '@/lib/hooks/useLLMProviders';
-import { Plus } from 'lucide-react';
-import { toast } from 'sonner';
+import { Plus, Cpu } from 'lucide-react';
+
+/**
+ * Loading skeleton for LLM providers grid
+ */
+function ProvidersLoadingSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Loading LLM providers">
+      {/* Header skeleton */}
+      <div className="flex items-center justify-between">
+        <div>
+          <Skeleton className="h-8 w-40 mb-2" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <Skeleton className="h-10 w-36" />
+      </div>
+
+      {/* Filters skeleton */}
+      <div className="glass-card p-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-10 w-20 rounded-lg" />
+          <Skeleton className="h-10 w-20 rounded-lg" />
+          <Skeleton className="h-10 w-24 rounded-lg" />
+        </div>
+      </div>
+
+      {/* Grid skeleton - 3 columns */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="glass-card p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-12 w-12 rounded-lg" />
+              <div className="flex-1">
+                <Skeleton className="h-5 w-32 mb-2" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-16 rounded-full" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+            <div className="pt-4 border-t border-white/10 flex gap-2">
+              <Skeleton className="h-8 flex-1" />
+              <Skeleton className="h-8 w-20" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function LLMProvidersPage() {
   const router = useRouter();
-  const { data: providers, isLoading } = useLLMProviders();
+  const { data: providers, isLoading, isError, error, refetch } = useLLMProviders();
   const deleteProviderMutation = useDeleteLLMProvider();
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'healthy' | 'unhealthy'>('all');
@@ -55,11 +106,13 @@ export default function LLMProvidersPage() {
     if (deleteDialogState.providerId) {
       deleteProviderMutation.mutate(deleteDialogState.providerId, {
         onSuccess: () => {
-          toast.success('Provider deleted successfully');
+          toast.success(`"${deleteDialogState.providerName}" deleted successfully`);
           setDeleteDialogState({ isOpen: false, providerId: null, providerName: '' });
         },
-        onError: (error) => {
-          toast.error(`Failed to delete provider: ${error.message}`);
+        onError: (err) => {
+          toast.error('Failed to delete provider', {
+            description: err instanceof Error ? err.message : 'Please try again.',
+          });
         },
       });
     }
@@ -71,11 +124,37 @@ export default function LLMProvidersPage() {
     return provider.status === statusFilter;
   }) || [];
 
+  // Loading state with skeleton
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loading />
+        <ProvidersLoadingSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  // Error state with retry
+  if (isError) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-h1 font-bold text-text-primary">
+                LLM Providers
+              </h1>
+              <p className="text-sm text-text-secondary mt-1">
+                Manage AI model providers and configurations
+              </p>
+            </div>
+          </div>
+          <ErrorState
+            title="Failed to load providers"
+            description="We couldn't load the LLM providers list. Please check your connection and try again."
+            error={error instanceof Error ? error : null}
+            onRetry={() => refetch()}
+            showDetails={process.env.NODE_ENV === 'development'}
+          />
         </div>
       </DashboardLayout>
     );
@@ -125,12 +204,37 @@ export default function LLMProvidersPage() {
           </div>
         </div>
 
-        {/* Provider Grid */}
-        <ProviderGrid
-          providers={filteredProviders}
-          onTest={handleTest}
-          onDelete={handleDelete}
-        />
+        {/* Provider Grid or Empty State */}
+        {!providers || providers.length === 0 ? (
+          <EmptyState
+            icon={<Cpu className="w-12 h-12" />}
+            title="No LLM providers configured"
+            description="Add your first AI model provider to start using agents"
+            action={
+              <Button onClick={() => router.push('/dashboard/llm-providers/new')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Provider
+              </Button>
+            }
+          />
+        ) : filteredProviders.length === 0 ? (
+          <EmptyState
+            type="search"
+            title="No matching providers"
+            description={`No providers found with status "${statusFilter}". Try a different filter.`}
+            action={
+              <Button variant="ghost" onClick={() => setStatusFilter('all')}>
+                Clear filter
+              </Button>
+            }
+          />
+        ) : (
+          <ProviderGrid
+            providers={filteredProviders}
+            onTest={handleTest}
+            onDelete={handleDelete}
+          />
+        )}
 
         {/* Delete Confirmation Dialog */}
         <ConfirmDialog
@@ -142,6 +246,7 @@ export default function LLMProvidersPage() {
           confirmLabel="Delete Provider"
           confirmVariant="danger"
           isLoading={deleteProviderMutation.isPending}
+          type="delete"
         />
       </div>
     </DashboardLayout>

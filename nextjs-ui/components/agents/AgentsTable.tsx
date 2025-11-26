@@ -91,8 +91,16 @@ export function AgentsTable({
                 </Badge>
               </TableCell>
               <TableCell>
-                <Badge variant={agent.is_active ? 'success' : 'default'}>
-                  {agent.is_active ? 'Active' : 'Inactive'}
+                <Badge variant={
+                  agent.status === 'active' ? 'success' :
+                  agent.status === 'draft' ? 'warning' :
+                  agent.status === 'suspended' ? 'warning' :
+                  'default'
+                }>
+                  {agent.status === 'active' ? 'Active' :
+                   agent.status === 'draft' ? 'Draft' :
+                   agent.status === 'suspended' ? 'Suspended' :
+                   'Inactive'}
                 </Badge>
               </TableCell>
               <TableCell>

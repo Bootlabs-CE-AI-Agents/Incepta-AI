@@ -2,8 +2,9 @@
  * MetricCard Component
  *
  * Displays a single cost metric card with formatted value and optional trend indicator.
- * Follows 2025 Liquid Glass design system with glassmorphic styling.
+ * Uses glass-kpi class for glass effect with fluid background animation visibility.
  *
+ * Reference: UX Design Specification - Section 6.1 Component Strategy
  * Used by: CostMetricsCards component for LLM Cost Dashboard
  */
 
@@ -96,16 +97,15 @@ export function MetricCard({
     return (
       <div
         className={cn(
-          'glass-card p-6 rounded-xl',
-          'animate-pulse',
+          'glass-kpi p-6 animate-pulse',
           className
         )}
         role="status"
         aria-label="Loading metric"
       >
-        <div className="h-4 bg-muted/50 rounded w-24 mb-4" />
-        <div className="h-8 bg-muted/50 rounded w-32 mb-2" />
-        {subtitle && <div className="h-4 bg-muted/50 rounded w-36" />}
+        <div className="h-4 bg-gray-200/50 rounded w-24 mb-4" />
+        <div className="h-8 bg-gray-200/60 rounded w-32 mb-2" />
+        {subtitle && <div className="h-4 bg-gray-200/50 rounded w-36" />}
       </div>
     );
   }
@@ -113,9 +113,7 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        'glass-card p-6 rounded-xl',
-        'transition-all duration-300 hover:scale-[1.02]',
-        'border border-border/50',
+        'glass-kpi p-6',
         className
       )}
     >

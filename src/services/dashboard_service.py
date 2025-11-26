@@ -379,9 +379,10 @@ class DashboardService:
         Returns:
             List of RecentActivity items, most recent first
         """
-        # Query recent executions (both successful and failed)
+        # Query recent executions with agent name via join
         query = (
-            select(AgentTestExecution)
+            select(AgentTestExecution, Agent.name.label("agent_name"))
+            .outerjoin(Agent, AgentTestExecution.agent_id == Agent.id)
             .where(
                 and_(
                     AgentTestExecution.tenant_id == tenant_id,
@@ -392,22 +393,33 @@ class DashboardService:
             .limit(limit)
         )
         result = await db.execute(query)
-        executions = result.scalars().all()
+        rows = result.all()
 
         activities = []
-        for execution in executions:
+        for row in rows:
+            execution = row[0]  # AgentTestExecution object
+            agent_name = row[1] or "Unknown"  # Agent name from join
+
             # Determine activity type and status based on execution status
             if execution.status in ["success", "completed"]:
                 activity_type = ActivityType.EXECUTION_SUCCESS
                 activity_status = ActivityStatus.SUCCESS
-                title = f'Agent "{execution.agent_name or "Unknown"}" executed successfully'
+                title = f'Agent "{agent_name}" executed successfully'
             else:
                 activity_type = ActivityType.EXECUTION_FAILURE
                 activity_status = ActivityStatus.ERROR
-                title = f'Agent "{execution.agent_name or "Unknown"}" execution failed'
+                title = f'Agent "{agent_name}" execution failed'
 
             # Use created_at timestamp (should be in IST from database)
             timestamp = execution.created_at
+
+            # Extract error details from errors field (JSON list or None)
+            error_details = None
+            if execution.errors:
+                if isinstance(execution.errors, list) and len(execution.errors) > 0:
+                    error_details = str(execution.errors[0])
+                elif isinstance(execution.errors, str):
+                    error_details = execution.errors
 
             activities.append(
                 RecentActivity(
@@ -416,7 +428,7 @@ class DashboardService:
                     title=title,
                     timestamp=timestamp,
                     status=activity_status,
-                    details=execution.error_message if execution.error_message else None,
+                    details=error_details,
                 )
             )
 

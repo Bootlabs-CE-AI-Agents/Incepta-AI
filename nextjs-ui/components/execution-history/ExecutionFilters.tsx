@@ -80,7 +80,7 @@ export function ExecutionFilters({ filters, onFiltersChange }: ExecutionFiltersP
   );
 
   return (
-    <div className="space-y-4 rounded-lg border border-white/50 dark:border-white/20 bg-white/50 dark:bg-white/5 p-4 glass-card">
+    <div className="space-y-4 p-4 glass-subtle">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Filter className="h-5 w-5 text-text-secondary" />

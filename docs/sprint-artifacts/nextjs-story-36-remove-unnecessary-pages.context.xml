@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<story-context id="nextjs-story-36-remove-unnecessary-pages" v="1.0">
+  <metadata>
+    <epicId>Sprint 5</epicId>
+    <storyId>36</storyId>
+    <title>Remove Unnecessary Pages &amp; Cleanup Routes</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/nextjs-story-36-remove-unnecessary-pages.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer and product manager</asA>
+    <iWant>to remove pages and routes that are no longer needed (/tickets, /health) and ensure the sidebar navigation only shows active endpoints</iWant>
+    <soThat>the application is cleaner, less confusing, and users only see relevant navigation options</soThat>
+    <tasks>
+      <task>
+        <id>Task 1</id>
+        <title>Audit Routes and Decide What to Remove</title>
+        <description>List all current routes in the application, document each route's purpose and usage, identify routes that are unused or redundant</description>
+        <subtasks>
+          - Verify /tickets page necessity
+          - Determine /health page necessity (API-only vs page)
+          - Check /plugins route usage
+          - Document reasoning for removal decisions
+        </subtasks>
+      </task>
+      <task>
+        <id>Task 2</id>
+        <title>Remove Unused Routes</title>
+        <description>Delete identified unused routes and update layout files</description>
+        <subtasks>
+          - Delete /app/dashboard/tickets/ directory (if confirmed unnecessary)
+          - Delete /app/dashboard/health/ directory (if confirmed unnecessary)
+          - Remove any unused route directories
+          - Update layout files and remove unused imports
+        </subtasks>
+      </task>
+      <task>
+        <id>Task 3</id>
+        <title>Update Sidebar Navigation Component</title>
+        <description>Remove menu items for deleted routes and verify accessibility</description>
+        <subtasks>
+          - Review Sidebar component (components/dashboard/Sidebar.tsx)
+          - Remove navigation items for deleted routes
+          - Verify aria-current="page" attributes
+          - Test responsive behavior on mobile/tablet
+        </subtasks>
+      </task>
+      <task>
+        <id>Task 4</id>
+        <title>Verify Navigation and Add Missing Links</title>
+        <description>Test all sidebar links and ensure complete navigation structure</description>
+        <subtasks>
+          - Test all sidebar links open correct pages
+          - Identify important pages not in sidebar
+          - Add missing primary endpoint links
+          - Verify information architecture
+        </subtasks>
+      </task>
+      <task>
+        <id>Task 5</id>
+        <title>Run Full Build and Tests</title>
+        <description>Verify build and tests pass cleanly</description>
+        <subtasks>
+          - Run npm run build
+          - Run npm run test
+          - Verify TypeScript: 0 errors
+          - Manually test navigation
+        </subtasks>
+      </task>
+      <task>
+        <id>Task 6</id>
+        <title>Documentation</title>
+        <description>Document all changes and update story</description>
+        <subtasks>
+          - Document route changes in story Dev Notes
+          - List removed routes and reasoning
+          - Document final sidebar structure
+          - Update relevant docs
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="AC-1">
+      <title>Identify and Remove Unused Pages</title>
+      <criterion>Routes are reviewed for necessity (likely unused routes identified)</criterion>
+      <criterion>Pages marked for removal have no external references in active code</criterion>
+      <criterion>Removal decision is documented with reasoning</criterion>
+    </ac>
+    <ac id="AC-2">
+      <title>Delete Unused Route Directories</title>
+      <criterion>Confirmed unused routes are completely removed from app/dashboard/</criterion>
+      <criterion>Associated layout files are cleaned up</criterion>
+      <criterion>Build completes without errors after deletion</criterion>
+      <criterion>No broken imports or references remain</criterion>
+    </ac>
+    <ac id="AC-3">
+      <title>Update Sidebar Navigation</title>
+      <criterion>Sidebar component reflects only active, user-facing routes</criterion>
+      <criterion>No deleted routes appear in sidebar navigation</criterion>
+      <criterion>All sidebar links point to valid pages that exist</criterion>
+      <criterion>Navigation state (active/inactive) correctly reflects current page</criterion>
+      <criterion>Accessibility: sidebar links have proper aria-current="page" for active items</criterion>
+    </ac>
+    <ac id="AC-4">
+      <title>Verify No Broken References</title>
+      <criterion>Build completes successfully with no errors</criterion>
+      <criterion>TypeScript compilation passes (0 errors)</criterion>
+      <criterion>No console warnings for missing routes</criterion>
+      <criterion>All links point to existing pages</criterion>
+    </ac>
+    <ac id="AC-5">
+      <title>Add Missing Endpoints to Sidebar</title>
+      <criterion>All CRUD pages have sidebar access where applicable</criterion>
+      <criterion>Admin configuration pages are accessible from sidebar</criterion>
+      <criterion>Operations/monitoring pages are accessible from sidebar</criterion>
+      <criterion>Navigation hierarchy is logical</criterion>
+    </ac>
+    <ac id="AC-6">
+      <title>Document Navigation Structure</title>
+      <criterion>Navigation map is documented (URL → page title → route)</criterion>
+      <criterion>Removed routes are listed with removal reason</criterion>
+      <criterion>Any migration notes are documented</criterion>
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics-nextjs-feature-parity-completion.md</path>
+        <title>Epic 5: UI/UX Consistency &amp; Cleanup</title>
+        <section>Epic 5: UI/UX Consistency &amp; Cleanup - Page Cleanup (FR10)</section>
+        <snippet>Unnecessary pages (tickets, health, unclear purpose) should be evaluated and potentially removed to reduce UI clutter and confusion.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-35-loading-error-consistency.md</path>
+        <title>Story 35: Loading States &amp; Error Handling</title>
+        <section>Related Stories - Testing &amp; Navigation</section>
+        <snippet>Story 35 ensures error boundaries and loading patterns work properly during navigation changes and route transitions.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-34-accessibility-wcag.md</path>
+        <title>Story 34: Accessibility (WCAG 2.1 AA)</title>
+        <section>Related Stories - Accessibility Standards</section>
+        <snippet>Story 34 establishes accessibility standards including aria-current="page" attributes and keyboard navigation that must be maintained.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/nextjs-story-33-design-system-audit.md</path>
+        <title>Story 33: Design System Audit</title>
+        <section>Related Stories - Design Token Compliance</section>
+        <snippet>Story 33 established design token standards that sidebar component already follows with text-primary, text-secondary, accent-blue classes.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>nextjs-ui/components/dashboard/Sidebar.tsx</path>
+        <kind>component</kind>
+        <symbol>Sidebar</symbol>
+        <lines>1-129</lines>
+        <reason>Primary navigation component that must be updated. Currently includes /health and /tickets routes in navigationData array (lines 44-90). Must remove navigation items for any deleted routes and verify aria-current="page" attributes (line 115).</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/app/dashboard/health/page.tsx</path>
+        <kind>page</kind>
+        <symbol>HealthDashboardPage</symbol>
+        <lines>61-167</lines>
+        <reason>System Health Dashboard page displaying health status of API Server, Celery Workers, PostgreSQL, and Redis. Must be evaluated for necessity. Uses useHealthStatus hook and HealthCard component. If kept, ensure it's in sidebar; if removed, delete entire directory.</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/app/dashboard/tickets/page.tsx</path>
+        <kind>page</kind>
+        <symbol>TicketProcessingPage</symbol>
+        <lines>87-235</lines>
+        <reason>Ticket Processing Dashboard showing queue depth, processing rate, error rate, and recent activity. Must be evaluated for necessity. Uses useTicketMetrics and useQueueDepthHistory hooks. If kept, ensure it's in sidebar; if removed, delete entire directory.</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/app/dashboard</path>
+        <kind>directory</kind>
+        <symbol>route-structure</symbol>
+        <lines>N/A</lines>
+        <reason>Contains all route directories. Current routes include: agent-performance, agents, agents-config, audit-logs, execution-history, health, llm-costs, llm-providers, mcp-servers, operations, plugins, prompts, tenants, tickets, tools, users, workers. Each route must be verified as active or marked for removal.</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/hooks/useHealthStatus.tsx</path>
+        <kind>hook</kind>
+        <symbol>useHealthStatus</symbol>
+        <reason>Custom hook used by /health page to fetch system health status. If /health page is removed, this hook may become unused and should be deleted to clean up codebase.</reason>
+      </artifact>
+      <artifact>
+        <path>nextjs-ui/lib/hooks/useTicketMetrics.tsx</path>
+        <kind>hook</kind>
+        <symbol>useTicketMetrics</symbol>
+        <reason>Custom hook used by /tickets page to fetch ticket metrics. If /tickets page is removed, this hook may become unused and should be deleted to clean up codebase.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <ecosystem name="nodejs">
+        <package name="next" version="14.2.x">React framework with App Router used for page routing</package>
+        <package name="react" version="18.x">UI library for components</package>
+        <package name="@tanstack/react-query" version="5.x">Used by hooks (useHealthStatus, useTicketMetrics) for data fetching</package>
+        <package name="lucide-react" version="latest">Icon library used in sidebar and pages</package>
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>
+      <name>No Breaking Changes</name>
+      <description>Route deletion must not break other features or pages. All internal links must point to existing pages.</description>
+    </constraint>
+    <constraint>
+      <name>Accessibility Compliance</name>
+      <description>Must maintain WCAG 2.1 AA standards established in Story 34. Specifically: aria-current="page" on active nav items, keyboard navigation, semantic HTML.</description>
+    </constraint>
+    <constraint>
+      <name>Design System Compliance</name>
+      <description>Sidebar component already uses design tokens (text-primary, text-secondary, accent-blue). Do not override these with hardcoded colors.</description>
+    </constraint>
+    <constraint>
+      <name>Build Validation</name>
+      <description>Must pass npm run build with zero TypeScript errors and zero warnings before commit.</description>
+    </constraint>
+    <constraint>
+      <name>Test Coverage</name>
+      <description>Existing tests for Sidebar and pages must continue to pass. Update tests if navigation structure changes.</description>
+    </constraint>
+    <constraint>
+      <name>Pattern Consistency</name>
+      <description>Sidebar structure follows established patterns: category groups with icon + label nav items. Maintain this structure.</description>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Sidebar Navigation Component</name>
+      <kind>React Component Interface</kind>
+      <signature>export function Sidebar(): JSX.Element</signature>
+      <path>nextjs-ui/components/dashboard/Sidebar.tsx:92-129</path>
+      <description>Main navigation sidebar component. Takes no props, uses usePathname() hook internally. Returns aside element with nav sections containing Link components. Must have aria-label attributes for accessibility.</description>
+    </interface>
+    <interface>
+      <name>NavItem Interface</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface NavItem { label: string; href: string; icon: ReactNode; }</signature>
+      <path>nextjs-ui/components/dashboard/Sidebar.tsx:21-25</path>
+      <description>Type definition for navigation items in sidebar. Used in navigationData array to define all route links.</description>
+    </interface>
+    <interface>
+      <name>NavCategory Interface</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface NavCategory { category: string; items: NavItem[]; }</signature>
+      <path>nextjs-ui/components/dashboard/Sidebar.tsx:27-30</path>
+      <description>Type definition for navigation category groups (Monitoring, Configuration, Operations). Contains array of NavItem objects.</description>
+    </interface>
+    <interface>
+      <name>Health Status API</name>
+      <kind>REST Endpoint</kind>
+      <signature>GET /api/health</signature>
+      <path>Backend API (not in Next.js codebase)</path>
+      <description>Returns health status object with api, workers, database, redis fields and timestamp. Used by useHealthStatus hook.</description>
+    </interface>
+    <interface>
+      <name>Ticket Metrics API</name>
+      <kind>REST Endpoint</kind>
+      <signature>GET /api/tickets/metrics</signature>
+      <path>Backend API (not in Next.js codebase)</path>
+      <description>Returns ticket metrics including queue_depth, processing_rate_per_hour, error_rate_percentage, recent_tickets. Used by useTicketMetrics hook.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <paragraph>
+        Unit testing uses Vitest + React Testing Library for component testing. Integration tests use Playwright for E2E navigation testing. All tests should verify: (1) Sidebar renders correct navigation items, (2) aria-current="page" correctly identifies active route, (3) All href attributes point to existing pages, (4) Links are keyboard accessible (Tab, Enter), (5) No console errors on navigation. Tests should be in __tests__/components/dashboard/Sidebar.test.tsx. Related page tests (__tests__/app/dashboard/health/ and __tests__/app/dashboard/tickets/) should be updated or removed when routes change.
+      </paragraph>
+    </standards>
+    <locations>
+      <location>nextjs-ui/__tests__/components/dashboard/Sidebar.test.tsx</location>
+      <location>nextjs-ui/__tests__/app/dashboard/health/</location>
+      <location>nextjs-ui/__tests__/app/dashboard/tickets/</location>
+      <location>nextjs-ui/e2e/navigation.spec.ts</location>
+    </locations>
+    <ideas>
+      <idea acId="AC-1">
+        <title>Route Audit Test</title>
+        <description>Create test that verifies all routes in navigationData in Sidebar.tsx correspond to actual files in app/dashboard/. Should catch orphaned navigation items pointing to missing pages.</description>
+      </idea>
+      <idea acId="AC-3">
+        <title>Sidebar Navigation Rendering</title>
+        <description>Test that Sidebar component renders only active navigation items and correctly applies aria-current="page" to active link based on pathname from usePathname().</description>
+      </idea>
+      <idea acId="AC-4">
+        <title>Link Validity Test</title>
+        <description>E2E test that clicks each sidebar link and verifies page loads without errors, no 404s, and no broken imports in loaded component.</description>
+      </idea>
+      <idea acId="AC-5">
+        <title>Navigation Coverage Test</title>
+        <description>Test documenting which pages are accessible from sidebar and which require direct URL navigation. Ensures no critical pages are hidden from users.</description>
+      </idea>
+    </ideas>
+  </tests>
+</story-context>

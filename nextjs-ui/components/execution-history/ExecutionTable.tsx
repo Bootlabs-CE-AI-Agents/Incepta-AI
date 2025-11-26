@@ -36,6 +36,16 @@ const STATUS_COLORS: Record<ExecutionStatus, 'success' | 'warning' | 'error' | '
   cancelled: 'warning',
 };
 
+// Direct color values to ensure visibility (bypassing Tailwind color issues)
+const COLORS = {
+  textPrimary: '#1e293b',      // Very dark slate
+  textSecondary: '#475569',    // Medium slate
+  textMuted: '#64748b',        // Lighter slate
+  headerBg: '#e2e8f0',         // Light slate background
+  rowAltBg: '#f8fafc',         // Very light slate
+  border: '#cbd5e1',           // Slate border
+};
+
 function formatDuration(ms: number | null): string {
   if (!ms) return 'N/A';
   if (ms < 1000) return `${ms}ms`;
@@ -50,7 +60,10 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
         accessorKey: 'id',
         header: 'Execution ID',
         cell: ({ row }) => (
-          <div className="font-mono text-xs text-text-secondary dark:text-white/60 truncate max-w-[120px]">
+          <div
+            className="font-mono text-xs truncate max-w-[120px]"
+            style={{ color: COLORS.textSecondary }}
+          >
             {row.original.id.slice(0, 8)}
           </div>
         ),
@@ -61,7 +74,8 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting()}
-            className="flex items-center gap-1 hover:text-text-primary dark:hover:text-white transition-colors"
+            className="flex items-center gap-1 transition-colors"
+            style={{ color: COLORS.textPrimary }}
           >
             Agent
             {column.getIsSorted() === 'asc' ? (
@@ -69,12 +83,15 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="h-4 w-4" />
             ) : (
-              <ArrowUpDown className="h-4 w-4 opacity-40" />
+              <ArrowUpDown className="h-4 w-4 opacity-50" />
             )}
           </button>
         ),
         cell: ({ row }) => (
-          <div className="font-medium text-text-primary dark:text-white">
+          <div
+            className="font-semibold"
+            style={{ color: COLORS.textPrimary }}
+          >
             {row.original.agent_name}
           </div>
         ),
@@ -84,7 +101,8 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting()}
-            className="flex items-center gap-1 hover:text-text-primary dark:hover:text-white transition-colors"
+            className="flex items-center gap-1 transition-colors"
+            style={{ color: COLORS.textPrimary }}
           >
             Status
             {column.getIsSorted() === 'asc' ? (
@@ -92,7 +110,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="h-4 w-4" />
             ) : (
-              <ArrowUpDown className="h-4 w-4 opacity-40" />
+              <ArrowUpDown className="h-4 w-4 opacity-50" />
             )}
           </button>
         ),
@@ -107,7 +125,8 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting()}
-            className="flex items-center gap-1 hover:text-text-primary dark:hover:text-white transition-colors"
+            className="flex items-center gap-1 transition-colors"
+            style={{ color: COLORS.textPrimary }}
           >
             Duration
             {column.getIsSorted() === 'asc' ? (
@@ -115,12 +134,15 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="h-4 w-4" />
             ) : (
-              <ArrowUpDown className="h-4 w-4 opacity-40" />
+              <ArrowUpDown className="h-4 w-4 opacity-50" />
             )}
           </button>
         ),
         cell: ({ row }) => (
-          <div className="text-text-primary dark:text-white/80 tabular-nums">
+          <div
+            className="tabular-nums font-medium"
+            style={{ color: COLORS.textPrimary }}
+          >
             {formatDuration(row.original.duration_ms)}
           </div>
         ),
@@ -130,7 +152,8 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
         header: ({ column }) => (
           <button
             onClick={() => column.toggleSorting()}
-            className="flex items-center gap-1 hover:text-text-primary dark:hover:text-white transition-colors"
+            className="flex items-center gap-1 transition-colors"
+            style={{ color: COLORS.textPrimary }}
           >
             Started
             {column.getIsSorted() === 'asc' ? (
@@ -138,7 +161,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
             ) : column.getIsSorted() === 'desc' ? (
               <ArrowDown className="h-4 w-4" />
             ) : (
-              <ArrowUpDown className="h-4 w-4 opacity-40" />
+              <ArrowUpDown className="h-4 w-4 opacity-50" />
             )}
           </button>
         ),
@@ -146,10 +169,16 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
           const date = new Date(row.original.started_at);
           return (
             <div className="text-sm">
-              <div className="text-text-primary dark:text-white">
+              <div
+                className="font-medium"
+                style={{ color: COLORS.textPrimary }}
+              >
                 {formatDistanceToNow(date, { addSuffix: true })}
               </div>
-              <div className="text-xs text-text-secondary dark:text-white/60">
+              <div
+                className="text-xs"
+                style={{ color: COLORS.textSecondary }}
+              >
                 {format(date, 'MMM d, HH:mm:ss')}
               </div>
             </div>
@@ -167,7 +196,7 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
               e.stopPropagation();
               onRowClick(row.original);
             }}
-            className="text-text-secondary hover:text-text-primary dark:text-white/60 dark:hover:text-white"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
           >
             <Eye className="h-4 w-4 mr-1" />
             View
@@ -194,26 +223,36 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
   if (executions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="text-text-secondary dark:text-white/50 mb-2">
-          <Eye className="h-12 w-12 mx-auto mb-4" />
-          <p className="text-lg font-medium">No executions found</p>
-          <p className="text-sm">Try adjusting your filters</p>
+        <div className="mb-2">
+          <Eye className="h-12 w-12 mx-auto mb-4" style={{ color: COLORS.textMuted }} />
+          <p className="text-lg font-semibold" style={{ color: COLORS.textPrimary }}>
+            No executions found
+          </p>
+          <p className="text-sm" style={{ color: COLORS.textSecondary }}>
+            Try adjusting your filters
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-white/50 dark:border-white/20">
+    <div
+      className="overflow-x-auto rounded-lg shadow-sm"
+      style={{ border: `1px solid ${COLORS.border}` }}
+    >
       <table className="w-full">
-        <thead className="bg-white/50 dark:bg-white/5 border-b border-white/50 dark:border-white/20">
+        <thead style={{ backgroundColor: COLORS.headerBg, borderBottom: `1px solid ${COLORS.border}` }}>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="px-4 py-3 text-left text-xs font-semibold text-text-secondary dark:text-white/70 uppercase tracking-wider"
-                  style={{ width: header.column.columnDef.size }}
+                  className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider"
+                  style={{
+                    width: header.column.columnDef.size,
+                    color: COLORS.textPrimary,
+                  }}
                 >
                   {header.isPlaceholder
                     ? null
@@ -223,15 +262,23 @@ export function ExecutionTable({ executions, onRowClick, sorting = [], onSorting
             </tr>
           ))}
         </thead>
-        <tbody className="bg-white/30 dark:bg-white/5 divide-y divide-white/50 dark:divide-white/20">
-          {table.getRowModel().rows.map((row) => (
+        <tbody>
+          {table.getRowModel().rows.map((row, idx) => (
             <tr
               key={row.id}
               onClick={() => onRowClick(row.original)}
-              className="hover:bg-white/50 dark:hover:bg-white/10 cursor-pointer transition-colors"
+              className="cursor-pointer transition-colors hover:bg-blue-50"
+              style={{
+                backgroundColor: idx % 2 === 0 ? '#ffffff' : COLORS.rowAltBg,
+                borderBottom: `1px solid ${COLORS.border}`,
+              }}
             >
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-4 py-3 text-sm">
+                <td
+                  key={cell.id}
+                  className="px-4 py-3 text-sm"
+                  style={{ color: COLORS.textPrimary }}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}

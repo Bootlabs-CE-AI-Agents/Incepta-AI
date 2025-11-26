@@ -110,9 +110,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         return this.props.fallback(this.state.error, this.handleReset);
       }
 
-      // Default error UI
+      // Default error UI with accessibility attributes
       return (
-        <div className="min-h-screen bg-background-gradient-1 dark:bg-background-gradient-1 flex items-center justify-center p-4">
+        <div
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+          className="min-h-screen bg-background-gradient-1 dark:bg-background-gradient-1 flex items-center justify-center p-4"
+        >
           <div className="max-w-2xl w-full glass-card border-2 border-red-500 dark:border-red-600 rounded-2xl p-8">
             {/* Error Icon */}
             <div className="flex justify-center mb-6">
@@ -153,32 +158,39 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              {/* Reload Page */}
+            {/* Action Buttons - Accessible with keyboard navigation */}
+            <div
+              className="flex flex-col sm:flex-row items-center justify-center gap-3"
+              role="group"
+              aria-label="Error recovery actions"
+            >
+              {/* Reload Page - Primary action */}
               <button
                 onClick={this.handleReload}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                aria-label="Reload the page to try again"
               >
-                <RefreshCw size={18} />
+                <RefreshCw size={18} aria-hidden="true" />
                 Reload Page
               </button>
 
               {/* Report Issue */}
               <button
                 onClick={this.handleReportIssue}
-                className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-white/5 hover:bg-white/70 dark:hover:bg-white/10 text-text-primary dark:text-white font-medium rounded-lg border border-white/50 dark:border-white/20 transition-colors"
+                className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-white/5 hover:bg-white/70 dark:hover:bg-white/10 text-text-primary dark:text-white font-medium rounded-lg border border-white/50 dark:border-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                aria-label="Report this issue on GitHub"
               >
-                <Github size={18} />
+                <Github size={18} aria-hidden="true" />
                 Report Issue
               </button>
 
               {/* Copy Error */}
               <button
                 onClick={this.handleCopyError}
-                className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-white/5 hover:bg-white/70 dark:hover:bg-white/10 text-text-primary dark:text-white font-medium rounded-lg border border-white/50 dark:border-white/20 transition-colors"
+                className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-white/5 hover:bg-white/70 dark:hover:bg-white/10 text-text-primary dark:text-white font-medium rounded-lg border border-white/50 dark:border-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                aria-label="Copy error details to clipboard"
               >
-                <Copy size={18} />
+                <Copy size={18} aria-hidden="true" />
                 Copy Error
               </button>
             </div>

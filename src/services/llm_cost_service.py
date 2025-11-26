@@ -11,6 +11,10 @@ Following 2025 best practices:
 - Async/await patterns with SQLAlchemy 2.0+
 - Type hints with Optional, UUID, date
 - Proper error handling and logging
+
+Note: This service uses TWO database connections:
+- db: Main database (ai_agents) for tenant/agent lookups
+- litellm_db: LiteLLM database (litellm_db) for spend log queries
 """
 
 import logging
@@ -43,18 +47,24 @@ class LLMCostService:
     Orchestrates cost analytics queries and aggregations.
     Delegates to specialized modules for queries and aggregations.
     All methods support tenant isolation via tenant_id parameter.
+
+    Uses two database connections:
+    - db: Main database for tenant/agent metadata
+    - litellm_db: LiteLLM database for spend log queries
     """
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, litellm_db: AsyncSession):
         """
         Initialize cost service.
 
         Args:
-            db: Async database session
+            db: Async database session for main database (tenant/agent lookups)
+            litellm_db: Async database session for LiteLLM database (spend logs)
         """
         self.db = db
-        self.query_builder = CostQueryBuilder(db)
-        self.aggregator = CostAggregator(db)
+        self.litellm_db = litellm_db
+        self.query_builder = CostQueryBuilder(db, litellm_db)
+        self.aggregator = CostAggregator(db, litellm_db)
 
     async def get_total_spend(
         self,

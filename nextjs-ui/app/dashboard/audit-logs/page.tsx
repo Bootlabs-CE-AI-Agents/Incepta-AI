@@ -68,7 +68,7 @@ export default function AuditLogsPage() {
         </div>
 
         {/* Info Banner */}
-        <div className="bg-muted/30 border border-border rounded-lg p-4">
+        <div className="glass-subtle p-4">
           <p className="text-sm text-muted-foreground">
             Audit logs track all authentication events and system changes. Use
             the filters to narrow down your search. Click{' '}

@@ -1,11 +1,15 @@
 /**
  * Execution Detail Modal Component
  *
- * 3-tab modal displaying execution details with syntax-highlighted JSON
- * using @uiw/react-json-view. Tabs: Input, Output, Metadata/Logs
+ * Comprehensive modal displaying execution details with:
+ * - Execution Flow tab: Timeline view with tool calls and durations
+ * - LLM Conversation tab: User message, agent response, system prompt context
+ * - Input Data tab: Original webhook/trigger payload
+ * - Raw Output tab: Full execution_trace JSON
+ * - Metadata & Logs tab: Execution metadata and debug logs
  */
 
-import { Fragment } from 'react';
+import { useMemo } from 'react';
 import { X, Clock, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import JsonView from '@uiw/react-json-view';
 import { darkTheme } from '@uiw/react-json-view/dark';
@@ -15,6 +19,9 @@ import { Modal } from '@/components/ui/Modal';
 import { Tabs } from '@/components/ui/Tabs';
 import { Badge } from '@/components/ui/Badge';
 import { Loading } from '@/components/ui/Loading';
+import { ExecutionTraceTimeline } from './ExecutionTraceTimeline';
+import { LLMConversationDisplay } from './LLMConversationDisplay';
+import { parseExecutionTrace } from '@/lib/utils/execution-trace-parser';
 import { useExecutionDetail, type ExecutionStatus } from '@/lib/hooks/useExecutions';
 
 interface ExecutionDetailModalProps {
@@ -22,6 +29,16 @@ interface ExecutionDetailModalProps {
   onClose: () => void;
   isDarkMode?: boolean;
 }
+
+// Direct color values for guaranteed visibility (bypassing Tailwind issues)
+const COLORS = {
+  textPrimary: '#1e293b',      // Very dark slate
+  textSecondary: '#475569',    // Medium slate
+  textMuted: '#64748b',        // Lighter slate
+  headerBg: '#f1f5f9',         // Light slate background
+  cardBg: '#f8fafc',           // Very light slate
+  border: '#cbd5e1',           // Slate border
+};
 
 const STATUS_ICONS: Record<ExecutionStatus, React.ReactNode> = {
   completed: <CheckCircle className="h-5 w-5 text-accent-green" />,
@@ -49,13 +66,21 @@ function formatDuration(ms: number | null): string {
 export function ExecutionDetailModal({ executionId, onClose, isDarkMode = false }: ExecutionDetailModalProps) {
   const { data: execution, isLoading, error } = useExecutionDetail(executionId);
 
+  // Parse execution trace to extract LLM response
+  const parsedTrace = useMemo(() => {
+    if (execution?.output) {
+      return parseExecutionTrace(execution.output);
+    }
+    return { llmResponse: null, toolCalls: [], totalDurationMs: 0, toolCallsCount: 0, hasErrors: false };
+  }, [execution?.output]);
+
   if (!executionId) return null;
 
   return (
     <Modal isOpen={!!executionId} onClose={onClose} size="xl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h2 className="text-h2 font-bold text-text-primary dark:text-white">
+          <h2 className="text-h2 font-bold" style={{ color: COLORS.textPrimary }}>
             Execution Details
           </h2>
           {execution && (
@@ -67,7 +92,8 @@ export function ExecutionDetailModal({ executionId, onClose, isDarkMode = false 
         </div>
         <button
           onClick={onClose}
-          className="text-text-secondary hover:text-text-primary dark:hover:text-white/80 transition-colors"
+          className="hover:opacity-70 transition-opacity"
+          style={{ color: COLORS.textSecondary }}
         >
           <X className="h-6 w-6" />
         </button>
@@ -82,10 +108,10 @@ export function ExecutionDetailModal({ executionId, onClose, isDarkMode = false 
       {error && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-          <p className="text-lg font-medium text-text-primary dark:text-white">
+          <p className="text-lg font-medium" style={{ color: COLORS.textPrimary }}>
             Failed to load execution details
           </p>
-          <p className="text-sm text-text-secondary dark:text-white/60 mt-2">
+          <p className="text-sm mt-2" style={{ color: COLORS.textSecondary }}>
             {error instanceof Error ? error.message : 'An error occurred'}
           </p>
         </div>
@@ -94,39 +120,42 @@ export function ExecutionDetailModal({ executionId, onClose, isDarkMode = false 
       {execution && (
         <>
           {/* Summary Header */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 rounded-lg bg-white/50 dark:bg-white/5">
+          <div
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 rounded-lg"
+            style={{ backgroundColor: COLORS.cardBg, border: `1px solid ${COLORS.border}` }}
+          >
             <div>
-              <div className="text-xs font-medium text-text-secondary dark:text-white/60 uppercase mb-1">
+              <div className="text-xs font-medium uppercase mb-1" style={{ color: COLORS.textSecondary }}>
                 Execution ID
               </div>
-              <div className="text-sm font-mono text-text-primary dark:text-white truncate">
+              <div className="text-sm font-mono truncate" style={{ color: COLORS.textPrimary }}>
                 {execution.id.slice(0, 12)}...
               </div>
             </div>
             <div>
-              <div className="text-xs font-medium text-text-secondary dark:text-white/60 uppercase mb-1">
+              <div className="text-xs font-medium uppercase mb-1" style={{ color: COLORS.textSecondary }}>
                 Agent
               </div>
-              <div className="text-sm font-medium text-text-primary dark:text-white">
+              <div className="text-sm font-medium" style={{ color: COLORS.textPrimary }}>
                 {execution.agent_name}
               </div>
             </div>
             <div>
-              <div className="text-xs font-medium text-text-secondary dark:text-white/60 uppercase mb-1">
+              <div className="text-xs font-medium uppercase mb-1" style={{ color: COLORS.textSecondary }}>
                 Duration
               </div>
-              <div className="text-sm text-text-primary dark:text-white tabular-nums">
+              <div className="text-sm tabular-nums" style={{ color: COLORS.textPrimary }}>
                 {formatDuration(execution.duration_ms)}
               </div>
             </div>
             <div>
-              <div className="text-xs font-medium text-text-secondary dark:text-white/60 uppercase mb-1">
+              <div className="text-xs font-medium uppercase mb-1" style={{ color: COLORS.textSecondary }}>
                 Started
               </div>
-              <div className="text-sm text-text-primary dark:text-white">
+              <div className="text-sm" style={{ color: COLORS.textPrimary }}>
                 {formatDistanceToNow(new Date(execution.started_at), { addSuffix: true })}
               </div>
-              <div className="text-xs text-text-secondary dark:text-white/60">
+              <div className="text-xs" style={{ color: COLORS.textSecondary }}>
                 {format(new Date(execution.started_at), 'MMM d, HH:mm:ss')}
               </div>
             </div>
@@ -153,23 +182,53 @@ export function ExecutionDetailModal({ executionId, onClose, isDarkMode = false 
           <Tabs
             tabs={[
               {
-                key: 'input',
-                label: 'Input',
+                key: 'execution',
+                label: '⏱️ Execution Flow',
                 content: (
-                  <div className="rounded-lg border border-white/50 dark:border-white/20 overflow-hidden">
-                    <JsonView
-                      value={execution.input}
-                      style={isDarkMode ? darkTheme : lightTheme}
-                      displayDataTypes={false}
-                      collapsed={2}
-                      enableClipboard
+                  <div className="space-y-4">
+                    <ExecutionTraceTimeline
+                      outputData={execution.output}
+                      isDarkMode={isDarkMode}
+                      totalDurationMs={execution.duration_ms ?? 0}
                     />
                   </div>
                 ),
               },
               {
-                key: 'output',
-                label: 'Output',
+                key: 'conversation',
+                label: '💬 LLM Conversation',
+                content: (
+                  <LLMConversationDisplay
+                    llmResponse={parsedTrace.llmResponse}
+                    isDarkMode={isDarkMode}
+                    agentId={execution.agent_id}
+                  />
+                ),
+              },
+              {
+                key: 'input',
+                label: '📥 Input Data',
+                content: (
+                  <div className="rounded-lg border border-white/50 dark:border-white/20 overflow-hidden">
+                    {execution.input ? (
+                      <JsonView
+                        value={execution.input}
+                        style={isDarkMode ? darkTheme : lightTheme}
+                        displayDataTypes={false}
+                        collapsed={2}
+                        enableClipboard
+                      />
+                    ) : (
+                      <div className="p-6 text-center" style={{ color: COLORS.textSecondary }}>
+                        No input data available
+                      </div>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                key: 'raw-output',
+                label: '📤 Raw Output',
                 content: (
                   <div className="rounded-lg border border-white/50 dark:border-white/20 overflow-hidden">
                     {execution.output ? (
@@ -181,15 +240,8 @@ export function ExecutionDetailModal({ executionId, onClose, isDarkMode = false 
                         enableClipboard
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-16 text-center">
-                        <div className="text-text-secondary dark:text-white/50">
-                          <p className="text-lg font-medium">No output available</p>
-                          <p className="text-sm">
-                            {execution.status === 'completed'
-                              ? 'Execution completed without output'
-                              : 'Execution has not completed yet'}
-                          </p>
-                        </div>
+                      <div className="p-6 text-center" style={{ color: COLORS.textSecondary }}>
+                        No output data available
                       </div>
                     )}
                   </div>
@@ -197,12 +249,12 @@ export function ExecutionDetailModal({ executionId, onClose, isDarkMode = false 
               },
               {
                 key: 'metadata',
-                label: 'Metadata & Logs',
+                label: '📋 Metadata & Logs',
                 content: (
                   <div className="space-y-4">
                     {/* Metadata Section */}
                     <div>
-                      <h3 className="text-sm font-semibold text-text-primary dark:text-white mb-2">
+                      <h3 className="text-sm font-semibold mb-2" style={{ color: COLORS.textPrimary }}>
                         Metadata
                       </h3>
                       <div className="rounded-lg border border-white/50 dark:border-white/20 overflow-hidden">
@@ -219,10 +271,10 @@ export function ExecutionDetailModal({ executionId, onClose, isDarkMode = false 
                     {/* Logs Section */}
                     {execution.logs && execution.logs.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-semibold text-text-primary dark:text-white mb-2">
+                        <h3 className="text-sm font-semibold mb-2" style={{ color: COLORS.textPrimary }}>
                           Execution Logs ({execution.logs.length})
                         </h3>
-                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                        <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-thin">
                           {execution.logs.map((log, index) => (
                             <div
                               key={index}

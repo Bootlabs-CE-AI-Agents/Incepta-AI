@@ -20,13 +20,13 @@ export default function DashboardPage() {
       <DashboardLayout>
         <div className="space-y-6">
           <h2 className="text-h2 font-bold text-text-primary">Dashboard</h2>
-          {/* Loading skeleton */}
+          {/* Loading skeleton - Using glass-kpi for KPI metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="glass-card p-6 animate-pulse">
-                <div className="h-4 bg-white/20 rounded w-1/2 mb-2"></div>
-                <div className="h-8 bg-white/30 rounded w-2/3 mb-2"></div>
-                <div className="h-3 bg-white/20 rounded w-1/3"></div>
+              <div key={i} className="glass-kpi p-6 animate-pulse">
+                <div className="h-4 bg-gray-200/50 rounded w-1/2 mb-2"></div>
+                <div className="h-8 bg-gray-200/60 rounded w-2/3 mb-2"></div>
+                <div className="h-3 bg-gray-200/50 rounded w-1/3"></div>
               </div>
             ))}
           </div>
@@ -89,10 +89,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Stats Cards Grid */}
+        {/* Stats Cards Grid - Using glass-kpi for KPI metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Active Agents */}
-          <div className="glass-card p-6">
+          <div className="glass-kpi p-6">
             <div className="text-caption text-text-secondary mb-2">
               Active Agents
             </div>
@@ -107,7 +107,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Executions Today */}
-          <div className="glass-card p-6">
+          <div className="glass-kpi p-6">
             <div className="text-caption text-text-secondary mb-2">
               Executions Today
             </div>
@@ -120,7 +120,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Avg Response Time */}
-          <div className="glass-card p-6">
+          <div className="glass-kpi p-6">
             <div className="text-caption text-text-secondary mb-2">
               Avg Response Time
             </div>
@@ -139,7 +139,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Error Rate */}
-          <div className="glass-card p-6">
+          <div className="glass-kpi p-6">
             <div className="text-caption text-text-secondary mb-2">
               Error Rate
             </div>

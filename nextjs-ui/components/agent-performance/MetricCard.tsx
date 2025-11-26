@@ -1,7 +1,9 @@
 /**
  * Metric Card Component
  * Displays a single performance metric with optional color coding and trend
- * Following existing glass-card pattern from llm-costs components
+ * Uses glass-kpi class for glass effect with fluid background animation visibility.
+ *
+ * Reference: UX Design Specification - Section 6.1 Component Strategy
  */
 
 'use client';
@@ -34,19 +36,19 @@ export function MetricCard({
   if (isLoading) {
     return (
       <div
-        className="glass-card p-6 rounded-xl animate-pulse"
+        className="glass-kpi p-6 animate-pulse"
         role="status"
         aria-label="Loading metric"
       >
-        <div className="h-4 bg-muted/50 rounded w-24 mb-4" />
-        <div className="h-8 bg-muted/50 rounded w-32 mb-2" />
-        {subtitle && <div className="h-4 bg-muted/50 rounded w-36" />}
+        <div className="h-4 bg-gray-200/50 rounded w-24 mb-4" />
+        <div className="h-8 bg-gray-200/60 rounded w-32 mb-2" />
+        {subtitle && <div className="h-4 bg-gray-200/50 rounded w-36" />}
       </div>
     );
   }
 
   return (
-    <div className="glass-card p-6 rounded-xl transition-all duration-300 hover:scale-[1.02] border border-border/50">
+    <div className="glass-kpi p-6">
       {/* Header with title and optional icon */}
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm font-medium text-muted-foreground">

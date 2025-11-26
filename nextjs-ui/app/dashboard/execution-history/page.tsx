@@ -81,10 +81,10 @@ export default function ExecutionHistoryPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-h1 font-bold text-text-primary dark:text-white">
+            <h1 className="text-h1 font-bold text-text-primary dark:text-white" style={{ color: '#0f172a' }}>
               Execution History
             </h1>
-            <p className="text-text-secondary mt-1">
+            <p className="text-text-secondary dark:text-white/70 mt-1" style={{ color: '#475569' }}>
               View and analyze agent execution records
             </p>
           </div>

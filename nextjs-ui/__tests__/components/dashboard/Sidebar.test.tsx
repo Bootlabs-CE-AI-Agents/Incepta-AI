@@ -51,17 +51,12 @@ describe('Sidebar', () => {
     })
 
     it('renders Operations category', () => {
-      render(<Sidebar />)
-      expect(screen.getByText(/operations/i)).toBeInTheDocument()
-    })
-
-    it('renders Tools category', () => {
       const { container } = render(<Sidebar />)
-      // Find the category header (h3 element) with "Tools"
-      const toolsCategory = Array.from(container.querySelectorAll('h3')).find(
-        h3 => h3.textContent?.toLowerCase() === 'tools'
+      // Find the category header (h3 element) with "Operations"
+      const operationsCategory = Array.from(container.querySelectorAll('h3')).find(
+        h3 => h3.textContent?.toLowerCase() === 'operations'
       )
-      expect(toolsCategory).toBeInTheDocument()
+      expect(operationsCategory).toBeInTheDocument()
     })
 
     it('applies uppercase styling to categories', () => {
@@ -79,19 +74,19 @@ describe('Sidebar', () => {
       expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/dashboard')
     })
 
-    it('renders System Health link', () => {
-      render(<Sidebar />)
-      expect(screen.getByRole('link', { name: /system health/i })).toHaveAttribute('href', '/dashboard/health')
-    })
-
     it('renders Agent Metrics link', () => {
       render(<Sidebar />)
       expect(screen.getByRole('link', { name: /agent metrics/i })).toHaveAttribute('href', '/dashboard/agents')
     })
 
-    it('renders Ticket Processing link', () => {
+    it('renders Agent Performance link', () => {
       render(<Sidebar />)
-      expect(screen.getByRole('link', { name: /ticket processing/i })).toHaveAttribute('href', '/dashboard/tickets')
+      expect(screen.getByRole('link', { name: /agent performance/i })).toHaveAttribute('href', '/dashboard/agent-performance')
+    })
+
+    it('renders LLM Costs link', () => {
+      render(<Sidebar />)
+      expect(screen.getByRole('link', { name: /llm costs/i })).toHaveAttribute('href', '/dashboard/llm-costs')
     })
   })
 
@@ -99,6 +94,11 @@ describe('Sidebar', () => {
     it('renders Tenants link', () => {
       render(<Sidebar />)
       expect(screen.getByRole('link', { name: /tenants/i })).toHaveAttribute('href', '/dashboard/tenants')
+    })
+
+    it('renders Users link', () => {
+      render(<Sidebar />)
+      expect(screen.getByRole('link', { name: /users/i })).toHaveAttribute('href', '/dashboard/users')
     })
 
     it('renders Agents link', () => {
@@ -126,38 +126,31 @@ describe('Sidebar', () => {
       expect(screen.getByRole('link', { name: /mcp servers/i })).toHaveAttribute('href', '/dashboard/mcp-servers')
     })
 
-    it('renders Workflows link', () => {
+    it('renders LLM Providers link', () => {
       render(<Sidebar />)
-      expect(screen.getByRole('link', { name: /workflows/i })).toHaveAttribute('href', '/dashboard/workflows')
+      expect(screen.getByRole('link', { name: /llm providers/i })).toHaveAttribute('href', '/dashboard/llm-providers')
     })
   })
 
   describe('operations navigation items', () => {
-    it('renders Logs link', () => {
-      render(<Sidebar />)
-      expect(screen.getByRole('link', { name: /logs/i })).toHaveAttribute('href', '/dashboard/logs')
-    })
-
     it('renders Audit Trail link', () => {
       render(<Sidebar />)
-      expect(screen.getByRole('link', { name: /audit trail/i })).toHaveAttribute('href', '/dashboard/audit')
+      expect(screen.getByRole('link', { name: /audit trail/i })).toHaveAttribute('href', '/dashboard/audit-logs')
     })
 
-    it('renders Settings link', () => {
+    it('renders Execution History link', () => {
       render(<Sidebar />)
-      expect(screen.getByRole('link', { name: /settings/i })).toHaveAttribute('href', '/dashboard/settings')
-    })
-  })
-
-  describe('tools navigation items', () => {
-    it('renders API Playground link', () => {
-      render(<Sidebar />)
-      expect(screen.getByRole('link', { name: /api playground/i })).toHaveAttribute('href', '/dashboard/playground')
+      expect(screen.getByRole('link', { name: /execution history/i })).toHaveAttribute('href', '/dashboard/execution-history')
     })
 
-    it('renders Testing link', () => {
+    it('renders Operations link', () => {
       render(<Sidebar />)
-      expect(screen.getByRole('link', { name: /testing/i })).toHaveAttribute('href', '/dashboard/testing')
+      expect(screen.getByRole('link', { name: /operations/i })).toHaveAttribute('href', '/dashboard/operations')
+    })
+
+    it('renders Workers link', () => {
+      render(<Sidebar />)
+      expect(screen.getByRole('link', { name: /workers/i })).toHaveAttribute('href', '/dashboard/workers')
     })
   })
 
@@ -196,7 +189,7 @@ describe('Sidebar', () => {
       const { container } = render(<Sidebar />)
       // Count all SVG icons (lucide-react renders as SVG)
       const icons = container.querySelectorAll('svg')
-      // 4 Monitoring + 7 Configuration + 3 Operations + 2 Tools = 16 items
+      // 4 Monitoring + 8 Configuration + 4 Operations = 16 items
       expect(icons.length).toBe(16)
     })
   })
@@ -240,7 +233,23 @@ describe('Sidebar', () => {
     it('uses heading for categories', () => {
       const { container } = render(<Sidebar />)
       const headings = container.querySelectorAll('h3')
-      expect(headings.length).toBe(4) // 4 categories
+      expect(headings.length).toBe(3) // 3 categories
+    })
+
+    it('applies aria-current to active link', () => {
+      ;(usePathname as jest.Mock).mockReturnValue('/dashboard')
+      render(<Sidebar />)
+
+      const dashboardLink = screen.getByRole('link', { name: /dashboard/i })
+      expect(dashboardLink).toHaveAttribute('aria-current', 'page')
+    })
+
+    it('does not apply aria-current to inactive links', () => {
+      ;(usePathname as jest.Mock).mockReturnValue('/dashboard')
+      render(<Sidebar />)
+
+      const agentsLink = screen.getByRole('link', { name: /agent metrics/i })
+      expect(agentsLink).not.toHaveAttribute('aria-current')
     })
   })
 

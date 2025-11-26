@@ -26,10 +26,17 @@ logger = logging.getLogger(__name__)
 class CostAggregator:
     """Helper class for aggregating and formatting cost data."""
 
-    def __init__(self, db: AsyncSession):
-        """Initialize aggregator."""
+    def __init__(self, db: AsyncSession, litellm_db: AsyncSession):
+        """
+        Initialize aggregator.
+
+        Args:
+            db: Main database session for tenant/agent lookups
+            litellm_db: LiteLLM database session for spend log queries
+        """
         self.db = db
-        self.query_builder = CostQueryBuilder(db)
+        self.litellm_db = litellm_db
+        self.query_builder = CostQueryBuilder(db, litellm_db)
 
     async def get_budget_utilization(
         self,

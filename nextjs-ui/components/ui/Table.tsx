@@ -33,7 +33,7 @@ interface TableProps {
 
 export function Table({ children, className }: TableProps) {
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full overflow-x-auto scrollbar-auto-hide">
       <table className={cn('w-full text-sm text-left', className)}>
         {children}
       </table>

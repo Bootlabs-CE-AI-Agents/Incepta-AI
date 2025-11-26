@@ -2,7 +2,9 @@
  * KPICard Component
  *
  * Displays a key performance indicator with value, trend, and change percentage.
- * Follows 2025 Liquid Glass design system with auto-updating metrics.
+ * Uses glass-kpi class for glass effect with fluid background animation visibility.
+ *
+ * Reference: UX Design Specification - Section 6.1 Component Strategy
  */
 
 'use client';
@@ -116,7 +118,7 @@ export function KPICard({
   const formattedValue = formatValue(value, format, decimals);
 
   return (
-    <Card className={`glass-card p-6 ${className}`}>
+    <Card className={`glass-kpi p-6 ${className}`}>
       {/* Title */}
       <h3 className="text-sm font-medium text-muted-foreground mb-2">
         {title}

@@ -1,5 +1,6 @@
 import { toast as sonnerToast, ExternalToast } from 'sonner';
-import { CheckCircle2, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, Info, X, RefreshCw } from 'lucide-react';
+import { getErrorMessage, ErrorCategory } from '@/lib/api/error-messages';
 
 export interface ToastProps {
   /**
@@ -36,26 +37,53 @@ export interface ToastProps {
   onDismiss?: () => void;
 }
 
+/**
+ * Toast timing configuration per Story 35 spec
+ */
+const TOAST_DURATION = {
+  success: 4000,  // 4s - quick confirmation
+  error: 5000,    // 5s - user needs time to read
+  warning: 5000,  // 5s - user needs time to read
+  info: 4000,     // 4s - informational only
+  loading: Infinity, // Dismiss when complete
+} as const;
+
+/**
+ * ARIA live region configuration by variant
+ * - Error/Warning: assertive (immediately announce)
+ * - Success/Info: polite (announce when user is idle)
+ */
+const ARIA_CONFIG = {
+  success: { role: 'status' as const, ariaLive: 'polite' as const },
+  error: { role: 'alert' as const, ariaLive: 'assertive' as const },
+  warning: { role: 'alert' as const, ariaLive: 'assertive' as const },
+  info: { role: 'status' as const, ariaLive: 'polite' as const },
+};
+
 const variantConfig = {
   success: {
     icon: CheckCircle2,
     className: 'border-accent-green bg-accent-green/10 dark:bg-accent-green/20',
     iconColor: 'text-accent-green',
+    ariaLabel: 'Success',
   },
   error: {
     icon: XCircle,
     className: 'border-red-500 bg-red-500/10 dark:bg-red-500/20',
     iconColor: 'text-red-500',
+    ariaLabel: 'Error',
   },
   warning: {
     icon: AlertCircle,
     className: 'border-accent-orange bg-accent-orange/10 dark:bg-accent-orange/20',
     iconColor: 'text-accent-orange',
+    ariaLabel: 'Warning',
   },
   info: {
     icon: Info,
     className: 'border-accent-blue bg-accent-blue/10 dark:bg-accent-blue/20',
     iconColor: 'text-accent-blue',
+    ariaLabel: 'Information',
   },
 };
 
@@ -183,27 +211,101 @@ export const toast = {
   ) => {
     return sonnerToast.promise(promise, options);
   },
+
+  /**
+   * Show API error toast with user-friendly message
+   *
+   * Automatically maps HTTP status codes to user-friendly messages.
+   * Use this for handling API errors from the apiClient.
+   *
+   * @example
+   * ```tsx
+   * try {
+   *   await apiClient.delete('/agents/' + id);
+   *   toast.success('Agent deleted');
+   * } catch (error) {
+   *   toast.apiError(error.response?.status, {
+   *     onRetry: () => handleDelete(id)
+   *   });
+   * }
+   * ```
+   */
+  apiError: (
+    status: number | undefined,
+    options?: {
+      customMessage?: string;
+      onRetry?: () => void;
+      description?: string;
+    }
+  ) => {
+    const message = options?.customMessage || getErrorMessage(status);
+    return showToast({
+      message,
+      variant: 'error',
+      description: options?.description,
+      action: options?.onRetry
+        ? {
+            label: 'Retry',
+            onClick: options.onRetry,
+          }
+        : undefined,
+    });
+  },
+
+  /**
+   * Show network error toast with retry action
+   *
+   * @example
+   * ```tsx
+   * toast.networkError(() => refetch());
+   * ```
+   */
+  networkError: (onRetry?: () => void) => {
+    return showToast({
+      message: 'Connection lost',
+      variant: 'error',
+      description: 'Check your connection and try again.',
+      action: onRetry
+        ? {
+            label: 'Retry',
+            onClick: onRetry,
+          }
+        : undefined,
+    });
+  },
 };
 
 /**
  * Internal helper to show toast with custom rendering
+ *
+ * Accessibility features:
+ * - role="alert" or role="status" based on variant
+ * - aria-live="assertive" for errors, "polite" for others
+ * - Screen reader announcement prefix (e.g., "Error: ")
+ * - Keyboard accessible close and action buttons
+ *
+ * Reference: Story 35 AC-4 (Accessibility)
  */
 function showToast(props: ToastProps): string | number {
   const {
     message,
     description,
     variant = 'info',
-    duration = 4000,
+    duration,
     dismissible = false,
     action,
     onDismiss,
   } = props;
 
+  // Use variant-specific duration if not provided
+  const effectiveDuration = duration ?? TOAST_DURATION[variant];
+
   const config = variantConfig[variant];
+  const ariaConfig = ARIA_CONFIG[variant];
   const Icon = config.icon;
 
   const sonnerOptions: ExternalToast = {
-    duration,
+    duration: effectiveDuration,
     onDismiss,
     className: `glass-card border-2 ${config.className}`,
     description,
@@ -223,12 +325,28 @@ function showToast(props: ToastProps): string | number {
 
   return sonnerToast.custom(
     (t) => (
-      <div className="flex items-start gap-3 p-4 w-full">
-        <Icon size={20} className={`flex-shrink-0 ${config.iconColor}`} />
+      <div
+        className="flex items-start gap-3 p-4 w-full"
+        role={ariaConfig.role}
+        aria-live={ariaConfig.ariaLive}
+        aria-atomic="true"
+      >
+        {/* Screen reader announcement prefix */}
+        <span className="sr-only">{config.ariaLabel}: </span>
+
+        <Icon
+          size={20}
+          className={`flex-shrink-0 ${config.iconColor}`}
+          aria-hidden="true"
+        />
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-text-primary dark:text-white">{message}</div>
+          <div className="font-medium text-text-primary dark:text-white">
+            {message}
+          </div>
           {description && (
-            <div className="mt-1 text-sm text-text-secondary dark:text-text-secondary">{description}</div>
+            <div className="mt-1 text-sm text-text-secondary dark:text-text-secondary">
+              {description}
+            </div>
           )}
           {action && (
             <button
@@ -236,7 +354,7 @@ function showToast(props: ToastProps): string | number {
                 action.onClick();
                 sonnerToast.dismiss(t);
               }}
-              className="mt-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-white dark:bg-white/5 border border-white/50 dark:border-white/20 hover:bg-white/70 dark:hover:bg-white/10 transition-colors"
+              className="mt-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-white dark:bg-white/5 border border-white/50 dark:border-white/20 hover:bg-white/70 dark:hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
             >
               {action.label}
             </button>
@@ -245,10 +363,10 @@ function showToast(props: ToastProps): string | number {
         {dismissible && (
           <button
             onClick={() => sonnerToast.dismiss(t)}
-            className="flex-shrink-0 p-1 rounded hover:bg-white/50 dark:hover:bg-white/10 transition-colors"
+            className="flex-shrink-0 p-1 rounded hover:bg-white/50 dark:hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
             aria-label="Dismiss notification"
           >
-            <X size={16} className="text-text-secondary dark:text-text-secondary" />
+            <X size={16} className="text-text-secondary dark:text-text-secondary" aria-hidden="true" />
           </button>
         )}
       </div>

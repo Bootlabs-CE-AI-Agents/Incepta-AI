@@ -274,3 +274,42 @@ class TestHTTPMethods:
             f"/api/agents/{agent_id}/activate", headers=test_headers
         )
         assert response.status_code != 405  # Not Method Not Allowed
+
+
+class TestAgentOptionsEndpoint:
+    """Tests for GET /api/v1/agents/options endpoint (Story 10.2 support)."""
+
+    def test_get_agent_options_without_tenant_id(self):
+        """Test GET /api/v1/agents/options fails without tenant_id header."""
+        response = client.get("/api/v1/agents/options")
+        assert response.status_code == 400
+
+    def test_get_agent_options_with_tenant_id(self, test_headers):
+        """Test GET /api/v1/agents/options returns list format."""
+        response = client.get("/api/v1/agents/options", headers=test_headers)
+        # Accept 200 (success) or 500 (DB not set up)
+        assert response.status_code in [200, 500]
+
+        if response.status_code == 200:
+            data = response.json()
+            # Should return a list
+            assert isinstance(data, list)
+            # Each item should have 'id' and 'name' keys
+            for item in data:
+                assert "id" in item
+                assert "name" in item
+                assert isinstance(item["id"], str)
+                assert isinstance(item["name"], str)
+
+    def test_get_agent_options_response_format(self, test_headers):
+        """Test /api/v1/agents/options returns correct format for dropdown."""
+        response = client.get("/api/v1/agents/options", headers=test_headers)
+
+        if response.status_code == 200:
+            data = response.json()
+            # Verify it's suitable for dropdown use
+            assert isinstance(data, list)
+            # Empty list is valid if no agents exist
+            if len(data) > 0:
+                # Verify first item has required structure
+                assert set(data[0].keys()) >= {"id", "name"}

@@ -94,7 +94,7 @@ export function AuthAuditTable({ initialFilters = {} }: AuthAuditTableProps) {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-wrap items-end gap-4 p-4 bg-muted/30 border border-border rounded-lg">
+      <div className="flex flex-wrap items-end gap-4 p-4 glass-subtle">
         {/* User Email Search */}
         <div className="flex-1 min-w-[200px]">
           <label className="block text-sm font-medium text-foreground mb-1">

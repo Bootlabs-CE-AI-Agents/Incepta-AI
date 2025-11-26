@@ -101,13 +101,17 @@ class AgentService:
         2. Each MCP server is active (status='active')
         3. Each tool exists in the server's discovered primitives
 
+        Handles deduplicated tool names (e.g., 'fetch_mcp_Fetch MCP Server')
+        by mapping them back to their original discovered names.
+
         Args:
             assignments: List of MCPToolAssignment dicts to validate
             tenant_id: Tenant identifier (VARCHAR) for isolation
             db: Async database session
 
         Returns:
-            List of valid MCPToolAssignment dicts (filtered)
+            List of valid MCPToolAssignment dicts with deduplicated names
+            mapped back to original discovered names
 
         Raises:
             HTTPException(400): If MCP server not found, inactive, or tool not discovered
@@ -123,6 +127,7 @@ class AgentService:
             mcp_server_id = assignment.get("mcp_server_id")
             tool_name = assignment.get("name")
             primitive_type = assignment.get("mcp_primitive_type")
+            mcp_server_name = assignment.get("mcp_server_name", "").strip()
 
             # Query MCP server (Task 9.2)
             result = await db.execute(
@@ -153,6 +158,19 @@ class AgentService:
                     detail=f"MCP server {mcp_server.name} ({mcp_server_id}) is not active (status: {mcp_server.status})",
                 )
 
+            # Map deduplicated tool names back to original names
+            # Deduplicated names follow pattern: {original_name}_mcp_{server_name}
+            original_tool_name = tool_name
+            if tool_name and "_mcp_" in tool_name:
+                # Try to extract original name from deduplicated format
+                parts = tool_name.rsplit("_mcp_", 1)
+                if len(parts) == 2:
+                    potential_original = parts[0]
+                    potential_server = parts[1].strip()
+                    # Only treat as deduplicated if it matches the current server name
+                    if potential_server == mcp_server_name:
+                        original_tool_name = potential_original
+
             # Validation: Tool must exist in discovered primitives (Task 9.4, 9.5)
             discovered_field_map = {
                 "tool": mcp_server.discovered_tools or [],
@@ -162,7 +180,7 @@ class AgentService:
 
             discovered_primitives = discovered_field_map.get(primitive_type, [])
             tool_exists = any(
-                primitive.get("name") == tool_name for primitive in discovered_primitives
+                primitive.get("name") == original_tool_name for primitive in discovered_primitives
             )
 
             if not tool_exists:
@@ -170,10 +188,12 @@ class AgentService:
 
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Tool '{tool_name}' (type: {primitive_type}) not found in MCP server {mcp_server.name}'s discovered primitives",
+                    detail=f"Tool '{original_tool_name}' (type: {primitive_type}) not found in MCP server {mcp_server.name}'s discovered primitives",
                 )
 
-            # Tool is valid, add to validated list (Task 9.7)
+            # Tool is valid - update assignment with original tool name (not deduplicated)
+            # This ensures the backend stores the correct discovered tool name
+            assignment["name"] = original_tool_name
             validated_assignments.append(assignment)
 
         return validated_assignments

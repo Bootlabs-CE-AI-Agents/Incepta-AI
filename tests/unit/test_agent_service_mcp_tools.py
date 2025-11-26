@@ -262,6 +262,47 @@ class TestMCPToolAssignmentValidation:
         assert len(result) == 1
         assert result[0]["name"] == "test_prompt"
 
+    @pytest.mark.asyncio
+    async def test_validate_mcp_tools_deduplicated_name(self):
+        """Test validation handles deduplicated tool names by mapping back to original."""
+        service = AgentService()
+        tenant_id = uuid4()
+        server_id = uuid4()
+
+        # Mock MCP server with discovered tools
+        mock_server = MagicMock()
+        mock_server.id = server_id
+        mock_server.name = "Fetch MCP Server "
+        mock_server.status = "active"
+        mock_server.discovered_tools = [
+            {"name": "fetch", "description": "Fetch content from URLs"}
+        ]
+        mock_server.discovered_resources = []
+        mock_server.discovered_prompts = []
+
+        db_mock = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.first.return_value = mock_server
+        db_mock.execute.return_value = mock_result
+
+        # Send assignment with deduplicated name (as would come from frontend)
+        assignment = {
+            "id": str(uuid4()),
+            "name": "fetch_mcp_Fetch MCP Server ",  # Deduplicated name
+            "source_type": "mcp",
+            "mcp_server_id": str(server_id),
+            "mcp_server_name": "Fetch MCP Server ",
+            "mcp_primitive_type": "tool",
+        }
+
+        result = await service._validate_mcp_tool_assignments(
+            [assignment], tenant_id, db_mock
+        )
+
+        # Should succeed and return assignment with original tool name
+        assert len(result) == 1
+        assert result[0]["name"] == "fetch", "Tool name should be mapped back to original discovered name"
+
 
 class TestAgentCreateWithMCPTools:
     """Tests for create_agent with MCP tool assignments."""
@@ -421,3 +462,51 @@ class TestMCPOnlyAgent:
         # Should have MCP tools but no OpenAPI tools
         assert len(agent_data.mcp_tool_assignments) == 1
         assert len(agent_data.tool_ids) == 0
+
+
+    @pytest.mark.asyncio
+    async def test_agent_with_deduplicated_and_normal_tools_mixed(self):
+        """
+        Test handling of deduplicated tool names alongside normal MCP tools.
+
+        Scenario: When the same tool is discovered in multiple ways,
+        the deduplicated version should be mapped back to the original.
+        """
+        service = AgentService()
+        tenant_id = uuid4()
+        fetch_server_id = uuid4()
+
+        # Mock Fetch MCP server
+        mock_fetch_server = MagicMock()
+        mock_fetch_server.id = fetch_server_id
+        mock_fetch_server.name = "Fetch MCP Server "
+        mock_fetch_server.status = "active"
+        mock_fetch_server.discovered_tools = [
+            {"name": "fetch", "description": "Fetches a URL and returns the content"},
+        ]
+        mock_fetch_server.discovered_resources = []
+        mock_fetch_server.discovered_prompts = []
+
+        # Setup database mock
+        db_mock = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.first.return_value = mock_fetch_server
+        db_mock.execute.return_value = mock_result
+
+        # Assignment with deduplicated name (as comes from frontend UI deduplication)
+        assignment = {
+            "id": str(uuid4()),
+            "name": "fetch_mcp_Fetch MCP Server ",  # Deduplicated name with trailing space
+            "source_type": "mcp",
+            "mcp_server_id": str(fetch_server_id),
+            "mcp_server_name": "Fetch MCP Server ",
+            "mcp_primitive_type": "tool",
+        }
+
+        result = await service._validate_mcp_tool_assignments(
+            [assignment], tenant_id, db_mock
+        )
+
+        # Should succeed and map deduplicated name back to original
+        assert len(result) == 1
+        assert result[0]["name"] == "fetch", f"Expected 'fetch' but got '{result[0]['name']}'"

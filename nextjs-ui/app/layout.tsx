@@ -9,9 +9,19 @@ import { KeyboardShortcutsProvider } from "@/components/providers/KeyboardShortc
 import { PageLoader } from "@/components/ui/PageLoader";
 import { OfflineBanner } from "@/components/error-boundary/OfflineBanner";
 
+/**
+ * Force dynamic rendering to prevent RSC streaming issues with Cloudflare Tunnel.
+ * Cloudflare's HTTP/2 implementation buffers streaming responses, which breaks
+ * Next.js RSC flight data mechanism. By forcing dynamic rendering, we ensure
+ * the full HTML is sent at once instead of being streamed.
+ *
+ * Reference: https://github.com/cloudflare/cloudflared/issues/199
+ */
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
-  title: "AI Agents Platform",
-  description: "Enterprise AI Agents Management Platform with Liquid Glass Design",
+  title: "Incepta",
+  description: "Where Intelligent Agents Take Shape - Enterprise AI Agents Management Platform",
 };
 
 /**
@@ -19,7 +29,7 @@ export const metadata: Metadata = {
  *
  * Provider hierarchy (outer to inner):
  * 1. MSWProvider - Mock Service Worker (development only)
- * 2. SessionProvider - NextAuth authentication state
+ * 2. SessionProvider - NextAuth authentication state + auto-tenant initialization
  * 3. ReactQueryProvider - Server state management (React Query)
  * 4. ThemeProvider - Client-side theme state (light/dark mode)
  * 5. ToastProvider - Notification system (Sonner)

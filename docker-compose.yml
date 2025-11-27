@@ -284,6 +284,7 @@ services:
       context: .
       dockerfile: nextjs-ui/Dockerfile
       args:
+        # Build-time: Not needed since we use dynamic URL detection in lib/api/config.ts
         NEXT_PUBLIC_API_URL: "http://localhost:8000"
     container_name: ai-ops-nextjs-ui
     depends_on:
@@ -291,10 +292,17 @@ services:
         condition: service_healthy
     environment:
       - NODE_ENV=production
+      # Client-side API URL: Not used - we detect domain dynamically in lib/api/config.ts
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+      # Server-side API URL (NextAuth uses this for Docker internal network)
       - API_URL=http://api:8000
       - NEXTAUTH_SECRET=zFjSNePEpHVvABRBo5DftIS5tLw05sdmYQKxNPWCP7k=
-      - NEXTAUTH_URL=http://localhost:3000
+      # NEXTAUTH_URL: Set for tunnel domain - with AUTH_TRUST_HOST, it will be overridden by X-Forwarded headers
+      # NextAuth will use X-Forwarded-Proto and X-Forwarded-Host from nginx to detect https://incepta.nullbytes.app
+      - NEXTAUTH_URL=https://incepta.nullbytes.app
+      # Required for Cloudflare Tunnel - trust X-Forwarded-Host and X-Forwarded-Proto headers from nginx
+      # This allows NextAuth to work correctly when accessed via tunnel domain
+      - AUTH_TRUST_HOST=true
     ports:
       - "3000:3000"
     networks:

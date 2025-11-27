@@ -1,4 +1,24 @@
-model_list: []
+model_list:
+  - model_name: "anthropic/claude-3-sonnet-20240229"
+    litellm_params:
+      model: "claude-3-sonnet-20240229"
+      api_key: "{{ ANTHROPIC_API_KEY }}"
+
+  - model_name: "anthropic/claude-3-5-sonnet-20241022"
+    litellm_params:
+      model: "claude-3-5-sonnet-20241022"
+      api_key: "{{ ANTHROPIC_API_KEY }}"
+
+  - model_name: "openai/gpt-4o-mini"
+    litellm_params:
+      model: "gpt-4o-mini"
+      api_key: "{{ OPENAI_API_KEY }}"
+
+  - model_name: "openrouter/z-ai/glm-4.6"
+    litellm_params:
+      model: "z-ai/glm-4.6"
+      api_key: "{{ AI_AGENTS_OPENROUTER_API_KEY }}"
+      api_base: "{{ AI_AGENTS_OPENROUTER_BASE_URL }}"
 
 # LiteLLM Settings - Preserve function calling parameters
 # Bug Fix (Story 11.2.7): Disabled drop_params to preserve 'tools' parameter

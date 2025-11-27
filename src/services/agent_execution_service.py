@@ -263,29 +263,31 @@ class AgentExecutionService:
             max_tokens = agent.llm_config.get("max_tokens", 1000)
 
             # Normalize model string for LiteLLM proxy
-            # Handles various config formats: provider-prefixed models, bare names, etc.
-            # Reason: Ensure compatibility with all current and future LLM model configurations
+            # When routing through LiteLLM proxy (api_base set), use provider/model format
+            # Reason: LiteLLM proxy expects provider prefix to route requests correctly
             if "/" in llm_model:
-                # Model already has provider prefix (e.g., "xai/grok-4-fast-reasoning")
+                # Model already has provider prefix (e.g., "anthropic/claude-3-sonnet", "xai/grok-4-fast-reasoning")
+                # Use as-is since it already has the routing information
                 model_string = llm_model
                 logger.info(
                     f"Using provider-prefixed model: {model_string}",
                     extra={"model": model_string, "provider": llm_provider},
                 )
-            elif llm_provider == "litellm" or not llm_provider:
-                # Provider is generic marker or empty - use model as-is
-                # LiteLLM will infer the correct provider
-                model_string = llm_model
-                logger.info(
-                    f"Using model without prefix (provider={llm_provider}): {model_string}",
-                    extra={"model": model_string, "provider": llm_provider},
-                )
-            else:
-                # Traditional format: concatenate provider/model
+            elif llm_provider and llm_provider != "litellm":
+                # Provider specified and model is bare (no slash)
+                # Concatenate to create provider/model format for LiteLLM proxy routing
                 model_string = f"{llm_provider}/{llm_model}"
                 logger.info(
                     f"Constructed model string from provider+model: {model_string}",
                     extra={"model": llm_model, "provider": llm_provider},
+                )
+            else:
+                # No provider or generic "litellm" marker - use model as-is
+                # LiteLLM will attempt to infer provider or look up in its registry
+                model_string = llm_model
+                logger.info(
+                    f"Using model without explicit provider: {model_string}",
+                    extra={"model": model_string, "provider": llm_provider},
                 )
 
             # DEBUG: Log tool details before executor creation
@@ -308,12 +310,13 @@ class AgentExecutionService:
             )
 
             # Step 6: Initialize chat model with ChatLiteLLM
-            # Using ChatLiteLLM (November 2025) for proper multi-provider LLM support
-            # ChatLiteLLM correctly parses tool calls from all providers through LiteLLM proxy
+            # Using ChatLiteLLM configured to route through LiteLLM proxy gateway
+            # Key fix: Set api_base (not base_url) to ensure ChatLiteLLM uses the proxy
+            # instead of trying to call upstream providers directly (Story 12.10 - LiteLLM Proxy Gateway Fix)
             llm = ChatLiteLLM(
-                model=model_string,  # e.g., "xai/grok-4-fast-reasoning", "openai/gpt-4o-mini"
-                api_key=virtual_key,  # Tenant's virtual key from LiteLLM
-                base_url=f"{self.litellm_proxy_url}/v1",  # LiteLLM proxy endpoint
+                model=model_string,  # e.g., "openrouter/z-ai/glm-4.6", "openai/gpt-4o-mini"
+                api_key=virtual_key,  # Tenant's virtual key from LiteLLM proxy
+                api_base=f"{self.litellm_proxy_url}/v1",  # LiteLLM proxy endpoint (CRITICAL: use api_base not base_url)
                 temperature=temperature,
                 max_tokens=max_tokens,
             )

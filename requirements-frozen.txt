@@ -1,4 +1,7 @@
 -e file:///Users/ravi/Documents/nullBytes_Apps/Ai_Agents/AI%20Ops
+aiohappyeyeballs==2.6.1
+aiohttp==3.13.2
+aiosignal==1.4.0
 alembic==1.17.1
 altair==5.5.0
 amqp==5.3.1
@@ -45,9 +48,13 @@ exceptiongroup==1.3.0
 fakeredis==2.32.1
 fastapi==0.120.4
 fastmcp==2.13.0.2
+fastuuid==0.14.0
+filelock==3.20.0
 flask==3.1.2
 flask-cors==6.0.1
 flask-login==0.6.3
+frozenlist==1.8.0
+fsspec==2025.10.0
 gevent==25.9.1
 geventhttpclient==2.3.5
 gitdb==4.0.12
@@ -58,11 +65,13 @@ greenlet==3.2.4
 grpcio==1.76.0
 h11==0.16.0
 h2==4.3.0
+hf-xet==1.2.0
 hpack==4.1.0
 httpcore==1.0.9
 httptools==0.7.1
 httpx==0.28.1
 httpx-sse==0.4.3
+huggingface-hub==1.1.5
 hyperframe==6.1.0
 idna==3.11
 importlib-metadata==8.7.0
@@ -84,6 +93,7 @@ kubernetes==34.1.0
 langchain==1.0.5
 langchain-anthropic==1.0.1
 langchain-core==1.0.4
+langchain-litellm==0.3.2
 langchain-mcp-adapters==0.1.12
 langchain-openai==1.0.3
 langgraph==1.0.2
@@ -94,6 +104,7 @@ langgraph-sdk==0.2.9
 langmem==0.0.30
 langsmith==0.4.39
 limits==5.6.0
+litellm==1.80.0
 locust==2.42.3
 locust-cloud==1.29.0
 loguru==0.7.3
@@ -104,6 +115,7 @@ mcp==1.20.0
 mdurl==0.1.2
 more-itertools==10.8.0
 msgpack==1.1.2
+multidict==6.7.0
 mypy==1.18.2
 mypy-extensions==1.1.0
 narwhals==2.10.1
@@ -141,6 +153,7 @@ plotly==6.3.1
 pluggy==1.6.0
 prometheus-client==0.23.1
 prompt-toolkit==3.0.52
+propcache==0.4.1
 protobuf==6.33.0
 psutil==7.1.3
 psycopg==3.2.12
@@ -194,6 +207,7 @@ rpds-py==0.28.0
 rsa==4.9.1
 ruff==0.14.3
 setuptools==80.9.0
+shellingham==1.5.4
 simple-websocket==1.1.0
 six==1.17.0
 slowapi==0.1.9
@@ -208,10 +222,12 @@ streamlit==1.51.0
 tenacity==9.1.2
 text-unidecode==1.3
 tiktoken==0.12.0
+tokenizers==0.22.1
 toml==0.10.2
 tornado==6.5.2
 tqdm==4.67.1
 trustcall==0.0.39
+typer-slim==0.20.0
 types-cachetools==6.2.0.20251022
 types-passlib==1.7.7.20250602
 types-pyasn1==0.6.0.20250914
@@ -234,6 +250,7 @@ wheel==0.45.1
 wrapt==1.17.3
 wsproto==1.3.1
 xxhash==3.6.0
+yarl==1.22.0
 zipp==3.23.0
 zope-event==6.1
 zope-interface==8.1.1

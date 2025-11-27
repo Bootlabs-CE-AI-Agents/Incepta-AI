@@ -351,10 +351,12 @@ class AgentExecutionService:
 
             # Step 8: Build messages with augmented system prompt + user message
             # Uses extracted message_builder module (Story 12.7)
+            # Pass tools for prompt augmentation with explicit tool usage guidance (Story 12.9)
             messages = build_messages(
                 system_prompt=augmented_system_prompt,
                 user_message=user_message,
                 context=context,
+                tools=langchain_tools,
             )
 
             logger.info(

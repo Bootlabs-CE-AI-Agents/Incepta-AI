@@ -104,6 +104,20 @@ async def convert_tools_to_langchain(
                 mcp_langchain_tools = await bridge.get_langchain_tools(mcp_tools)
                 langchain_tools.extend(mcp_langchain_tools)
 
+                # DIAGNOSTIC: Log tool schema validation results (Story 12.9)
+                # This helps identify tools that may be filtered during bind_tools()
+                for tool in mcp_langchain_tools:
+                    has_args_schema = hasattr(tool, "args_schema") and tool.args_schema is not None
+                    tool_description = getattr(tool, "description", "No description")
+                    logger.debug(
+                        f"MCP tool loaded: {tool.name}",
+                        extra={
+                            "tool_name": tool.name,
+                            "has_args_schema": has_args_schema,
+                            "description_length": len(tool_description) if tool_description else 0,
+                        },
+                    )
+
                 # NOTE: Bridge cleanup is handled by caller's finally block
                 # This allows bridge reuse across multiple tool conversions
                 # in the same execution context

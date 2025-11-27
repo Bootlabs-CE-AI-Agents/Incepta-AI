@@ -39,14 +39,15 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from uuid import UUID
 
-from langchain_openai import ChatOpenAI
-from langgraph.prebuilt import create_react_agent
+from langchain_litellm import ChatLiteLLM
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import MCPServer
 from src.exceptions import BudgetExceededError
 from src.schemas.agent import CognitiveArchitecture
+from src.services.agent_execution.cognitive_architectures import CognitiveArchitectureFactory
+from src.services.agent_execution.agent_types import AgentTypeFactory
 from src.services.agent_execution.mcp_bridge_pooler import cleanup_mcp_bridge
 from src.services.agent_execution.message_builder import build_messages
 from src.services.agent_execution.result_extractor import extract_response, extract_tool_calls
@@ -297,10 +298,10 @@ class AgentExecutionService:
                 },
             )
 
-            # Step 6: Initialize chat model with ChatOpenAI
-            # Using ChatOpenAI with LiteLLM proxy ensures proper tool binding for all providers
-            # LiteLLM handles provider-specific tool calling formats (OpenAI, Grok, Claude, etc.)
-            llm = ChatOpenAI(
+            # Step 6: Initialize chat model with ChatLiteLLM
+            # Using ChatLiteLLM (November 2025) for proper multi-provider LLM support
+            # ChatLiteLLM correctly parses tool calls from all providers through LiteLLM proxy
+            llm = ChatLiteLLM(
                 model=model_string,  # e.g., "xai/grok-4-fast-reasoning", "openai/gpt-4o-mini"
                 api_key=virtual_key,  # Tenant's virtual key from LiteLLM
                 base_url=f"{self.litellm_proxy_url}/v1",  # LiteLLM proxy endpoint
@@ -311,17 +312,38 @@ class AgentExecutionService:
             # Step 7: Create agent executor based on architecture
             # Using factory pattern to support multiple cognitive architectures (Story 12.8)
             architecture = getattr(agent, "cognitive_architecture", CognitiveArchitecture.REACT)
-            
+
             agent_executor = self._create_agent_executor(
                 architecture=architecture,
                 llm=llm,
                 tools=langchain_tools,
             )
 
-            # Step 8: Build messages with system prompt + user message
+            # Step 7.5: Augment system prompt based on agent type (Story 12.8)
+            # Get agent type with backward compatibility default
+            agent_type = getattr(agent, "type", "tool_based")
+
+            # Use AgentTypeFactory to augment system prompt with type-specific guidance
+            type_context = AgentTypeFactory.get_initialization_context(
+                agent_type=agent_type,
+                agent_id=str(agent_id),
+                system_prompt=agent.system_prompt,
+                tools=langchain_tools,
+            )
+            augmented_system_prompt = type_context["system_prompt"]
+
+            logger.debug(
+                "Agent type initialization",
+                extra={
+                    "agent_type": agent_type,
+                    "tool_binding_strategy": type_context["tool_binding_strategy"],
+                },
+            )
+
+            # Step 8: Build messages with augmented system prompt + user message
             # Uses extracted message_builder module (Story 12.7)
             messages = build_messages(
-                system_prompt=agent.system_prompt,
+                system_prompt=augmented_system_prompt,
                 user_message=user_message,
                 context=context,
             )
@@ -420,49 +442,29 @@ class AgentExecutionService:
             await cleanup_mcp_bridge(execution_context_id)
 
     def _create_agent_executor(
-        self, 
-        architecture: str, 
-        llm: Any, 
-        tools: list[Any], 
+        self,
+        architecture: str,
+        llm: Any,
+        tools: list[Any],
     ) -> Any:
         """
-        Factory method to create agent executor based on cognitive architecture.
-        
+        Create agent executor based on cognitive architecture.
+
+        Delegates to CognitiveArchitectureFactory for proper architecture
+        implementation. Supports ReAct, Single-Step, and Plan-and-Solve.
+
         Args:
-            architecture: CognitiveArchitecture enum value
-            llm: Initialized ChatModel
+            architecture: CognitiveArchitecture enum value (react, single_step, plan_and_solve)
+            llm: Initialized ChatOpenAI model
             tools: List of LangChain tools
-            
+
         Returns:
-            Compiled LangGraph graph
-        """
-        if architecture == CognitiveArchitecture.SINGLE_STEP:
-            return self._create_single_step_agent(llm, tools)
-        elif architecture == CognitiveArchitecture.PLAN_AND_SOLVE:
-            return self._create_plan_and_solve_agent(llm, tools)
-        else:
-            # Default to REACT
-            return create_react_agent(model=llm, tools=tools)
+            Compiled LangGraph StateGraph with ainvoke() interface
 
-    def _create_single_step_agent(self, llm: Any, tools: list[Any]) -> Any:
+        Story: 12.8 - Agent Type and Execution Strategy Implementation
         """
-        Create a zero-shot single-step agent (no reasoning loop).
-        
-        Useful for simple tasks where latency is critical and multi-step reasoning 
-        is not required.
-        """
-        # For single step, we can still use create_react_agent but bind tools 
-        # and force a single invocation, or use a simpler chain.
-        # To keep it compatible with the 'messages' state, we use create_react_agent
-        # but we could optimize this further in the future.
-        return create_react_agent(model=llm, tools=tools)
-
-    def _create_plan_and_solve_agent(self, llm: Any, tools: list[Any]) -> Any:
-        """
-        Create a Plan-and-Solve agent.
-        
-        For now, this falls back to ReAct as a placeholder until the full 
-        Plan-and-Solve graph is implemented in a future iteration.
-        """
-        # TODO: Implement full Plan-and-Solve graph
-        return create_react_agent(model=llm, tools=tools)
+        return CognitiveArchitectureFactory.create_executor(
+            architecture=architecture,
+            llm=llm,
+            tools=tools,
+        )

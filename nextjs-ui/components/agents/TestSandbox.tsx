@@ -4,22 +4,23 @@
  * Provides an interface to test agent execution with:
  * - Input message textarea
  * - Execute test button with loading state
- * - JSON response display with syntax highlighting
+ * - Readable execution trace visualization with timeline/waterfall view
+ * - Hierarchical step details (Tool Calls vs LLM Requests)
  * - Execution metadata (duration, tokens, cost)
  * - Error handling
  *
- * Uses @uiw/react-json-view for modern JSON visualization (2025 best practice)
+ * Uses ExecutionTraceViewer for professional trace visualization.
+ * References: LangSmith, Google ADK, AgentPrism patterns.
  */
 
 'use client';
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Loader2, PlayCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
-import JsonView from '@uiw/react-json-view';
-import { lightTheme } from '@uiw/react-json-view/light';
-import { darkTheme } from '@uiw/react-json-view/dark';
+import { Loader2, PlayCircle, AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import { ExecutionTraceViewer } from '@/components/execution-history/ExecutionTraceViewer';
 import { useTestAgent } from '@/lib/hooks/useTestAgent';
+import { useAgent } from '@/lib/hooks/useAgents';
 
 interface TestSandboxProps {
   agentId: string;
@@ -38,16 +39,33 @@ interface TestSandboxProps {
 export function TestSandbox({ agentId }: TestSandboxProps) {
   const [message, setMessage] = useState('');
   const testMutation = useTestAgent();
+  const { data: agent, isLoading: agentLoading } = useAgent(agentId);
 
   const handleExecuteTest = async () => {
     if (!message.trim()) {
       return;
     }
 
+    // Validate agent configuration before testing
+    if (!agent) {
+      console.error('Agent not loaded');
+      return;
+    }
+
+    if (!agent.llm_config?.model) {
+      testMutation.reset();
+      return;
+    }
+
     try {
       await testMutation.mutateAsync({
         agentId,
-        data: { message },
+        data: {
+          payload: {
+            message: message.trim(),
+          },
+          simulate_webhook: true,
+        },
       });
     } catch (err) {
       // Error handled by mutation
@@ -55,16 +73,36 @@ export function TestSandbox({ agentId }: TestSandboxProps) {
     }
   };
 
-  // Determine theme based on system preference (TODO: Use actual theme from context)
-  const isDarkMode = false; // Will be replaced with actual theme detection
-  const jsonTheme = isDarkMode ? darkTheme : lightTheme;
-
   const testResult = testMutation.data;
   const error = testMutation.error?.message;
   const isLoading = testMutation.isPending;
 
+  // Check if agent has required configuration for testing
+  const hasRequiredConfig = agent && agent.llm_config?.model && agent.system_prompt;
+  const configErrors = [];
+  if (!agent?.llm_config?.model) configErrors.push('LLM model not configured');
+  if (!agent?.system_prompt) configErrors.push('System prompt not set');
+
   return (
     <div className="space-y-6">
+      {/* Configuration Warning */}
+      {!hasRequiredConfig && !agentLoading && (
+        <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-yellow-600 mb-2">Agent Not Ready for Testing</h3>
+              <ul className="text-sm text-yellow-700/90 space-y-1">
+                {configErrors.map((error, idx) => (
+                  <li key={idx}>• {error}</li>
+                ))}
+              </ul>
+              <p className="text-xs text-yellow-700/75 mt-2">Please configure the missing items in the Overview tab before testing.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Test Input Section */}
       <div>
         <label
@@ -82,7 +120,7 @@ export function TestSandbox({ agentId }: TestSandboxProps) {
           placeholder="Enter a message to test this agent..."
           className="w-full px-4 py-3 bg-glass-surface border border-glass-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-primary/50 text-text-primary placeholder:text-text-tertiary resize-y"
           aria-label="Test message input"
-          disabled={isLoading}
+          disabled={isLoading || agentLoading || !hasRequiredConfig}
         />
         {message.length > 0 && (
           <div className="mt-1 text-xs text-text-secondary">
@@ -95,7 +133,7 @@ export function TestSandbox({ agentId }: TestSandboxProps) {
       <div className="flex gap-3">
         <Button
           onClick={handleExecuteTest}
-          disabled={isLoading || !message.trim()}
+          disabled={isLoading || !message.trim() || !hasRequiredConfig || agentLoading}
           className="gap-2"
           size="lg"
         >
@@ -162,45 +200,39 @@ export function TestSandbox({ agentId }: TestSandboxProps) {
               <div>
                 <div className="text-xs text-text-secondary mb-1">Execution Time</div>
                 <div className="text-lg font-semibold text-text-primary">
-                  {testResult.execution_time_ms}
+                  {testResult.execution_time?.total_duration_ms?.toFixed(2) || 'N/A'}
                   <span className="text-sm font-normal text-text-secondary ml-1">ms</span>
                 </div>
               </div>
               <div>
                 <div className="text-xs text-text-secondary mb-1">Status</div>
                 <div className="text-sm font-medium text-success">
-                  {testResult.message || 'Success'}
+                  {testResult.status || 'Success'}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-text-secondary mb-1">Metadata Keys</div>
+                <div className="text-xs text-text-secondary mb-1">Steps Executed</div>
                 <div className="text-sm font-medium text-text-primary">
-                  {Object.keys(testResult.metadata || {}).length}
+                  {testResult.execution_trace?.steps?.length || 0}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-text-secondary mb-1">Total Tokens</div>
+                <div className="text-sm font-medium text-text-primary">
+                  {testResult.token_usage?.total_tokens || 0}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-text-secondary mb-1">Estimated Cost</div>
+                <div className="text-sm font-medium text-text-primary">
+                  ${(testResult.token_usage?.estimated_cost_usd || 0).toFixed(6)}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Agent Response with JSON Syntax Highlighting */}
-          <div className="glass-card rounded-lg p-6">
-            <h3 className="text-sm font-semibold text-text-primary mb-4 uppercase tracking-wide">
-              Agent Response
-            </h3>
-            <div className="bg-background/50 rounded-lg p-4 overflow-auto max-h-[600px]">
-              <JsonView
-                value={testResult.output as object}
-                collapsed={2}
-                style={{
-                  ...jsonTheme,
-                  '--w-rjv-font-family': 'ui-monospace, monospace',
-                  '--w-rjv-background-color': 'transparent',
-                  '--w-rjv-border-left': '1px solid var(--glass-border)',
-                } as React.CSSProperties}
-                enableClipboard={true}
-                displayDataTypes={false}
-              />
-            </div>
-          </div>
+          {/* Agent Response - Execution Trace Viewer */}
+          <ExecutionTraceViewer trace={testResult.execution_trace} />
         </div>
       )}
 

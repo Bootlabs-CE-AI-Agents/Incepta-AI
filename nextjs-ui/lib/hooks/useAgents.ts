@@ -17,7 +17,7 @@ import {
   assignTools,
   activateAgent,
 } from '../api/agents';
-import type { AgentUpdateData, AgentTestInput } from '../validations';
+import type { AgentUpdateData, AgentTestInput, MCPToolAssignment } from '../validations';
 
 /**
  * Query keys for cache management
@@ -132,13 +132,22 @@ export const useTestAgent = () => {
 
 /**
  * Assign tools to agent
+ *
+ * Supports both OpenAPI tools (via toolIds) and MCP tools (via mcpToolAssignments)
  */
 export const useAssignTools = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, toolIds }: { id: string; toolIds: string[] }) =>
-      assignTools(id, toolIds),
+    mutationFn: ({
+      id,
+      toolIds,
+      mcpToolAssignments
+    }: {
+      id: string;
+      toolIds: string[];
+      mcpToolAssignments?: MCPToolAssignment[];
+    }) => assignTools(id, toolIds, mcpToolAssignments),
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: agentKeys.detail(id) });
       toast.success('Tools assigned successfully');

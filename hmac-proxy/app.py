@@ -35,6 +35,7 @@ from loguru import logger
 HMAC_SECRET = os.getenv("HMAC_SECRET")  # Base64-encoded secret key
 API_BASE_URL = os.getenv("API_BASE_URL", "http://api:8000")  # AI Ops API base URL
 DEFAULT_AGENT_ID = os.getenv("DEFAULT_AGENT_ID")  # Fallback agent ID (optional)
+DEFAULT_TENANT_ID = os.getenv("DEFAULT_TENANT_ID", "default")  # Default tenant for API calls
 TIMEOUT_SECONDS = int(os.getenv("TIMEOUT_SECONDS", "30"))
 AGENT_CACHE_TTL = int(os.getenv("AGENT_CACHE_TTL", "300"))  # Cache agents for 5 minutes
 
@@ -73,17 +74,20 @@ async def lookup_agent(agent_identifier: str) -> Optional[dict[str, Any]]:
 
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
+            # Headers for API request (tenant context required)
+            headers = {"X-Tenant-ID": DEFAULT_TENANT_ID}
+
             # Try as UUID first
             try:
                 from uuid import UUID
                 UUID(agent_identifier)  # Validate UUID format
-                endpoint = f"{API_BASE_URL}/api/agents/{agent_identifier}"
+                endpoint = f"{API_BASE_URL}/api/v1/agents/{agent_identifier}"
             except ValueError:
                 # Not a UUID, search by name
-                endpoint = f"{API_BASE_URL}/api/agents?name={agent_identifier}"
+                endpoint = f"{API_BASE_URL}/api/v1/agents?name={agent_identifier}"
 
-            logger.info(f"Looking up agent: {endpoint}")
-            response = await client.get(endpoint)
+            logger.info(f"Looking up agent: {endpoint} (tenant: {DEFAULT_TENANT_ID})")
+            response = await client.get(endpoint, headers=headers)
 
             if response.status_code == 404:
                 logger.warning(f"Agent not found: {agent_identifier}")

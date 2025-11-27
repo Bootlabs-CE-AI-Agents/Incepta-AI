@@ -7,6 +7,7 @@ import { ChevronDown, Check, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTenantStore, type Tenant } from "@/lib/stores/useTenantStore";
 import { TenantAvatar } from "@/components/ui/TenantAvatar";
+import { getApiBaseUrl } from "@/lib/api/config";
 
 interface UserRole {
   role: string;
@@ -29,8 +30,6 @@ interface UserRole {
  * Reference: tech-spec Section 2.3.4
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 export function TenantSwitcher() {
   const { data: session } = useSession();
   const { selectedTenant, setSelectedTenant } = useTenantStore();
@@ -40,7 +39,7 @@ export function TenantSwitcher() {
   const { data: tenants = [], isLoading } = useQuery<Tenant[]>({
     queryKey: ["tenants"],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/api/v1/tenants`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/v1/tenants`, {
         headers: {
           Authorization: `Bearer ${session?.accessToken}`,
         },
@@ -51,19 +50,28 @@ export function TenantSwitcher() {
     enabled: !!session?.accessToken,
   });
 
-  // Set first tenant as default when loaded
+  // Set first tenant as default when loaded, or update selected tenant with fresh data
   useEffect(() => {
-    if (tenants.length > 0 && !selectedTenant) {
-      setSelectedTenant(tenants[0]);
+    if (tenants.length > 0) {
+      if (!selectedTenant) {
+        // No tenant selected, use first one
+        setSelectedTenant(tenants[0]);
+      } else {
+        // Update selected tenant with fresh data from API (logo, name changes, etc.)
+        const freshTenant = tenants.find(t => t.id === selectedTenant.id);
+        if (freshTenant) {
+          setSelectedTenant(freshTenant);
+        }
+      }
     }
-  }, [tenants, selectedTenant]);
+  }, [tenants]);
 
   // Fetch role for selected tenant
   const { data: userRole } = useQuery<UserRole>({
     queryKey: ["userRole", selectedTenant?.id],
     queryFn: async () => {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/users/me/role?tenant_id=${selectedTenant?.tenant_id}`,
+        `${getApiBaseUrl()}/api/v1/users/me/role?tenant_id=${selectedTenant?.tenant_id}`,
         {
           headers: {
             Authorization: `Bearer ${session?.accessToken}`,

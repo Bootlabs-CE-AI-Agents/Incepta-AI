@@ -8,11 +8,12 @@ import { Input, Textarea, Button, Select } from '@/components/ui';
 import { Agent } from '@/lib/api/agents';
 import { useAvailableModels } from '@/lib/hooks/useAvailableModels';
 import { RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MCPToolDiscovery from '@/components/tools/MCPToolDiscovery';
 import { SystemPromptEditor } from '@/components/prompts/SystemPromptEditor';
 import { useSession } from 'next-auth/react';
 import { useTenantStore } from '@/lib/stores/useTenantStore';
+import { UnifiedTool, MCPToolAssignment } from '@/types/tools';
 
 /**
  * Agent Form Component
@@ -41,9 +42,20 @@ export function AgentForm({
   const [forceRefresh, setForceRefresh] = useState(false);
   const { data: availableModels = [], isLoading: modelsLoading, refetch: refetchModels } = useAvailableModels(forceRefresh);
 
-  // Tool selection state
-  const [selectedToolIds, setSelectedToolIds] = useState<Set<string>>(
-    new Set(defaultValues?.tool_ids || [])
+  // Tool selection state - track both IDs and full tool objects
+  // Includes both OpenAPI tools (tool_ids) and MCP tools (mcp_tool_assignments)
+  // Initialize with both OpenAPI and MCP tool IDs
+  const [selectedToolIds, setSelectedToolIds] = useState<Set<string>>(() => {
+    const toolIds = new Set(defaultValues?.tool_ids || []);
+    // Also add MCP tool IDs
+    (defaultValues?.mcp_tool_assignments || []).forEach(mcp => {
+      toolIds.add(mcp.id);
+    });
+    return toolIds;
+  });
+  const [selectedTools, setSelectedTools] = useState<UnifiedTool[]>([]);
+  const [selectedMCPAssignments, setSelectedMCPAssignments] = useState<MCPToolAssignment[]>(
+    defaultValues?.mcp_tool_assignments || []
   );
 
   // Get tenant ID from Zustand store (global tenant selection)
@@ -69,6 +81,39 @@ export function AgentForm({
       cognitive_architecture: (defaultValues?.cognitive_architecture || 'react') as 'react' | 'single_step' | 'plan_and_solve',
     },
   });
+
+  // Reason: Reset form only when defaultValues change AND form is not dirty
+  // This prevents clearing user input while still syncing server data
+  useEffect(() => {
+    if (defaultValues && !form.formState.isDirty) {
+      const newValues = {
+        name: defaultValues.name || '',
+        type: defaultValues.type || 'conversational',
+        description: defaultValues.description || '',
+        system_prompt: defaultValues.system_prompt || '',
+        llm_config: defaultValues.llm_config || {
+          provider: 'litellm',
+          model: '',
+          temperature: 0.7,
+          max_tokens: undefined,
+          top_p: undefined,
+        },
+        tool_ids: defaultValues.tool_ids || [],
+        is_active: defaultValues.is_active ?? true,
+        cognitive_architecture: (defaultValues.cognitive_architecture || 'react') as 'react' | 'single_step' | 'plan_and_solve',
+      };
+      form.reset(newValues);
+
+      // Also update tool selection state when agent data changes
+      const newToolIds = new Set(defaultValues.tool_ids || []);
+      // Include MCP tool IDs as well
+      (defaultValues.mcp_tool_assignments || []).forEach(mcp => {
+        newToolIds.add(mcp.id);
+      });
+      setSelectedToolIds(newToolIds);
+      setSelectedMCPAssignments(defaultValues.mcp_tool_assignments || []);
+    }
+  }, [defaultValues?.id, defaultValues?.name, defaultValues?.type, defaultValues?.description, form]);
 
   const handleRefreshModels = async () => {
     setForceRefresh(true);
@@ -323,9 +368,25 @@ export function AgentForm({
         <MCPToolDiscovery
           tenantId={tenantId}
           selectedToolIds={selectedToolIds}
-          onSelectionChange={(newSelection) => {
+          onSelectionChange={(newSelection, tools) => {
             setSelectedToolIds(newSelection);
-            form.setValue('tool_ids', Array.from(newSelection));
+            setSelectedTools(tools);
+            // Separate OpenAPI tools (tool_ids) from MCP tools (mcp_tool_assignments)
+            const openapiToolIds = tools
+              .filter(t => t.source_type === 'openapi')
+              .map(t => t.id);
+            const mcpToolAssignments: MCPToolAssignment[] = tools
+              .filter(t => t.source_type === 'mcp')
+              .map(t => ({
+                id: t.id,
+                name: t.name,
+                source_type: 'mcp' as const,
+                mcp_server_id: t.mcp_server_id || '',
+                mcp_server_name: t.mcp_server_name || t.mcp_server || '',
+                mcp_primitive_type: t.mcp_primitive_type || 'tool',
+              }));
+            form.setValue('tool_ids', openapiToolIds);
+            form.setValue('mcp_tool_assignments', mcpToolAssignments);
           }}
         />
       </div>

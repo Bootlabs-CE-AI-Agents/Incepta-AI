@@ -14,6 +14,7 @@ function extractTokenValues(obj: any): any {
 }
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -21,7 +22,24 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      colors: extractTokenValues(designTokens.colors),
+      colors: {
+        // Use CSS variables for semantic colors that auto-switch in dark mode
+        ...extractTokenValues(designTokens.colors),
+        // Override text colors to use CSS variables (defined in globals.css)
+        text: {
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
+        },
+        // Add semantic surface/background colors using CSS variables
+        surface: {
+          DEFAULT: "var(--card-bg)",
+          secondary: "var(--bg-secondary)",
+        },
+        border: {
+          DEFAULT: "var(--card-border)",
+          hover: "var(--card-hover-border)",
+        },
+      },
       fontFamily: {
         sans: designTokens.typography.fontFamily.primary.value.split(", "),
       },

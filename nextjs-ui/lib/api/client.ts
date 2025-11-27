@@ -20,6 +20,7 @@ import { getSession } from 'next-auth/react';
 import { useTenantStore } from '@/lib/stores/useTenantStore';
 import { getErrorMessage, getErrorCategory, ApiError } from './error-messages';
 import { addRetryInterceptor, RetryConfig } from './retry';
+import { getApiBaseUrl } from './config';
 
 /**
  * Retry configuration for API client
@@ -46,7 +47,7 @@ const RETRY_CONFIG: Partial<RetryConfig> = {
  */
 export const createApiClient = (): AxiosInstance => {
   const client = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    baseURL: getApiBaseUrl(),
     timeout: 30000, // 30 second timeout
     headers: {
       'Content-Type': 'application/json',

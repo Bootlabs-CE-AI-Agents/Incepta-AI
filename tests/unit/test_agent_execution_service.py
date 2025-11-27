@@ -189,7 +189,7 @@ async def test_execute_agent_success_mocked(
 
     # Mock LangGraph components
     with patch("src.services.agent_execution_service.ChatOpenAI") as mock_chat_openai:
-        with patch("src.services.agent_execution_service.create_react_agent") as mock_create_agent:
+        with patch("src.services.agent_execution_service.CognitiveArchitectureFactory.create_executor") as mock_create_executor:
             # Setup LLM
             mock_llm = MagicMock()
             mock_chat_openai.return_value = mock_llm
@@ -199,7 +199,7 @@ async def test_execute_agent_success_mocked(
             mock_agent_executor.ainvoke = AsyncMock(
                 return_value={"messages": [MagicMock(content="Test response")]}
             )
-            mock_create_agent.return_value = mock_agent_executor
+            mock_create_executor.return_value = mock_agent_executor
 
             # Execute
             result = await service.execute_agent(

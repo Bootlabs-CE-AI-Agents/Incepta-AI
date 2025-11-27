@@ -50,6 +50,11 @@ function decodeJWT(token: string): JWTPayload {
 }
 
 export const authOptions: NextAuthOptions = {
+  // Trust the host header from reverse proxy (Cloudflare Tunnel, nginx, etc.)
+  // This is required for proper callback URL generation behind proxies
+  // Reference: https://authjs.dev/getting-started/deployment
+  // Also controlled by AUTH_TRUST_HOST=true environment variable
+  ...(process.env.AUTH_TRUST_HOST === "true" && { trustHost: true }),
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -128,6 +133,26 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    // Handle redirect URLs properly for reverse proxy scenarios
+    // This ensures callbacks work correctly behind Cloudflare Tunnel
+    async redirect({ url, baseUrl }) {
+      // If the URL is relative, prepend the base URL
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      // If the URL is on the same origin, allow it
+      try {
+        const urlObj = new URL(url);
+        const baseUrlObj = new URL(baseUrl);
+        if (urlObj.origin === baseUrlObj.origin) {
+          return url;
+        }
+      } catch {
+        // If URL parsing fails, fall back to baseUrl
+      }
+      // Default to baseUrl for security
+      return baseUrl;
+    },
     async jwt({ token, user }) {
       // Initial sign in - add user data to token
       if (user && "accessToken" in user && "tokenVersion" in user) {

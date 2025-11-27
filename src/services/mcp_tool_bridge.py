@@ -240,6 +240,8 @@ class MCPToolBridge:
                                 "server_id": str(server.id),
                                 "server_name": server.name,
                                 "tool_count": len(filtered_tools),
+                                "loaded_tool_names": [t.name for t in filtered_tools],
+                                "assigned_tool_names": list(assigned_tool_names),
                             },
                         )
 
@@ -297,7 +299,10 @@ class MCPToolBridge:
 
                 logger.info(
                     f"MCP Tool Bridge created {len(langchain_tools)} LangChain tools",
-                    extra={"total_tool_count": len(langchain_tools)},
+                    extra={
+                        "total_tool_count": len(langchain_tools),
+                        "final_tool_names": [t.name for t in langchain_tools],
+                    },
                 )
 
                 parent_span.set_attribute("mcp.total_tools_loaded", len(langchain_tools))

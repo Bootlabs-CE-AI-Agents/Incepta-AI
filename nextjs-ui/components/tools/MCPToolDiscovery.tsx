@@ -13,13 +13,15 @@ import { useUnifiedTools } from '@/hooks/useUnifiedTools';
 import { useMCPServerHealth } from '@/hooks/useMCPServerHealth';
 import ToolCheckbox from './ToolCheckbox';
 
+import { UnifiedTool, MCPToolAssignment } from '@/types/tools';
+
 interface MCPToolDiscoveryProps {
   /** Tenant ID for fetching tools */
   tenantId: string;
   /** Currently selected tool IDs */
   selectedToolIds: Set<string>;
-  /** Callback when tool selection changes */
-  onSelectionChange: (selectedIds: Set<string>) => void;
+  /** Callback when tool selection changes - passes IDs and full tool objects */
+  onSelectionChange: (selectedIds: Set<string>, selectedTools: UnifiedTool[]) => void;
 }
 
 type TabId = 'all' | 'openapi' | 'mcp';
@@ -82,6 +84,11 @@ export default function MCPToolDiscovery({
     };
   }, [tools]);
 
+  // Helper to get selected tools from IDs
+  const getSelectedTools = (ids: Set<string>): UnifiedTool[] => {
+    return tools.filter(t => ids.has(t.id));
+  };
+
   // Selection handlers
   const handleToggleTool = (toolId: string) => {
     const newSelection = new Set(selectedToolIds);
@@ -90,7 +97,7 @@ export default function MCPToolDiscovery({
     } else {
       newSelection.add(toolId);
     }
-    onSelectionChange(newSelection);
+    onSelectionChange(newSelection, getSelectedTools(newSelection));
   };
 
   const handleSelectAll = () => {
@@ -99,7 +106,7 @@ export default function MCPToolDiscovery({
       ...Array.from(selectedToolIds),
       ...Array.from(visibleIds)
     ]);
-    onSelectionChange(combined);
+    onSelectionChange(combined, getSelectedTools(combined));
   };
 
   const handleClearAll = () => {
@@ -107,7 +114,7 @@ export default function MCPToolDiscovery({
     const newSelection = new Set(
       Array.from(selectedToolIds).filter(id => !visibleIds.has(id))
     );
-    onSelectionChange(newSelection);
+    onSelectionChange(newSelection, getSelectedTools(newSelection));
   };
 
   return (

@@ -18,6 +18,7 @@ import { ImportConfig } from '@/components/tools/ImportConfig';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { canEdit, canManage } from '@/lib/utils/roleUtils';
 
 type Step = 'upload' | 'validation' | 'preview' | 'import';
 
@@ -32,8 +33,7 @@ export default function ToolsPage() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [selectedOperations, setSelectedOperations] = useState<string[]>([]);
 
-  const userRole = session?.user?.role || 'viewer';
-  const canImport = ['tenant_admin', 'developer'].includes(userRole);
+  const canImport = canEdit(session?.user?.roles);
 
   // Redirect if no permission
   useEffect(() => {

@@ -19,12 +19,13 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Copy, X, Check, Loader2 } from 'lucide-react';
 import { useQueueTasks, useCancelTask, type QueueTask } from '@/lib/hooks/useQueue';
 import { toast } from 'sonner';
+import { hasRole, type RoleEntry } from '@/lib/utils/roleUtils';
 
 /**
- * Check if user can cancel tasks
+ * Check if user can cancel tasks (tenant_admin or operator)
  */
-const canCancelTasks = (role?: string): boolean => {
-  return role === 'tenant_admin' || role === 'operator';
+const canCancelTasks = (roles?: RoleEntry[] | null): boolean => {
+  return hasRole(roles, ['tenant_admin', 'operator', 'super_admin']);
 };
 
 /**
@@ -67,7 +68,7 @@ export function TaskList() {
   const { data, isLoading, error } = useQueueTasks(page, 20);
   const cancelMutation = useCancelTask();
 
-  const canCancel = canCancelTasks(session?.user?.role);
+  const canCancel = canCancelTasks(session?.user?.roles);
 
   if (isLoading) {
     return (

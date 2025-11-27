@@ -34,8 +34,8 @@ class TenantResponse:
         self.id = tenant.id
         self.tenant_id = tenant.tenant_id
         self.name = tenant.name or tenant.tenant_id
-        self.description = f"Tenant {tenant.tenant_id}"
-        self.logo = None
+        self.description = tenant.description or f"Tenant {tenant.tenant_id}"
+        self.logo = tenant.logo  # Use actual logo from database
         self.agent_count = 0  # TODO: Query actual agent count
         self.created_at = tenant.created_at.isoformat()
         self.updated_at = tenant.updated_at.isoformat() if tenant.updated_at else tenant.created_at.isoformat()
@@ -296,6 +296,10 @@ async def update_tenant(
         HTTPException(400): If validation fails
         HTTPException(500): If update fails
     """
+    # Cache user attributes early to avoid lazy loading issues in exception handlers
+    user_id = current_user.id
+    user_email = current_user.email
+
     try:
         # Resolve tenant_identifier to tenant_id (slug)
         # The TenantService.update_tenant expects tenant_id (slug), not UUID
@@ -353,8 +357,8 @@ async def update_tenant(
         )
 
         logger.info(
-            f"User {current_user.email} updated tenant {tenant_id_slug}",
-            extra={"user_id": current_user.id, "tenant_id": tenant_id_slug}
+            f"User {user_email} updated tenant {tenant_id_slug}",
+            extra={"user_id": user_id, "tenant_id": tenant_id_slug}
         )
 
         return response.model_dump()
@@ -365,7 +369,7 @@ async def update_tenant(
         # Validation errors or business logic errors
         logger.warning(
             f"Tenant update validation failed: {str(e)}",
-            extra={"user_id": current_user.id, "tenant_id": tenant_identifier, "error": str(e)}
+            extra={"user_id": user_id, "tenant_id": tenant_identifier, "error": str(e)}
         )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -377,7 +381,7 @@ async def update_tenant(
 
         logger.error(
             f"Failed to update tenant {tenant_identifier}: {str(e)}",
-            extra={"user_id": current_user.id, "tenant_id": tenant_identifier, "error": str(e)}
+            extra={"user_id": user_id, "tenant_id": tenant_identifier, "error": str(e)}
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

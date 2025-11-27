@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { AgentForm } from '@/components/agents/AgentForm';
 import { ToolAssignment } from '@/components/agents/ToolAssignment';
@@ -27,7 +27,6 @@ export default function AgentDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const agentId = params.id as string;
-  const defaultTab = searchParams.get('tab') || 'overview';
 
   const { data: agent, isLoading } = useAgent(agentId);
   const updateAgentMutation = useUpdateAgent();
@@ -38,6 +37,17 @@ export default function AgentDetailPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [copiedSecret, setCopiedSecret] = useState(false);
+
+  // Reason: Initialize tab index directly from URL on mount
+  // Defaults to Overview (index 0) instead of relying on searchParams hook which can cause re-renders
+  const [activeTabIndex, setActiveTabIndex] = useState(() => {
+    // Only read from window on client side
+    if (typeof window === 'undefined') return 0;
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
+    if (tabParam === 'tools') return 1;
+    if (tabParam === 'test') return 2;
+    return 0; // Default to overview
+  });
 
   // Mock tools data - in real app, fetch from API
   const mockTools = [
@@ -240,7 +250,16 @@ export default function AgentDetailPage() {
 
         {/* Tabbed Content */}
         <Tabs
-          defaultIndex={defaultTab === 'tools' ? 1 : defaultTab === 'test' ? 2 : 0}
+          selectedIndex={activeTabIndex}
+          onChange={(index) => {
+            setActiveTabIndex(index);
+            // Update URL to reflect current tab
+            const tabKey = index === 0 ? 'overview' : index === 1 ? 'tools' : 'test';
+            // Use window.history to avoid full page reload
+            if (typeof window !== 'undefined') {
+              window.history.replaceState({}, '', `?tab=${tabKey}`);
+            }
+          }}
           variant="underline"
           className="w-full"
           tabs={[

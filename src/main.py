@@ -14,7 +14,7 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import make_asgi_app
 
-from src.api import health, webhooks, feedback, plugins, agents, prompts, budget, llm_providers, llm_models, fallback_chains, byok, agent_testing, memory, llm_costs, agent_performance, tenant_spend, executions, openapi_tools, mcp_servers, agent_execution, unified_tools, metrics, tenants, dashboard, queue, audit, workers
+from src.api import health, webhooks, feedback, plugins, agents, prompts, budget, llm_providers, llm_providers_v1, llm_models, fallback_chains, byok, agent_testing, memory, llm_costs, agent_performance, tenant_spend, executions, openapi_tools, mcp_servers, agent_execution, unified_tools, metrics, tenants, dashboard, queue, audit, workers
 from src.api import auth, users, roles  # Story 1C: Authentication endpoints, Story 25: Role management
 from src.api.admin import tenants as admin_tenants
 from src.api.exception_handlers import setup_exception_handlers  # Story 1C
@@ -95,7 +95,8 @@ app.include_router(prompts.router)  # Story 8.5: Prompt versioning (BEFORE agent
 app.include_router(openapi_tools.router)  # Story 8.8: OpenAPI tool upload and MCP auto-generation
 app.include_router(agents.router)  # Story 8.3: Agent CRUD API endpoints
 app.include_router(budget.router)  # Story 8.10: Budget enforcement webhook endpoint
-app.include_router(llm_providers.router)  # Story 8.11: LLM provider configuration endpoints
+app.include_router(llm_providers.router)  # Story 8.11: LLM provider configuration endpoints (deprecated)
+app.include_router(llm_providers_v1.router)  # LLM Providers API v1 - wraps LiteLLM
 app.include_router(llm_models.router)  # Story 8.11: LLM model configuration endpoints
 app.include_router(fallback_chains.router)  # Story 8.12: Fallback chain configuration endpoints
 app.include_router(byok.router)  # Story 8.13: BYOK (Bring Your Own Key) endpoints
@@ -163,6 +164,16 @@ async def startup_event() -> None:
     except Exception as e:
         logger.error(f"Failed to register Jira plugin: {str(e)}", exc_info=True)
         raise
+
+    # Story 8.9 Enhancement: Backfill virtual keys for tenants missing them
+    # This ensures any tenants created before Story 8.9 or through direct DB
+    # insertion will automatically get their LiteLLM virtual keys created
+    try:
+        from src.services.virtual_key_backfill import backfill_virtual_keys_on_startup
+        await backfill_virtual_keys_on_startup()
+    except Exception as e:
+        # Non-fatal - log warning but don't block startup
+        logger.warning(f"Virtual key backfill failed (non-fatal): {str(e)}")
 
 
 @app.get("/")

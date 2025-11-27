@@ -13,6 +13,47 @@ const nextConfig = {
   skipTrailingSlashRedirect: true,
   skipMiddlewareUrlNormalize: true,
 
+  // Headers to fix Cloudflare Tunnel buffering issues with RSC streaming
+  // Reference: https://github.com/cloudflare/cloudflared/issues/199
+  async headers() {
+    return [
+      {
+        // CRITICAL: Prevent caching of webpack.js to fix race condition with RSC
+        // Cloudflare edge caching serves webpack.js too fast, causing it to execute
+        // before inline RSC scripts, breaking React hydration (blank page)
+        source: '/_next/static/chunks/webpack-:hash*.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
+          { key: 'CDN-Cache-Control', value: 'no-store' },
+          { key: 'Cloudflare-CDN-Cache-Control', value: 'no-store' },
+        ],
+      },
+      {
+        // Also prevent caching of main-app chunk (second critical script)
+        source: '/_next/static/chunks/main-app-:hash*.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
+          { key: 'CDN-Cache-Control', value: 'no-store' },
+          { key: 'Cloudflare-CDN-Cache-Control', value: 'no-store' },
+        ],
+      },
+      {
+        // Apply to all routes
+        source: '/:path*',
+        headers: [
+          // Disable nginx/proxy buffering
+          { key: 'X-Accel-Buffering', value: 'no' },
+          // Prevent caching of dynamic content
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, proxy-revalidate' },
+          // Prevent Cloudflare from caching
+          { key: 'CDN-Cache-Control', value: 'no-store' },
+          // Cloudflare-specific cache bypass
+          { key: 'Cloudflare-CDN-Cache-Control', value: 'no-store' },
+        ],
+      },
+    ];
+  },
+
   // Bundle optimization
   compiler: {
     // Remove console logs in production
@@ -27,7 +68,15 @@ const nextConfig = {
   },
 
   // Webpack optimization
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
+    // Add build timestamp to force new hashes after cache busting changes
+    // This ensures Cloudflare edge cache gets new files after nginx header updates
+    config.plugins.push(
+      new webpack.DefinePlugin({
+        '__BUILD_TIMESTAMP__': JSON.stringify(Date.now().toString()),
+      })
+    );
+
     // Optimize chunk splitting
     if (!isServer) {
       config.optimization = {
@@ -85,10 +134,16 @@ const nextConfig = {
   experimental: {
     // Enable optimistic client cache
     optimisticClientCache: true,
+    // Disable CSR bailout check - fixes Cloudflare Tunnel blank page issue
+    // Reference: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    missingSuspenseWithCSRBailout: false,
+    // Disable PPR (Partial Prerendering) to avoid streaming issues with Cloudflare
+    ppr: false,
   },
 
-  // Enable compression
-  compress: true,
+  // Disable compression - let nginx/cloudflare handle it
+  // This prevents double-compression issues with Cloudflare Tunnel
+  compress: false,
 
   // Production source maps (smaller)
   productionBrowserSourceMaps: false,

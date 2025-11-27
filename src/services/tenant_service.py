@@ -286,9 +286,13 @@ class TenantService:
             db_config.tool_type = update_data["tool_type"]
 
         if "servicedesk_url" in update_data:
-            db_config.servicedesk_url = str(update_data["servicedesk_url"])
+            # Only update if value is not None (None means "no change" from frontend)
+            if update_data["servicedesk_url"] is not None:
+                db_config.servicedesk_url = str(update_data["servicedesk_url"])
 
         if "servicedesk_api_key" in update_data:
+            # Only update if value is not None (None means "no change" from frontend)
+            # Column has NOT NULL constraint, so we can't set it to None
             if update_data["servicedesk_api_key"] is not None:
                 try:
                     db_config.servicedesk_api_key_encrypted = encrypt(
@@ -297,13 +301,14 @@ class TenantService:
                 except EncryptionError as e:
                     logger.error(f"Failed to encrypt new API key: {str(e)}")
                     raise
-            else:
-                db_config.servicedesk_api_key_encrypted = None
+            # If None, skip update - keep existing value
 
-        if "jira_url" in update_data:
+        # Jira fields - only update if model has these attributes
+        if "jira_url" in update_data and hasattr(db_config, 'jira_url'):
             db_config.jira_url = str(update_data["jira_url"]) if update_data["jira_url"] else None
 
-        if "jira_api_token" in update_data:
+        if "jira_api_token" in update_data and hasattr(db_config, 'jira_api_token_encrypted'):
+            # Only update if value is not None (None means "no change" from frontend)
             if update_data["jira_api_token"] is not None:
                 try:
                     db_config.jira_api_token_encrypted = encrypt(
@@ -312,13 +317,13 @@ class TenantService:
                 except EncryptionError as e:
                     logger.error(f"Failed to encrypt new Jira API token: {str(e)}")
                     raise
-            else:
-                db_config.jira_api_token_encrypted = None
+            # If None, skip update - keep existing value
 
-        if "jira_project_key" in update_data:
+        if "jira_project_key" in update_data and hasattr(db_config, 'jira_project_key'):
             db_config.jira_project_key = update_data["jira_project_key"]
 
         if "webhook_signing_secret" in update_data:
+            # Only update if value is not None (None means "no change" from frontend)
             if update_data["webhook_signing_secret"] is not None:
                 try:
                     db_config.webhook_signing_secret_encrypted = encrypt(
@@ -327,8 +332,7 @@ class TenantService:
                 except EncryptionError as e:
                     logger.error(f"Failed to encrypt new webhook secret: {str(e)}")
                     raise
-            else:
-                db_config.webhook_signing_secret_encrypted = None
+            # If None, skip update - keep existing value
 
         if "enhancement_preferences" in update_data:
             prefs = update_data["enhancement_preferences"]
@@ -350,13 +354,29 @@ class TenantService:
             logger.warning(f"Failed to invalidate cache for {tenant_id}: {str(e)}")
 
         # Decrypt and return updated config
-        try:
-            decrypted_api_key = decrypt(db_config.servicedesk_api_key_encrypted) if db_config.servicedesk_api_key_encrypted else None
-            decrypted_webhook_secret = decrypt(db_config.webhook_signing_secret_encrypted) if db_config.webhook_signing_secret_encrypted else None
-            decrypted_jira_token = decrypt(db_config.jira_api_token_encrypted) if db_config.jira_api_token_encrypted else None
-        except EncryptionError as e:
-            logger.error(f"Failed to decrypt updated credentials for {tenant_id}: {str(e)}")
-            raise
+        # Handle decryption errors gracefully - corrupted data shouldn't block updates
+        decrypted_api_key = None
+        decrypted_webhook_secret = None
+        decrypted_jira_token = None
+
+        if db_config.servicedesk_api_key_encrypted:
+            try:
+                decrypted_api_key = decrypt(db_config.servicedesk_api_key_encrypted)
+            except EncryptionError as e:
+                logger.warning(f"Failed to decrypt servicedesk API key for {tenant_id}: {str(e)}")
+
+        if db_config.webhook_signing_secret_encrypted:
+            try:
+                decrypted_webhook_secret = decrypt(db_config.webhook_signing_secret_encrypted)
+            except EncryptionError as e:
+                logger.warning(f"Failed to decrypt webhook secret for {tenant_id}: {str(e)}")
+
+        # Jira token - only if model has this attribute
+        if hasattr(db_config, 'jira_api_token_encrypted') and db_config.jira_api_token_encrypted:
+            try:
+                decrypted_jira_token = decrypt(db_config.jira_api_token_encrypted)
+            except EncryptionError as e:
+                logger.warning(f"Failed to decrypt Jira API token for {tenant_id}: {str(e)}")
 
         return TenantConfigInternal(
             id=db_config.id,
@@ -367,9 +387,9 @@ class TenantService:
             tool_type=db_config.tool_type,
             servicedesk_url=db_config.servicedesk_url,
             servicedesk_api_key=decrypted_api_key,
-            jira_url=db_config.jira_url,
+            jira_url=getattr(db_config, 'jira_url', None),
             jira_api_token=decrypted_jira_token,
-            jira_project_key=db_config.jira_project_key,
+            jira_project_key=getattr(db_config, 'jira_project_key', None),
             webhook_signing_secret=decrypted_webhook_secret,
             enhancement_preferences=db_config.enhancement_preferences,
             is_active=db_config.is_active,

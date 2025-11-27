@@ -8,6 +8,11 @@
   /* Hybrid Design System - Subtle background */
   --bg-primary: #f8fafc;
   --bg-secondary: #f1f5f9;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --card-bg: white;
+  --card-border: #e2e8f0;
+  --card-hover-border: #cbd5e1;
 
   /* Fluid orb colors */
   --orb-blue: rgba(59, 130, 246, 0.8);
@@ -16,11 +21,29 @@
   --orb-cyan: rgba(14, 165, 233, 0.5);
 }
 
+/* Dark mode CSS variables */
+.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --card-hover-border: #475569;
+
+  /* Darker orb colors for dark mode */
+  --orb-blue: rgba(59, 130, 246, 0.4);
+  --orb-purple: rgba(139, 92, 246, 0.35);
+  --orb-pink: rgba(236, 72, 153, 0.3);
+  --orb-cyan: rgba(14, 165, 233, 0.25);
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
-  color: #1f2937;
+  color: var(--text-primary);
   background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ============================================
@@ -33,16 +56,25 @@ body {
 @layer components {
   /* Solid Card - Default for forms, tables, general containers */
   .glass-card {
-    background: white;
-    border: 1px solid #e2e8f0;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     transition: all 0.2s ease;
   }
 
   .glass-card:hover {
-    border-color: #cbd5e1;
+    border-color: var(--card-hover-border);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Dark mode solid card adjustments */
+  .dark .glass-card {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .dark .glass-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
   /* Glass KPI Card - Only for metrics/highlights that need glass effect */
@@ -64,6 +96,21 @@ body {
     box-shadow:
       0 12px 32px rgba(0, 0, 0, 0.1),
       inset 0 1px 0 rgba(255, 255, 255, 1);
+  }
+
+  /* Dark mode glass KPI adjustments */
+  .dark .glass-kpi {
+    background: rgba(30, 41, 59, 0.75);
+    border: 1px solid rgba(51, 65, 85, 0.9);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .dark .glass-kpi:hover {
+    box-shadow:
+      0 12px 32px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
   /* Glass Subtle - For filter panes, toolbars, secondary content
@@ -91,10 +138,31 @@ body {
       inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
+  /* Dark mode glass subtle adjustments */
+  .dark .glass-subtle {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(51, 65, 85, 0.8);
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .dark .glass-subtle:hover {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(71, 85, 105, 0.9);
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
   /* Fallback for browsers without backdrop-filter */
   @supports not (backdrop-filter: blur(8px)) {
     .glass-subtle {
       background: rgba(255, 255, 255, 0.95);
+    }
+
+    .dark .glass-subtle {
+      background: rgba(30, 41, 59, 0.95);
     }
   }
 
@@ -225,6 +293,19 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* ============================================
+     DARK MODE TEXT COLOR OVERRIDES
+     Forces text-text-primary and text-text-secondary
+     to use CSS variables that auto-switch
+     ============================================ */
+  .text-text-primary {
+    color: var(--text-primary) !important;
+  }
+
+  .text-text-secondary {
+    color: var(--text-secondary) !important;
   }
 
   /* ============================================

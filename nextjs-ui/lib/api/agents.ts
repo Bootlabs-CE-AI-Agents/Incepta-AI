@@ -10,7 +10,8 @@ import type {
   AgentCreateData,
   AgentUpdateData,
   AgentTestInput,
-  LLMConfig
+  LLMConfig,
+  MCPToolAssignment
 } from '../validations';
 
 /**
@@ -47,10 +48,38 @@ export interface Agent {
  * Agent Test Response Type
  */
 export interface AgentTestResponse {
-  message: string;
-  output: unknown;
-  execution_time_ms: number;
-  metadata: Record<string, unknown>;
+  test_id: string;
+  agent_id: string;
+  status: string;
+  execution_trace: {
+    steps: Array<{
+      step_number: number;
+      step_type: string;
+      tool_name?: string;
+      model?: string;
+      input: Record<string, unknown>;
+      output: Record<string, unknown>;
+      timestamp: string;
+      duration_ms: number;
+    }>;
+    total_duration_ms: number;
+    status: string;
+  };
+  token_usage: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    estimated_cost_usd: number;
+  };
+  execution_time: {
+    total_duration_ms: number;
+    steps: Array<{
+      name: string;
+      duration_ms: number;
+    }>;
+  };
+  errors: unknown | null;
+  created_at: string;
 }
 
 /**
@@ -120,16 +149,36 @@ export const testAgent = async (
 };
 
 /**
+ * Tool Assignment Payload
+ * Separates OpenAPI tools (tool_ids) from MCP tools (mcp_tool_assignments)
+ */
+interface ToolAssignmentPayload {
+  tool_ids: string[];
+  mcp_tool_assignments?: MCPToolAssignment[];
+}
+
+/**
  * Assign tools to agent
- * Uses the standard update endpoint with tool_ids field
+ * Uses the standard update endpoint with both tool_ids and mcp_tool_assignments
+ *
+ * @param id - Agent ID
+ * @param toolIds - OpenAPI tool UUIDs
+ * @param mcpToolAssignments - MCP tool assignments with full metadata
  */
 export const assignTools = async (
   id: string,
-  toolIds: string[]
+  toolIds: string[],
+  mcpToolAssignments?: MCPToolAssignment[]
 ): Promise<Agent> => {
-  const response = await apiClient.put<Agent>(`/api/v1/agents/${id}`, {
+  const payload: ToolAssignmentPayload = {
     tool_ids: toolIds,
-  });
+  };
+
+  if (mcpToolAssignments && mcpToolAssignments.length > 0) {
+    payload.mcp_tool_assignments = mcpToolAssignments;
+  }
+
+  const response = await apiClient.put<Agent>(`/api/v1/agents/${id}`, payload);
   return response.data;
 };
 

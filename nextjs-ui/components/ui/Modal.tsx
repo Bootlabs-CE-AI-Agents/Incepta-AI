@@ -28,9 +28,13 @@ export interface ModalProps {
    */
   footer?: ReactNode;
   /**
-   * Size variant: 'sm' (384px), 'md' (512px), 'lg' (768px), 'xl' (1024px)
+   * Size variant: 'sm' (384px), 'md' (512px), 'lg' (768px), 'xl' (896px), '2xl' (1024px)
    */
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  /**
+   * If true, constrains modal height to viewport with scrollable content (default: false)
+   */
+  scrollable?: boolean;
   /**
    * If true, clicking the backdrop will NOT close the modal
    */
@@ -49,7 +53,8 @@ const sizeClasses = {
   sm: 'max-w-sm',
   md: 'max-w-md',
   lg: 'max-w-lg',
-  xl: 'max-w-xl',
+  xl: 'max-w-4xl', // Wider for execution details (was max-w-xl = 576px, now 896px)
+  '2xl': 'max-w-5xl', // Even wider option for complex content
 };
 
 /**
@@ -91,6 +96,7 @@ export function Modal({
   children,
   footer,
   size = 'md',
+  scrollable = false,
   preventBackdropClose = false,
   className = '',
   showCloseButton = true,
@@ -114,12 +120,13 @@ export function Modal({
             ${sizeClasses[size]} w-full
             glass-card p-6 shadow-2xl
             transform transition-all duration-300
+            ${scrollable ? 'max-h-[85vh] flex flex-col overflow-hidden' : ''}
             ${className}
           `}
         >
           {/* Header with title and close button */}
           {(title || showCloseButton) && (
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-4 flex-shrink-0">
               <div className="flex-1">
                 {title && (
                   <DialogTitle className="text-lg font-semibold text-text-primary dark:text-white">
@@ -144,14 +151,14 @@ export function Modal({
             </div>
           )}
 
-          {/* Body */}
-          <div className="text-text-secondary dark:text-text-secondary">
+          {/* Body - scrollable when scrollable prop is true */}
+          <div className={`text-text-secondary dark:text-text-secondary ${scrollable ? 'flex-1 overflow-y-auto min-h-0' : ''}`}>
             {children}
           </div>
 
           {/* Footer (optional) */}
           {footer && (
-            <div className="mt-6 flex gap-3 justify-end">
+            <div className="mt-6 flex gap-3 justify-end flex-shrink-0">
               {footer}
             </div>
           )}

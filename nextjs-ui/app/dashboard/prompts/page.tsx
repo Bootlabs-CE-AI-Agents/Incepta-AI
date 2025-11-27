@@ -14,13 +14,13 @@ import { PromptCards } from '@/components/prompts/PromptCards';
 import { Button } from '@/components/ui/Button';
 import { Loading } from '@/components/ui/Loading';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { canEdit as checkCanEdit } from '@/lib/utils/roleUtils';
 
 export default function PromptsPage() {
   const { data: session } = useSession();
   const { data: prompts, isLoading, error } = usePrompts();
 
-  const userRole = session?.user?.role || 'viewer';
-  const canEdit = ['super_admin', 'tenant_admin', 'developer'].includes(userRole);
+  const canEditPrompts = checkCanEdit(session?.user?.roles);
 
   if (isLoading) {
     return (
@@ -54,7 +54,7 @@ export default function PromptsPage() {
             Manage LLM prompt templates with variable substitution
           </p>
         </div>
-        {canEdit && (
+        {canEditPrompts && (
           <Link href="/dashboard/prompts/new">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
@@ -64,7 +64,7 @@ export default function PromptsPage() {
         )}
       </div>
 
-      <PromptCards prompts={prompts || []} canEdit={canEdit} />
+      <PromptCards prompts={prompts || []} canEdit={canEditPrompts} />
     </DashboardLayout>
   );
 }

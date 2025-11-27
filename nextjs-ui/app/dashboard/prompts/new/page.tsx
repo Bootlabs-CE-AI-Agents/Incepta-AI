@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Textarea } from '@/components/ui/Textarea';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { canEdit } from '@/lib/utils/roleUtils';
 
 const createPromptSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
@@ -43,8 +44,7 @@ export default function NewPromptPage() {
   const [templateText, setTemplateText] = useState(DEFAULT_TEMPLATE);
   const [showDraftBanner, setShowDraftBanner] = useState(false);
 
-  const userRole = session?.user?.role || 'viewer';
-  const canCreate = ['super_admin', 'tenant_admin', 'developer'].includes(userRole);
+  const canCreate = canEdit(session?.user?.roles);
 
   // Auto-save draft every 30 seconds (AC-6)
   const { isSaving, lastSaved, clearDraft, loadDraft } = useAutoSaveDraft({

@@ -288,6 +288,15 @@ class AgentExecutionService:
                     extra={"model": llm_model, "provider": llm_provider},
                 )
 
+            # DEBUG: Log tool details before executor creation
+            logger.info(
+                "Tools ready for executor binding",
+                extra={
+                    "tool_count": len(langchain_tools),
+                    "tool_names": [t.name for t in langchain_tools] if langchain_tools else [],
+                },
+            )
+
             logger.info(
                 "Creating ReAct agent",
                 extra={

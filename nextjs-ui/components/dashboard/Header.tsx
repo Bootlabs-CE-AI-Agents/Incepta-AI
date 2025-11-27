@@ -24,10 +24,10 @@ export function Header() {
       {/* Logo */}
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center text-white font-bold">
-          AI
+          I
         </div>
         <h1 className="text-xl font-semibold text-text-primary">
-          AI Agents Platform
+          Incepta
         </h1>
       </div>
 

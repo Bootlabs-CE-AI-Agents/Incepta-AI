@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { TenantFormData, tenantCreateSchema } from '@/lib/validations/tenants';
+import { TenantFormData, tenantCreateSchema, tenantUpdateSchema, TenantUpdateData } from '@/lib/validations/tenants';
 import { Form, FormField } from '@/components/forms';
 import {
   Input,
@@ -32,7 +32,7 @@ import { json } from '@codemirror/lang-json';
  */
 
 interface TenantFormProps {
-  onSubmit: (data: TenantFormData) => void;
+  onSubmit: (data: TenantFormData | TenantUpdateData) => void;
   defaultValues?: Partial<Tenant>;
   isLoading?: boolean;
   onCancel?: () => void;
@@ -46,8 +46,14 @@ export function TenantForm({
   onCancel,
   mode = 'create',
 }: TenantFormProps) {
+  // Use appropriate validation schema based on mode
+  // Edit mode uses a relaxed schema that doesn't require API keys (they're masked)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const validationSchema = mode === 'edit' ? tenantUpdateSchema : tenantCreateSchema;
+
   const form = useForm<TenantFormData>({
-    resolver: zodResolver(tenantCreateSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(validationSchema) as any,
     mode: 'onSubmit',
     reValidateMode: 'onChange',
     defaultValues: {
@@ -166,8 +172,27 @@ export function TenantForm({
     return `$${value.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
   };
 
+  // Handle form submission with error logging
+  const handleFormSubmit = form.handleSubmit(
+    (data) => {
+      console.log('Form submitted successfully with data:', data);
+      onSubmit(data);
+    },
+    (errors) => {
+      console.error('Form validation errors:', errors);
+      // Show toast with first error
+      const firstError = Object.entries(errors)[0];
+      if (firstError) {
+        const [field, error] = firstError;
+        toast.error(`Validation error: ${field}`, {
+          description: (error as { message?: string })?.message || 'Invalid value',
+        });
+      }
+    }
+  );
+
   return (
-    <Form onSubmit={form.handleSubmit(onSubmit)} className="w-full max-w-[800px] mx-auto space-y-6">
+    <Form onSubmit={handleFormSubmit} className="w-full max-w-[800px] mx-auto space-y-6">
       <Accordion defaultValue={["basic"]}>
         {/* AC-8: Basic Information Section (expanded by default) */}
         <AccordionItem value="basic">

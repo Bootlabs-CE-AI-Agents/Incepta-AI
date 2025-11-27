@@ -1141,6 +1141,8 @@ class Agent(Base):
         name: Human-readable agent name
         description: Detailed description of agent purpose
         status: Agent status (draft, active, suspended, inactive)
+        type: Agent type (tool_based, conversational, langgraph, custom)
+        cognitive_architecture: Execution strategy (react, single_step, plan_and_solve)
         system_prompt: LLM system prompt defining agent behavior
         llm_config: JSONB configuration for LLM (model, temperature, max_tokens)
         memory_config: Agent memory configuration (short_term, long_term, agentic)
@@ -1182,6 +1184,13 @@ class Agent(Base):
         nullable=False,
         index=True,
         doc="Agent status: draft, active, suspended, inactive",
+    )
+    type: str = Column(
+        String(50),
+        nullable=False,
+        default="tool_based",
+        server_default="tool_based",
+        doc="Agent type: tool_based, conversational, langgraph, custom",
     )
     cognitive_architecture: str = Column(
         String(50),

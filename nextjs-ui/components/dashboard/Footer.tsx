@@ -15,7 +15,7 @@ export function Footer() {
     <footer className="hidden md:block glass-card mt-6 px-6 py-4">
       <div className="flex items-center justify-between text-sm text-text-secondary">
         <div>
-          © {new Date().getFullYear()} AI Agents Platform. All rights reserved.
+          © {new Date().getFullYear()} Incepta. All rights reserved.
         </div>
         <div className="flex items-center gap-6">
           <span>v1.0.0</span>

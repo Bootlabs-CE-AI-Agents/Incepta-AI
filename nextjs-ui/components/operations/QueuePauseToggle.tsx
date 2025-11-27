@@ -18,12 +18,13 @@ import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { Loader2, Pause, Play, AlertTriangle } from 'lucide-react';
 import { useQueueStatus, usePauseQueue, useResumeQueue } from '@/lib/hooks/useQueue';
+import { hasRole, type RoleEntry } from '@/lib/utils/roleUtils';
 
 /**
  * Check if user has permission to pause/resume queue
  */
-const canManageQueue = (role?: string): boolean => {
-  return role === 'tenant_admin' || role === 'operator';
+const canManageQueue = (roles?: RoleEntry[] | null): boolean => {
+  return hasRole(roles, ['tenant_admin', 'operator', 'super_admin']);
 };
 
 export function QueuePauseToggle() {
@@ -34,7 +35,7 @@ export function QueuePauseToggle() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Hide if user doesn't have permission
-  if (!canManageQueue(session?.user?.role)) {
+  if (!canManageQueue(session?.user?.roles)) {
     return null;
   }
 

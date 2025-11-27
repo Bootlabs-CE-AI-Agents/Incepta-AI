@@ -7,6 +7,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { getDashboardSummary, type DashboardSummary } from '@/lib/api/dashboard';
+import { useTenantStore } from '@/lib/stores/useTenantStore';
 
 /**
  * Hook for dashboard summary data
@@ -42,13 +43,18 @@ import { getDashboardSummary, type DashboardSummary } from '@/lib/api/dashboard'
  * ```
  */
 export function useDashboardSummary(refreshInterval: number = 30000) {
+  // Include tenant ID in query key to refetch when tenant changes
+  const selectedTenant = useTenantStore((state) => state.selectedTenant);
+  const tenantId = selectedTenant?.tenant_id;
+
   return useQuery<DashboardSummary, Error>({
-    queryKey: ['dashboard', 'summary'],
+    queryKey: ['dashboard', 'summary', tenantId],
     queryFn: getDashboardSummary,
     refetchInterval: refreshInterval,
     staleTime: 5 * 1000, // Consider data stale after 5s (prevent duplicate requests)
     gcTime: 60 * 1000,   // Keep data in cache for 60s
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    enabled: !!tenantId, // Only fetch when tenant is selected
   });
 }

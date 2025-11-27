@@ -27,6 +27,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Loading } from '@/components/ui/Loading';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
+import { canEdit as checkCanEdit, canManage } from '@/lib/utils/roleUtils';
 
 export default function PromptDetailPage() {
   const params = useParams();
@@ -51,14 +52,14 @@ export default function PromptDetailPage() {
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  const userRole = session?.user?.role || 'viewer';
-  const canEdit = ['super_admin', 'tenant_admin', 'developer'].includes(userRole);
+  const userRoles = session?.user?.roles;
+  const canEdit = checkCanEdit(userRoles);
 
   // RBAC check for Version History (AC-9: developer/admin only)
-  const canViewVersionHistory = ['tenant_admin', 'developer', 'super_admin'].includes(userRole);
+  const canViewVersionHistory = checkCanEdit(userRoles);
 
   // RBAC check for Test tab (AC-8: developer/admin only)
-  const canViewTestTab = ['tenant_admin', 'developer', 'super_admin'].includes(userRole);
+  const canViewTestTab = checkCanEdit(userRoles);
 
   // Update URL when tab changes (AC-9)
   const handleTabChange = (index: number) => {

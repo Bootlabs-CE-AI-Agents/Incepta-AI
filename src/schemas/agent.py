@@ -70,6 +70,33 @@ class CognitiveArchitecture(str, Enum):
     PLAN_AND_SOLVE = "plan_and_solve"
 
 
+class AgentType(str, Enum):
+    """
+    Agent types determining initialization and tool presentation strategy.
+
+    TOOL_BASED: Direct tool calling, optimized for task automation.
+        Best for: Ticket automation, data processing, workflows.
+        System Prompt: Includes tool-calling instructions.
+
+    CONVERSATIONAL: Memory-aware, optimized for multi-turn chat.
+        Best for: Customer support, help desk, interactive analysis.
+        System Prompt: Includes conversation management instructions.
+
+    LANGGRAPH: Complex routing with sub-agents and conditional logic.
+        Best for: Complex workflows, supervisor patterns, multi-agent systems.
+        System Prompt: Includes orchestration instructions.
+
+    CUSTOM: User-defined custom agent logic.
+        Best for: Specialized requirements not covered by other types.
+        System Prompt: Used as-is without modification.
+    """
+
+    TOOL_BASED = "tool_based"
+    CONVERSATIONAL = "conversational"
+    LANGGRAPH = "langgraph"
+    CUSTOM = "custom"
+
+
 class LLMConfig(BaseModel):
     """
     LLM provider configuration for agents.
@@ -308,6 +335,7 @@ class AgentCreate(BaseModel):
         system_prompt: LLM system prompt (10-32000 chars)
         llm_config: LLM configuration (provider, model, temperature, max_tokens)
         status: Agent status (default: draft)
+        type: Agent type (default: tool_based)
         created_by: Optional user who created agent
         triggers: List of triggers to create with agent
         tool_ids: List of OpenAPI tool IDs to assign
@@ -320,6 +348,10 @@ class AgentCreate(BaseModel):
     system_prompt: str = Field(..., min_length=10, max_length=32000)
     llm_config: LLMConfig
     status: AgentStatus = Field(default=AgentStatus.DRAFT)
+    type: AgentType = Field(
+        default=AgentType.TOOL_BASED,
+        description="Agent type determining initialization strategy",
+    )
     cognitive_architecture: CognitiveArchitecture = Field(
         default=CognitiveArchitecture.REACT,
         description="Cognitive architecture for execution flow",
@@ -397,6 +429,7 @@ class AgentUpdate(BaseModel):
         system_prompt: Optional system prompt update
         llm_config: Optional LLM configuration update
         status: Optional status update (validated for valid transitions)
+        type: Optional agent type update
         tool_ids: Optional list of OpenAPI tool IDs to assign
         mcp_tool_assignments: Optional list of MCP tool assignments
         cognitive_architecture: Optional cognitive architecture update
@@ -407,6 +440,7 @@ class AgentUpdate(BaseModel):
     system_prompt: Optional[str] = Field(None, min_length=10, max_length=32000)
     llm_config: Optional[LLMConfig] = None
     status: Optional[AgentStatus] = None
+    type: Optional[AgentType] = None
     cognitive_architecture: Optional[CognitiveArchitecture] = None
     tool_ids: Optional[list[str]] = Field(
         None, max_length=20, description="OpenAPI tool IDs (from openapi_tools table)"
@@ -469,6 +503,7 @@ class AgentResponse(BaseModel):
         name: Agent name
         description: Agent description
         status: Current status
+        type: Agent type
         system_prompt: System prompt
         llm_config: LLM configuration (serialized JSONB dict)
         created_at: Creation timestamp
@@ -489,6 +524,7 @@ class AgentResponse(BaseModel):
         Handles serialization of AgentTrigger and AgentTool relationships
         from SQLAlchemy ORM objects to dict format expected by schema.
         Also deserializes assigned_mcp_tools JSONB field.
+        Includes backward compatibility for agents without type field.
         """
         if hasattr(data, "__dict__"):  # It's an ORM object
             # Build dict from ORM attributes
@@ -498,6 +534,11 @@ class AgentResponse(BaseModel):
                 "name": data.name,
                 "description": data.description,
                 "status": data.status,
+                "type": (
+                    data.type
+                    if hasattr(data, "type")
+                    else "tool_based"  # Backward compatibility default
+                ),
                 "system_prompt": data.system_prompt,
                 "llm_config": data.llm_config,
                 "created_at": data.created_at,
@@ -547,6 +588,7 @@ class AgentResponse(BaseModel):
     name: str
     description: Optional[str]
     status: AgentStatus
+    type: AgentType = Field(default=AgentType.TOOL_BASED)
     system_prompt: str
     llm_config: dict[str, Any]  # JSONB serialized as dict
     created_at: datetime
@@ -577,6 +619,7 @@ class AgentResponse(BaseModel):
                 "name": "Ticket Enhancement Agent",
                 "description": "Enhances tickets with context",
                 "status": "active",
+                "type": "tool_based",
                 "system_prompt": "You are a helpful assistant...",
                 "llm_config": {
                     "provider": "litellm",

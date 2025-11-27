@@ -52,8 +52,10 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - login (login page)
-     * - / (home/landing page)
+     * - design-preview (design preview page)
+     *
+     * The root path "/" is excluded by only matching paths with at least one character after /
      */
-    "/((?!api/auth|api/health|api/healthz|_next/static|_next/image|favicon.ico|login|design-preview|^/$).*)",
+    "/((?!api/auth|api/health|api/healthz|_next/static|_next/image|favicon.ico|login|design-preview).+)",
   ],
 };

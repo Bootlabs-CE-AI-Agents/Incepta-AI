@@ -37,11 +37,26 @@ export interface UnifiedTool {
   /** MCP server name (only for MCP tools) */
   mcp_server?: string;
 
+  /** MCP server ID (UUID, only for MCP tools) */
+  mcp_server_id?: string;
+
+  /** MCP server name from backend (only for MCP tools) */
+  mcp_server_name?: string;
+
+  /** MCP primitive type: tool, resource, or prompt (only for MCP tools) */
+  mcp_primitive_type?: 'tool' | 'resource' | 'prompt';
+
   /** Tool icon emoji (derived from category or name) */
   icon?: string;
 
   /** Tool schema (JSON Schema for parameters) */
   schema?: Record<string, any>;
+
+  /** Input schema from backend */
+  input_schema?: Record<string, any>;
+
+  /** Whether tool is enabled */
+  enabled?: boolean;
 }
 
 /**
@@ -112,6 +127,26 @@ export interface MCPHealthStatusResponse {
 }
 
 /**
+ * MCP Tool Assignment
+ *
+ * Proper MCP tool assignment structure expected by backend
+ */
+export interface MCPToolAssignment {
+  /** Deterministic UUID for the tool */
+  id: string;
+  /** Tool name */
+  name: string;
+  /** Always "mcp" for MCP tools */
+  source_type: 'mcp';
+  /** MCP server UUID */
+  mcp_server_id: string;
+  /** MCP server name */
+  mcp_server_name: string;
+  /** MCP primitive type */
+  mcp_primitive_type: 'tool' | 'resource' | 'prompt';
+}
+
+/**
  * Tool Assignment Payload
  *
  * Sent to backend when saving agent tool assignments
@@ -120,6 +155,6 @@ export interface ToolAssignmentPayload {
   /** OpenAPI tool IDs to assign */
   tool_ids: string[];
 
-  /** MCP tool assignments (format: "server/tool_name") */
-  mcp_tool_assignments: string[];
+  /** MCP tool assignments with full metadata */
+  mcp_tool_assignments: MCPToolAssignment[];
 }

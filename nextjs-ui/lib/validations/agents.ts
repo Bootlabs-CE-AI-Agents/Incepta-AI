@@ -35,6 +35,21 @@ export const cognitiveArchitectureEnum = z.enum([
  * Note: provider_id was removed in favor of direct LiteLLM integration
  * The provider field should be set to "litellm" and uses LiteLLM proxy models
  */
+/**
+ * MCP Tool Assignment Schema
+ * For MCP tools assigned to agents
+ */
+export const mcpToolAssignmentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  source_type: z.literal('mcp'),
+  mcp_server_id: z.string(),
+  mcp_server_name: z.string(),
+  mcp_primitive_type: z.enum(['tool', 'resource', 'prompt']),
+});
+
+export type MCPToolAssignment = z.infer<typeof mcpToolAssignmentSchema>;
+
 export const llmConfigSchema = z.object({
   provider: z
     .string()
@@ -92,8 +107,11 @@ export const agentSchema = z.object({
 
   llm_config: llmConfigSchema,
 
-  // Tool IDs assigned to this agent (managed in Tool Assignment UI)
+  // Tool IDs assigned to this agent (OpenAPI tools only)
   tool_ids: z.array(z.string().uuid()),
+
+  // MCP tool assignments with full metadata
+  mcp_tool_assignments: z.array(mcpToolAssignmentSchema).optional(),
 
   // Status active/inactive
   is_active: z.boolean(),
@@ -116,14 +134,16 @@ export const agentUpdateSchema = agentSchema.partial();
 /**
  * Agent Test Input Schema
  * For testing agents in sandbox
+ *
+ * Maps frontend "message" field to backend "payload" structure
  */
 export const agentTestSchema = z.object({
-  message: z.string()
-    .min(1, { message: "Test message is required" })
-    .max(2000, { message: "Test message must not exceed 2000 characters" }),
+  payload: z.record(z.string(), z.any())
+    .describe("Test payload data - webhook data or trigger parameters"),
 
-  context: z.record(z.string(), z.any())
-    .optional(),
+  simulate_webhook: z.boolean()
+    .default(true)
+    .describe("True for webhook simulation, False for scheduled trigger"),
 });
 
 /**

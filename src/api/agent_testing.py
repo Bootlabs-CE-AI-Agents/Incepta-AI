@@ -24,7 +24,7 @@ from src.schemas.agent_test import (
 from src.services.agent_test_service import AgentTestService
 from src.utils.logger import logger
 
-router = APIRouter(prefix="/api/agents", tags=["agent-testing"])
+router = APIRouter(prefix="/api/v1/agents", tags=["agent-testing"])
 
 
 def get_agent_test_service() -> AgentTestService:

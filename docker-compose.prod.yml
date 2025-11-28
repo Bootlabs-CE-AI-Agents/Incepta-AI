@@ -1,0 +1,378 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:17-alpine
+    container_name: ai-agents-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aiagents}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-ai_agents}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init.sh:/docker-entrypoint-initdb.d/init-litellm-db.sh:ro
+    ports:
+      - "5433:5432"
+    networks:
+      - ai-agents-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiagents}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # Redis Cache and Message Broker
+  redis:
+    image: redis:7-alpine
+    container_name: ai-agents-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - ai-agents-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # FastAPI Application
+  api:
+    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:api-latest
+    container_name: ai-agents-api
+    user: root
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./alembic.ini:/app/alembic.ini
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8000:8000"
+    networks:
+      - ai-agents-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # Celery Worker for Async Task Processing
+  worker:
+    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:worker-latest
+    container_name: ai-agents-worker
+    user: root
+    entrypoint: []
+    command: celery -A src.workers.celery_app worker --loglevel=info --concurrency=4
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - ai-agents-network
+    healthcheck:
+      test: [ "CMD-SHELL", "celery -A src.workers.celery_app inspect ping -d celery@$$HOSTNAME" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # HMAC Webhook Proxy for Jira Integration
+  hmac-proxy:
+    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:hmac-proxy-latest
+    container_name: ai-agents-hmac-proxy
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - HMAC_SECRET=${TICKET_ENHANCER_HMAC_SECRET}
+      - API_BASE_URL=http://api:8000
+      - DEFAULT_AGENT_ID=00bab7b6-6335-4359-96b4-f48f3460b610
+      - TIMEOUT_SECONDS=30
+      - AGENT_CACHE_TTL=300
+    ports:
+      - "3001:3000"
+    networks:
+      - ai-agents-network
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import httpx; httpx.get('http://localhost:3000/health', timeout=2)" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # Jira MCP Server
+  jira-mcp:
+    image: ghcr.io/sooperset/mcp-atlassian:latest
+    container_name: jira-mcp-server
+    environment:
+      JIRA_URL: ${JIRA_BASE_URL:-}
+      JIRA_USERNAME: ${JIRA_EMAIL:-}
+      JIRA_API_TOKEN: ${JIRA_API_TOKEN:-}
+      ENABLED_TOOLS: "jira_*"
+      LOG_LEVEL: ${JIRA_MCP_LOG_LEVEL:-INFO}
+    restart: "no"
+
+  # Prometheus Metrics Server
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ai-agents-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - ./data/prometheus:/prometheus
+    ports:
+      - "9091:9090"
+    networks:
+      - ai-agents-network
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # Alertmanager
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: ai-agents-alertmanager
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    environment:
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      PAGERDUTY_INTEGRATION_KEY: ${PAGERDUTY_INTEGRATION_KEY:-}
+      SMTP_SMARTHOST: ${SMTP_SMARTHOST:-}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      EMAIL_RECIPIENT: ${EMAIL_RECIPIENT:-}
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./data/alertmanager:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - ai-agents-network
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ai-agents-grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      GF_SERVER_ROOT_URL: "http://localhost:3002"
+    volumes:
+      - ./k8s/grafana-datasource-provision.yaml:/etc/grafana/provisioning/datasources/prometheus.yaml:ro
+      - ./k8s/grafana-dashboard-provision.yaml:/etc/grafana/provisioning/dashboards/dashboard.yaml:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3002:3000"
+    networks:
+      - ai-agents-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # Jaeger
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: ai-agents-jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - COLLECTOR_OTLP_HOST_PORT=0.0.0.0:4317
+    volumes:
+      - ./data/jaeger:/badger
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+    networks:
+      - ai-agents-network
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "http://localhost:16686/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # Next.js UI
+  nextjs-ui:
+    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:ui-latest
+    container_name: ai-ops-nextjs-ui
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - API_URL=http://api:8000
+      - NEXTAUTH_SECRET=zFjSNePEpHVvABRBo5DftIS5tLw05sdmYQKxNPWCP7k=
+      - NEXTAUTH_URL=https://incepta.nullbytes.app
+      - AUTH_TRUST_HOST=true
+    ports:
+      - "3000:3000"
+    networks:
+      - ai-agents-network
+    healthcheck:
+      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: ai-ops-nginx
+    depends_on:
+      api:
+        condition: service_healthy
+      nextjs-ui:
+        condition: service_healthy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    networks:
+      - ai-agents-network
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # Streamlit Admin UI
+  streamlit:
+    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:streamlit-latest
+    container_name: ai-agents-streamlit
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      AI_AGENTS_DATABASE_URL: postgresql+asyncpg://aiagents:password@postgres:5432/ai_agents
+      AI_AGENTS_REDIS_URL: redis://redis:6379/1
+      AI_AGENTS_CELERY_BROKER_URL: redis://redis:6379/1
+      AI_AGENTS_CELERY_RESULT_BACKEND: redis://redis:6379/1
+      API_BASE_URL: http://api:8000
+    ports:
+      - "8501:8501"
+    networks:
+      - ai-agents-network
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # LiteLLM Proxy
+  litellm:
+    image: ghcr.io/berriai/litellm-database:main-stable
+    container_name: litellm-proxy
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${LITELLM_DATABASE_URL:-postgresql://aiagents:password@postgres:5432/litellm_db}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY}
+      STORE_MODEL_IN_DB: ${STORE_MODEL_IN_DB}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AZURE_API_KEY: ${AZURE_API_KEY:-}
+      AZURE_API_BASE: ${AZURE_API_BASE:-}
+      WEBHOOK_URL: http://api:8000/api/v1/budget-alerts
+    volumes:
+      - ./config/litellm-config.yaml:/app/config.yaml:ro
+    ports:
+      - "4000:4000"
+    networks:
+      - ai-agents-network
+    command: [ "--config", "/app/config.yaml", "--detailed_debug" ]
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/').read()" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    external: true
+    name: aiops_postgres_data
+  redis_data:
+    name: ai-agents-redis-data
+    driver: local
+  prometheus_data:
+    name: ai-agents-prometheus-data
+    driver: local
+  grafana_data:
+    name: ai-agents-grafana-data
+    driver: local
+  alertmanager_data:
+    name: ai-agents-alertmanager-data
+    driver: local
+
+networks:
+  ai-agents-network:
+    name: ai-agents-network
+    driver: bridge

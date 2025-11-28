@@ -1,0 +1,59 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - new-ui
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: incepta-ai
+  ECR_REGISTRY: 779527285137.dkr.ecr.ap-south-1.amazonaws.com
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        # No credentials needed, uses instance profile
+
+      - name: Build and push API image
+        run: |
+          docker build -f docker/backend.dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:api-latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:api-latest
+
+      - name: Build and push Worker image
+        run: |
+          docker build -f docker/backend.dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:worker-latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:worker-latest
+
+      - name: Build and push HMAC Proxy image
+        run: |
+          docker build -f hmac-proxy/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:hmac-proxy-latest ./hmac-proxy
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:hmac-proxy-latest
+
+      - name: Build and push Next.js UI image
+        run: |
+          docker build -f nextjs-ui/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:ui-latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:ui-latest
+
+      - name: Build and push Streamlit image
+        run: |
+          docker build -f docker/streamlit.dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:streamlit-latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:streamlit-latest
+
+      - name: Deploy services
+        run: |
+          # Pull latest images to ensure we have the exact versions from registry
+          docker-compose -f docker-compose.prod.yml pull
+          
+          # Restart services
+          docker-compose -f docker-compose.prod.yml up -d

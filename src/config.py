@@ -277,8 +277,8 @@ class Settings(BaseSettings):
         default="http://litellm:4000",
         description="LiteLLM proxy URL for virtual key management and LLM routing",
     )
-    litellm_master_key: str = Field(
-        ...,
+    litellm_master_key: Optional[str] = Field(
+        default=None,
         description="LiteLLM master key for admin operations (virtual key management)",
         min_length=10,
     )

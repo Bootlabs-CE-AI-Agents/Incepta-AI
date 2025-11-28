@@ -7,6 +7,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-aiagents}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: ${POSTGRES_DB:-ai_agents}
+      # Encryption key for sensitive data (generated for production)
+      AI_AGENTS_ENCRYPTION_KEY: ${AI_AGENTS_ENCRYPTION_KEY:-IMcbQ6SWfDS7-ByKzRcU6vPvf3LVU2YjBQKaRDVJgJs=}
+      # JWT Secret for authentication
+      AI_AGENTS_JWT_SECRET_KEY: ${AI_AGENTS_JWT_SECRET_KEY:-zFjSNePEpHVvABRBo5DftIS5tLw05sdmYQKxNPWCP7k=}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres-init.sh:/docker-entrypoint-initdb.d/init-litellm-db.sh:ro
@@ -51,6 +55,9 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    environment:
+      - AI_AGENTS_ENCRYPTION_KEY=${AI_AGENTS_ENCRYPTION_KEY:-IMcbQ6SWfDS7-ByKzRcU6vPvf3LVU2YjBQKaRDVJgJs=}
+      - AI_AGENTS_JWT_SECRET_KEY=${AI_AGENTS_JWT_SECRET_KEY:-zFjSNePEpHVvABRBo5DftIS5tLw05sdmYQKxNPWCP7k=}
     volumes:
       - ./alembic.ini:/app/alembic.ini
       - /var/run/docker.sock:/var/run/docker.sock
@@ -80,6 +87,9 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    environment:
+      - AI_AGENTS_ENCRYPTION_KEY=${AI_AGENTS_ENCRYPTION_KEY:-IMcbQ6SWfDS7-ByKzRcU6vPvf3LVU2YjBQKaRDVJgJs=}
+      - AI_AGENTS_JWT_SECRET_KEY=${AI_AGENTS_JWT_SECRET_KEY:-zFjSNePEpHVvABRBo5DftIS5tLw05sdmYQKxNPWCP7k=}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:

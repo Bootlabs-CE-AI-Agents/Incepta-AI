@@ -43,7 +43,7 @@ services:
 
   # FastAPI Application
   api:
-    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:api-latest
+    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:backend-${IMAGE_TAG}
     container_name: ai-agents-api
     user: root
     depends_on:
@@ -70,7 +70,7 @@ services:
 
   # Celery Worker for Async Task Processing
   worker:
-    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:worker-latest
+    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:backend-${IMAGE_TAG}
     container_name: ai-agents-worker
     user: root
     entrypoint: []
@@ -96,7 +96,7 @@ services:
 
   # HMAC Webhook Proxy for Jira Integration
   hmac-proxy:
-    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:hmac-proxy-latest
+    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:hmac-proxy-${IMAGE_TAG}
     container_name: ai-agents-hmac-proxy
     depends_on:
       api:
@@ -246,7 +246,7 @@ services:
 
   # Next.js UI
   nextjs-ui:
-    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:ui-latest
+    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:ui-${IMAGE_TAG}
     container_name: ai-ops-nextjs-ui
     depends_on:
       api:
@@ -294,7 +294,7 @@ services:
 
   # Streamlit Admin UI
   streamlit:
-    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:streamlit-latest
+    image: 779527285137.dkr.ecr.ap-south-1.amazonaws.com/incepta-ai:streamlit-${IMAGE_TAG}
     container_name: ai-agents-streamlit
     depends_on:
       postgres:

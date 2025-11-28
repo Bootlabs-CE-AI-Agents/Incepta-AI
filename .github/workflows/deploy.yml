@@ -11,7 +11,64 @@ env:
   ECR_REGISTRY: 779527285137.dkr.ecr.ap-south-1.amazonaws.com
 
 jobs:
+  build-backend:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Backend image
+        run: |
+          docker build -f docker/backend.dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:backend-${{ github.sha }} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:backend-${{ github.sha }}
+
+  build-ui:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Next.js UI image
+        run: |
+          docker build -f nextjs-ui/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:ui-${{ github.sha }} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:ui-${{ github.sha }}
+
+  build-streamlit:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Streamlit image
+        run: |
+          docker build -f docker/streamlit.dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:streamlit-${{ github.sha }} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:streamlit-${{ github.sha }}
+
+  build-hmac:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push HMAC Proxy image
+        run: |
+          docker build -f hmac-proxy/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:hmac-proxy-${{ github.sha }} ./hmac-proxy
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:hmac-proxy-${{ github.sha }}
+
   deploy:
+    needs: [build-backend, build-ui, build-streamlit, build-hmac]
     runs-on: self-hosted
     steps:
       - name: Checkout code
@@ -21,38 +78,16 @@ jobs:
         run: aws sts get-caller-identity
 
       - name: Login to Amazon ECR
-        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-        # No credentials needed, uses instance profile
-
-      - name: Build and push API image
-        run: |
-          docker build -f docker/backend.dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:api-latest .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:api-latest
-
-      - name: Build and push Worker image
-        run: |
-          docker build -f docker/backend.dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:worker-latest .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:worker-latest
-
-      - name: Build and push HMAC Proxy image
-        run: |
-          docker build -f hmac-proxy/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:hmac-proxy-latest ./hmac-proxy
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:hmac-proxy-latest
-
-      - name: Build and push Next.js UI image
-        run: |
-          docker build -f nextjs-ui/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:ui-latest .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:ui-latest
-
-      - name: Build and push Streamlit image
-        run: |
-          docker build -f docker/streamlit.dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:streamlit-latest .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:streamlit-latest
 
       - name: Deploy services
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Pull latest images to ensure we have the exact versions from registry
+          # Export IMAGE_TAG for docker-compose interpolation
+          export IMAGE_TAG=$IMAGE_TAG
+          
+          # Pull latest images (using the specific tag)
           docker-compose -f docker-compose.prod.yml pull
           
           # Restart services

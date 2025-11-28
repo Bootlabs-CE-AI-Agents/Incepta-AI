@@ -37,12 +37,16 @@ init_tracer_provider()
 logger = logging.getLogger(__name__)
 
 # Initialize FastAPI application
+# redirect_slashes=False prevents 307 redirects that can cause HTTPS→HTTP downgrade
+# when running behind reverse proxies (Cloudflare Tunnel, nginx, etc.)
+# See: https://fastapi.tiangolo.com/advanced/behind-a-proxy/
 app = FastAPI(
     title="AI Agents",
     description="Multi-tenant AI enhancement platform for MSP technicians",
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    redirect_slashes=False,
 )
 
 # Story 4.6: Instrument FastAPI with OpenTelemetry
@@ -253,4 +257,7 @@ if __name__ == "__main__":
         port=8000,
         reload=True,
         log_level=settings.log_level.lower(),
+        # Trust X-Forwarded-* headers from any proxy (for local dev with tunnels)
+        # In production, specify actual proxy IPs for security
+        forwarded_allow_ips="*",
     )

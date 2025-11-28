@@ -78,7 +78,7 @@ async def log_audit(
 
 
 @router.get(
-    "/",
+    "",
     status_code=status.HTTP_200_OK,
     summary="List registered plugins",
     description="Returns list of all registered plugins with metadata (name, type, version, status, description). "

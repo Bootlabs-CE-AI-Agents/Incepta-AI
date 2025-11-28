@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api/v1/feedback", tags=["feedback"])
 
 
 @router.post(
-    "/",
+    "",
     status_code=status.HTTP_201_CREATED,
     summary="Submit enhancement feedback",
     description="Allows technicians to rate enhancement quality with thumbs up/down or 1-5 scale. "
@@ -112,7 +112,7 @@ async def submit_feedback(
 
 
 @router.get(
-    "/",
+    "",
     status_code=status.HTTP_200_OK,
     summary="Retrieve feedback records",
     description="Retrieves enhancement feedback with optional filters: date range, feedback type, pagination. "

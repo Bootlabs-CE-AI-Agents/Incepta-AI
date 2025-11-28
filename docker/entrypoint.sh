@@ -15,4 +15,7 @@ echo "Seeding database with initial data..."
 python3 scripts/seed_db.py || echo "Warning: Database seeding failed or skipped"
 
 echo "Starting FastAPI application..."
-exec uvicorn src.main:app --host 0.0.0.0 --port 8000 "$@"
+# --forwarded-allow-ips '*' trusts X-Forwarded-Proto header from reverse proxies
+# This ensures HTTPS scheme is preserved in redirects when behind Cloudflare Tunnel, nginx, etc.
+# See: https://fastapi.tiangolo.com/advanced/behind-a-proxy/
+exec uvicorn src.main:app --host 0.0.0.0 --port 8000 --forwarded-allow-ips '*' "$@"

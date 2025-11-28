@@ -29,7 +29,7 @@ router = APIRouter(prefix="/api/v1/mcp-servers", tags=["MCP Servers"])
 
 
 @router.post(
-    "/",
+    "",
     response_model=MCPServerResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create MCP Server",
@@ -123,7 +123,7 @@ async def create_mcp_server(
 
 
 @router.get(
-    "/",
+    "",
     response_model=list[MCPServerResponse],
     status_code=status.HTTP_200_OK,
     summary="List MCP Servers",

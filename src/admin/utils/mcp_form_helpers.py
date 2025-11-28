@@ -1,4 +1,11 @@
-"""Helper functions for MCP Server form rendering (HTTP+SSE transport)."""
+"""Helper functions for MCP Server form rendering (all network transports).
+
+Supports all langchain-mcp-adapters transport types:
+- streamable_http: Modern HTTP MCP for /mcp endpoints
+- sse: Server-Sent Events for /sse endpoints
+- websocket: WebSocket transport for ws:// or wss:// endpoints
+- http_sse: Deprecated alias for backward compatibility
+"""
 
 from typing import Any
 
@@ -6,33 +13,91 @@ import streamlit as st
 
 from src.admin.utils.mcp_ui_helpers import is_sensitive_header, test_mcp_connection
 
+# Transport types that use HTTP/HTTPS URLs
+HTTP_TRANSPORT_TYPES = ("streamable_http", "sse", "http_sse")
 
-def validate_url(url: str) -> tuple[bool, str]:
+# Transport types that use WebSocket URLs
+WEBSOCKET_TRANSPORT_TYPES = ("websocket",)
+
+
+def validate_url(url: str, transport_type: str = "streamable_http") -> tuple[bool, str]:
     """
-    Validate URL format for HTTP+SSE transport.
+    Validate URL format based on transport type.
 
     Args:
         url: URL string to validate
+        transport_type: Transport type (streamable_http, sse, websocket, http_sse)
 
     Returns:
         Tuple of (is_valid, error_message)
     """
     if not url:
-        return False, "URL is required for HTTP+SSE transport"
+        if transport_type in WEBSOCKET_TRANSPORT_TYPES:
+            return False, "URL is required for WebSocket transport"
+        return False, "URL is required for HTTP-based transport"
 
     url_lower = url.lower()
-    if not (url_lower.startswith("http://") or url_lower.startswith("https://")):
-        return False, "URL must start with http:// or https://"
+
+    if transport_type in WEBSOCKET_TRANSPORT_TYPES:
+        # WebSocket transport requires ws:// or wss://
+        if not (url_lower.startswith("ws://") or url_lower.startswith("wss://")):
+            return False, "WebSocket URL must start with ws:// or wss://"
+    else:
+        # HTTP-based transports require http:// or https://
+        if not (url_lower.startswith("http://") or url_lower.startswith("https://")):
+            return False, "URL must start with http:// or https://"
 
     return True, ""
 
 
-def render_http_sse_url_field(server_data: dict[str, Any] | None = None) -> str:
+def get_url_placeholder(transport_type: str) -> str:
     """
-    Render HTTP+SSE URL input field with validation.
+    Get URL placeholder text based on transport type.
+
+    Args:
+        transport_type: Transport type
+
+    Returns:
+        Appropriate placeholder URL
+    """
+    placeholders = {
+        "streamable_http": "https://api.example.com/mcp",
+        "sse": "https://api.example.com/sse",
+        "websocket": "wss://api.example.com/ws",
+        "http_sse": "https://api.example.com/sse",
+    }
+    return placeholders.get(transport_type, "https://your-mcp-server.com/mcp")
+
+
+def get_url_help_text(transport_type: str) -> str:
+    """
+    Get URL help text based on transport type.
+
+    Args:
+        transport_type: Transport type
+
+    Returns:
+        Help text for the URL field
+    """
+    help_texts = {
+        "streamable_http": "Modern HTTP MCP endpoint (typically /mcp path)",
+        "sse": "Server-Sent Events endpoint (typically /sse path)",
+        "websocket": "WebSocket endpoint (must use ws:// or wss://)",
+        "http_sse": "⚠️ Deprecated - SSE endpoint (consider using Streamable HTTP)",
+    }
+    return help_texts.get(transport_type, "MCP server endpoint URL")
+
+
+def render_http_sse_url_field(
+    server_data: dict[str, Any] | None = None,
+    transport_type: str = "streamable_http",
+) -> str:
+    """
+    Render URL input field with transport-specific validation.
 
     Args:
         server_data: Optional existing server data for edit mode
+        transport_type: Transport type for validation and placeholders
 
     Returns:
         The URL value entered by the user
@@ -40,13 +105,13 @@ def render_http_sse_url_field(server_data: dict[str, Any] | None = None) -> str:
     url = st.text_input(
         "URL *",
         value=server_data.get("url", "") if server_data else "",
-        placeholder="https://your-mcp-server.com/mcp",
-        help="HTTP/HTTPS endpoint for the MCP server",
+        placeholder=get_url_placeholder(transport_type),
+        help=get_url_help_text(transport_type),
     )
 
     # Real-time URL validation indicator
     if url:
-        is_valid, error_msg = validate_url(url)
+        is_valid, error_msg = validate_url(url, transport_type)
         if is_valid:
             st.success("✓ Valid URL format")
         else:

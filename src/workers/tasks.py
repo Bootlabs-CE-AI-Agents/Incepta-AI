@@ -829,6 +829,12 @@ async def _execute_agent_async(agent_id: str, payload: Dict[str, Any], execution
     - Iterative tool execution loop (handles tool_calls in LLM responses)
     - Proper OpenAPI + MCP tool binding to LLM
 
+    Status lifecycle:
+    - 'pending': Record created, waiting for worker to start
+    - 'processing': Worker started execution
+    - 'completed': Execution finished successfully
+    - 'failed': Execution encountered an error
+
     Args:
         agent_id: Agent UUID string
         payload: Webhook payload
@@ -863,16 +869,48 @@ async def _execute_agent_async(agent_id: str, payload: Dict[str, Any], execution
         if not agent:
             raise ValueError(f"Agent {agent_id} not found")
 
+        # CREATE EXECUTION RECORD IMMEDIATELY with 'pending' status
+        # This allows UI to show execution while it's waiting/processing
+        test_execution = AgentTestExecution(
+            id=execution_id,
+            agent_id=agent.id,
+            tenant_id=agent.tenant_id,
+            payload=payload,
+            execution_trace={"steps": [], "status_message": "Execution queued"},
+            token_usage={"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "estimated_cost_usd": 0.0},
+            execution_time={"total_duration_ms": 0},
+            errors=None,
+            status="pending",
+            task_id=task_id
+        )
+        session.add(test_execution)
+        await session.commit()
+        await session.refresh(test_execution)
+
+        logger.info(
+            "Created execution record with pending status",
+            extra={
+                "agent_id": agent_id,
+                "execution_id": execution_id,
+                "status": "pending",
+            }
+        )
+
         # Build user message from payload
         user_message = f"Process the following request:\n\n{json.dumps(payload, indent=2)}"
 
-        # Execute agent using AgentExecutionService (MODERN PATH with MCP tool support)
+        # UPDATE STATUS TO 'processing' - execution is starting
+        test_execution.status = "processing"
+        test_execution.execution_trace = {"steps": [], "status_message": "Agent execution in progress"}
+        await session.commit()
+
         logger.info(
             "Executing agent with AgentExecutionService (LangGraph + MCP)",
             extra={
                 "agent_id": agent_id,
                 "tenant_id": agent.tenant_id,
                 "execution_id": execution_id,
+                "status": "processing",
             }
         )
 
@@ -927,7 +965,8 @@ async def _execute_agent_async(agent_id: str, payload: Dict[str, Any], execution
         }
 
         # Determine execution status
-        status = "success" if service_result.get("success") else "failed"
+        # Use 'completed' (not 'success') to match frontend expectations
+        final_status = "completed" if service_result.get("success") else "failed"
         errors = None
         if not service_result.get("success"):
             errors = {
@@ -935,21 +974,13 @@ async def _execute_agent_async(agent_id: str, payload: Dict[str, Any], execution
                 "message": service_result.get("error", "Unknown error"),
             }
 
-        # Save execution to database
-        test_execution = AgentTestExecution(
-            id=execution_id,
-            agent_id=agent.id,
-            tenant_id=agent.tenant_id,
-            payload=payload,
-            execution_trace=execution_trace,
-            token_usage=token_usage,
-            execution_time={"total_duration_ms": total_duration_ms},
-            errors=errors,
-            status=status,
-            task_id=task_id  # Celery task ID for correlation
-        )
-
-        session.add(test_execution)
+        # UPDATE existing execution record with final results
+        # (Record was created earlier with 'pending' status)
+        test_execution.execution_trace = execution_trace
+        test_execution.token_usage = token_usage
+        test_execution.execution_time = {"total_duration_ms": total_duration_ms}
+        test_execution.errors = errors
+        test_execution.status = final_status
         await session.commit()
 
         logger.info(
@@ -958,7 +989,7 @@ async def _execute_agent_async(agent_id: str, payload: Dict[str, Any], execution
                 "agent_id": agent_id,
                 "execution_id": execution_id,
                 "duration_ms": total_duration_ms,
-                "status": status,
+                "status": final_status,
                 "tool_calls_count": len(service_result.get("tool_calls", [])),
                 "success": service_result.get("success"),
             }
@@ -975,7 +1006,11 @@ async def _execute_agent_async(agent_id: str, payload: Dict[str, Any], execution
 
 async def _save_failed_execution(agent_id: str, payload: Dict[str, Any], execution_id: str, error: Exception, duration_ms: int, task_id: str):
     """
-    Save failed execution to database.
+    Save or update failed execution to database.
+
+    Handles both cases:
+    - Record exists (created as 'pending'/'processing'): Update with failed status
+    - Record doesn't exist (error before record creation): Create new failed record
 
     Args:
         agent_id: Agent UUID string
@@ -1005,25 +1040,51 @@ async def _save_failed_execution(agent_id: str, payload: Dict[str, Any], executi
 
         tenant_id = agent.tenant_id if agent else "unknown"
 
-        # Save failed execution
-        test_execution = AgentTestExecution(
-            id=execution_id,
-            agent_id=agent_id,
-            tenant_id=tenant_id,
-            payload=payload,
-            execution_trace={"steps": [], "total_duration_ms": duration_ms, "error": "Execution failed before completion"},
-            token_usage={"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "estimated_cost_usd": 0.0},
-            execution_time={"total_duration_ms": duration_ms},
-            errors={
-                "error_type": type(error).__name__,
-                "message": str(error),
-                "stack_trace": traceback.format_exc()
-            },
-            status="failed",
-            task_id=task_id  # Celery task ID for correlation
-        )
+        # Prepare error info
+        error_info = {
+            "error_type": type(error).__name__,
+            "message": str(error),
+            "stack_trace": traceback.format_exc()
+        }
+        execution_trace = {"steps": [], "total_duration_ms": duration_ms, "error": "Execution failed before completion"}
+        token_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "estimated_cost_usd": 0.0}
 
-        session.add(test_execution)
+        # Check if execution record already exists (created as pending/processing)
+        existing_stmt = select(AgentTestExecution).where(AgentTestExecution.id == execution_id)
+        existing_result = await session.execute(existing_stmt)
+        existing_execution = existing_result.scalar_one_or_none()
+
+        if existing_execution:
+            # UPDATE existing record
+            existing_execution.execution_trace = execution_trace
+            existing_execution.token_usage = token_usage
+            existing_execution.execution_time = {"total_duration_ms": duration_ms}
+            existing_execution.errors = error_info
+            existing_execution.status = "failed"
+            logger.info(
+                f"Updated existing execution record to failed status",
+                extra={"execution_id": execution_id, "previous_status": existing_execution.status}
+            )
+        else:
+            # CREATE new record (error occurred before record was created)
+            test_execution = AgentTestExecution(
+                id=execution_id,
+                agent_id=agent_id,
+                tenant_id=tenant_id,
+                payload=payload,
+                execution_trace=execution_trace,
+                token_usage=token_usage,
+                execution_time={"total_duration_ms": duration_ms},
+                errors=error_info,
+                status="failed",
+                task_id=task_id
+            )
+            session.add(test_execution)
+            logger.info(
+                f"Created new failed execution record",
+                extra={"execution_id": execution_id}
+            )
+
         await session.commit()
 
 

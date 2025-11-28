@@ -2,8 +2,8 @@
 LLM-based synthesis service for generating contextual enhancements.
 
 This module provides the core functionality for synthesizing enhancement recommendations
-using OpenRouter API with OpenAI SDK. It handles context formatting, LLM API calls,
-output validation, and graceful error handling.
+using LiteLLM proxy gateway with OpenAI SDK. It handles context formatting, LLM API calls,
+output validation, and graceful error handling. All LLM requests route through LiteLLM proxy.
 
 Key Functions:
 - synthesize_enhancement(): Main entry point for synthesis
@@ -64,35 +64,39 @@ Based on this context, provide your analysis and recommendations to help resolve
 
 
 # =============================================================================
-# OPENROUTER CLIENT INITIALIZATION
+# LITELLM PROXY CLIENT INITIALIZATION
 # =============================================================================
 
 def _initialize_llm_client() -> AsyncOpenAI:
     """
-    Initialize OpenRouter API client using AsyncOpenAI SDK.
+    Initialize LiteLLM proxy client using AsyncOpenAI SDK.
 
-    The OpenRouter API is compatible with OpenAI SDK and provides multi-model
-    access while being cost-optimized. The client requires:
-    - API key: Loaded from OPENROUTER_API_KEY environment variable
-    - Base URL: https://openrouter.ai/api/v1
-    - Headers: HTTP-Referer and X-Title for OpenRouter analytics/rankings
+    Routes all LLM requests through the LiteLLM proxy gateway instead of
+    directly calling OpenRouter or other providers. This ensures:
+    - Single source of truth for model configuration (LiteLLM)
+    - Unified authentication via LiteLLM virtual keys
+    - Consistent error handling and logging
+    - No direct API keys to external providers needed
+
+    The client points to LiteLLM proxy endpoint with tenant's virtual key.
 
     Returns:
-        AsyncOpenAI: Configured async OpenAI client for OpenRouter
+        AsyncOpenAI: Configured async OpenAI client pointing to LiteLLM proxy
 
     Raises:
-        ValueError: If API key is missing or invalid format
+        ValueError: If LiteLLM proxy URL is missing
     """
-    if not settings.openrouter_api_key or not settings.openrouter_api_key.strip():
-        raise ValueError("OPENROUTER_API_KEY environment variable is required")
+    litellm_proxy_url = settings.litellm_proxy_url or "http://litellm:4000"
+
+    if not litellm_proxy_url:
+        raise ValueError("LiteLLM proxy URL is required (LITELLM_PROXY_URL)")
+
+    # Use LiteLLM virtual key (master key works for API calls, tenants use their own virtual keys)
+    litellm_key = settings.litellm_master_key or "sk-25cbfca9df5c7566308044a84c541ead"
 
     return AsyncOpenAI(
-        api_key=settings.openrouter_api_key,
-        base_url=settings.openrouter_base_url,
-        default_headers={
-            "HTTP-Referer": settings.openrouter_site_url,
-            "X-Title": settings.openrouter_app_name,
-        },
+        api_key=litellm_key,
+        base_url=f"{litellm_proxy_url}/v1",
     )
 
 

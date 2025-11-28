@@ -68,7 +68,13 @@ class MCPToolBridge:
         """
         Initialize MultiServerMCPClient for all configured MCP servers.
 
-        Creates client with stdio transport configurations for each server.
+        Creates client with appropriate transport configurations for each server.
+        Per langchain-mcp-adapters, supported transports are:
+        - stdio: Local subprocess communication (command + args)
+        - streamable_http: Modern HTTP MCP for /mcp endpoints (recommended for hosted servers)
+        - sse: Server-Sent Events for legacy /sse endpoints
+        - websocket: WebSocket transport
+
         Handles client initialization errors gracefully.
 
         Raises:
@@ -79,12 +85,37 @@ class MCPToolBridge:
 
         server_configs: dict[str, dict[str, Any]] = {}
         for server in self.servers:
-            server_configs[str(server.id)] = {
-                "transport": "stdio",
-                "command": server.command,
-                "args": server.args or [],
-                "env": server.env or {},
-            }
+            transport_type = server.transport_type
+
+            # Handle all transport types explicitly per langchain-mcp-adapters
+            if transport_type == "stdio":
+                # stdio transport: local subprocess communication
+                server_configs[str(server.id)] = self._build_stdio_config(server)
+
+            elif transport_type in ("streamable_http", "http_sse"):
+                # streamable_http: Modern HTTP MCP for /mcp endpoints (e.g., Exa AI)
+                # http_sse: Deprecated alias, treated same as streamable_http
+                server_configs[str(server.id)] = self._build_streamable_http_config(server)
+
+            elif transport_type == "sse":
+                # sse: Legacy Server-Sent Events for /sse endpoints
+                server_configs[str(server.id)] = self._build_sse_config(server)
+
+            elif transport_type == "websocket":
+                # websocket: WebSocket transport
+                server_configs[str(server.id)] = self._build_websocket_config(server)
+
+            else:
+                logger.warning(
+                    f"Unknown transport type '{transport_type}' for server {server.name}, "
+                    "defaulting to stdio",
+                    extra={
+                        "server_id": str(server.id),
+                        "server_name": server.name,
+                        "transport_type": transport_type,
+                    },
+                )
+                server_configs[str(server.id)] = self._build_stdio_config(server)
 
         try:
             # Note: Celery LoggingProxy workaround is handled by get_langchain_tools()
@@ -101,6 +132,143 @@ class MCPToolBridge:
                 extra={"error_type": type(e).__name__, "server_count": len(self.servers)},
             )
             raise RuntimeError(f"MCP client initialization failed: {e}") from e
+
+    def _build_stdio_config(self, server: Any) -> dict[str, Any]:
+        """
+        Build stdio transport configuration for local MCP servers.
+
+        Args:
+            server: MCPServer database model instance
+
+        Returns:
+            Config dict for langchain-mcp-adapters MultiServerMCPClient
+        """
+        args = list(server.args or [])
+        env = server.env or {}
+
+        # BUGFIX: Docker run doesn't inherit process env vars into the container.
+        # When command is 'docker', inject env vars as '-e KEY=VALUE' flags
+        # before the image name (last positional arg).
+        if server.command == "docker" and env:
+            env_flags: list[str] = []
+            for key, value in env.items():
+                env_flags.extend(["-e", f"{key}={value}"])
+
+            if args:
+                image_name = args[-1]
+                args = args[:-1] + env_flags + [image_name]
+            else:
+                args = env_flags
+
+            logger.debug(
+                f"Docker env vars injected as -e flags for server {server.name}",
+                extra={"env_count": len(env), "args": args},
+            )
+            env = {}
+
+        config = {
+            "transport": "stdio",
+            "command": server.command,
+            "args": args,
+            "env": env,
+        }
+        logger.info(
+            f"Configured stdio transport for MCP server {server.name}",
+            extra={
+                "server_id": str(server.id),
+                "server_name": server.name,
+                "command": server.command,
+            },
+        )
+        return config
+
+    def _build_streamable_http_config(self, server: Any) -> dict[str, Any]:
+        """
+        Build streamable_http transport configuration for modern HTTP MCP servers.
+
+        This transport is recommended for hosted MCP servers like Exa AI that use
+        the /mcp endpoint pattern.
+
+        Args:
+            server: MCPServer database model instance
+
+        Returns:
+            Config dict for langchain-mcp-adapters MultiServerMCPClient
+        """
+        config = {
+            "transport": "streamable_http",
+            "url": server.url,
+            "headers": server.headers or {},
+            "timeout": 60.0,  # Connection timeout
+            "sse_read_timeout": 300.0,  # Long timeout for streaming operations
+        }
+        logger.info(
+            f"Configured streamable_http transport for MCP server {server.name}",
+            extra={
+                "server_id": str(server.id),
+                "server_name": server.name,
+                "url": server.url,
+                "has_headers": bool(server.headers),
+            },
+        )
+        return config
+
+    def _build_sse_config(self, server: Any) -> dict[str, Any]:
+        """
+        Build SSE transport configuration for legacy /sse endpoint MCP servers.
+
+        This transport uses Server-Sent Events and is typically for older MCP
+        server implementations.
+
+        Args:
+            server: MCPServer database model instance
+
+        Returns:
+            Config dict for langchain-mcp-adapters MultiServerMCPClient
+        """
+        config = {
+            "transport": "sse",
+            "url": server.url,
+            "headers": server.headers or {},
+            "timeout": 60.0,
+            "sse_read_timeout": 300.0,
+        }
+        logger.info(
+            f"Configured sse transport for MCP server {server.name}",
+            extra={
+                "server_id": str(server.id),
+                "server_name": server.name,
+                "url": server.url,
+                "has_headers": bool(server.headers),
+            },
+        )
+        return config
+
+    def _build_websocket_config(self, server: Any) -> dict[str, Any]:
+        """
+        Build WebSocket transport configuration for WS-based MCP servers.
+
+        Args:
+            server: MCPServer database model instance
+
+        Returns:
+            Config dict for langchain-mcp-adapters MultiServerMCPClient
+        """
+        config = {
+            "transport": "websocket",
+            "url": server.url,
+            "headers": server.headers or {},
+        }
+        logger.info(
+            f"Configured websocket transport for MCP server {server.name}",
+            extra={
+                "server_id": str(server.id),
+                "server_name": server.name,
+                "url": server.url,
+                "has_headers": bool(server.headers),
+            },
+        )
+        return config
 
     async def get_langchain_tools(
         self, mcp_tool_assignments: list[dict[str, Any]]
@@ -154,148 +322,187 @@ class MCPToolBridge:
 
                 await self._initialize_client()
 
-            if not self.client:
-                logger.error("MCP client not initialized")
-                parent_span.set_attribute("mcp.error", "client_not_initialized")
-                return []
+                if not self.client:
+                    logger.error("MCP client not initialized")
+                    parent_span.set_attribute("mcp.error", "client_not_initialized")
+                    return []
 
-            langchain_tools: list[BaseTool] = []
+                langchain_tools: list[BaseTool] = []
 
-            # Group assignments by server for efficient loading
-            # BUGFIX: Normalize mcp_server_id to UUID type for consistent lookup
-            # Reason: mcp_server_id from DB may be str, but server.id is UUID
-            tools_by_server: dict[UUID, list[dict[str, Any]]] = {}
-            for assignment in mcp_tool_assignments:
-                server_id = assignment.get("mcp_server_id")
-                if server_id:
-                    # Convert to UUID if it's a string to ensure type consistency
-                    if isinstance(server_id, str):
-                        server_id = UUID(server_id)
-                    tools_by_server.setdefault(server_id, []).append(assignment)
+                # Group assignments by server for efficient loading
+                # BUGFIX: Normalize mcp_server_id to UUID type for consistent lookup
+                # Reason: mcp_server_id from DB may be str, but server.id is UUID
+                tools_by_server: dict[UUID, list[dict[str, Any]]] = {}
+                for assignment in mcp_tool_assignments:
+                    server_id = assignment.get("mcp_server_id")
+                    if server_id:
+                        # Convert to UUID if it's a string to ensure type consistency
+                        if isinstance(server_id, str):
+                            server_id = UUID(server_id)
+                        tools_by_server.setdefault(server_id, []).append(assignment)
 
-            # Load tools from each MCP server
-            for server in self.servers:
-                server_assignments: list[dict[str, Any]] = tools_by_server.get(server.id, [])  # type: ignore[call-overload]
-                if not server_assignments:
-                    continue
+                # DIAGNOSTIC: Log tools_by_server grouping to identify missing servers
+                logger.info(
+                    "Tools grouped by server for MCP loading",
+                    extra={
+                        "tools_by_server_keys": [str(k) for k in tools_by_server.keys()],
+                        "tools_by_server_counts": {str(k): len(v) for k, v in tools_by_server.items()},
+                        "available_servers": [str(s.id) for s in self.servers],
+                        "total_assignments": len(mcp_tool_assignments),
+                    },
+                )
 
-                # Story 12.8 AC1: Child span for loading tools from one server
-                with tracer.start_as_current_span("mcp.bridge.load_tools") as load_span:
-                    load_span.set_attribute("mcp.server_id", str(server.id))
-                    load_span.set_attribute("mcp.server_name", server.name)
-                    load_span.set_attribute("mcp.transport_type", "stdio")  # Currently only stdio supported
-                    load_span.set_attribute("mcp.assignment_count", len(server_assignments))
+                # Load tools from each MCP server
+                for server in self.servers:
+                    server_assignments: list[dict[str, Any]] = tools_by_server.get(server.id, [])  # type: ignore[call-overload]
+                    if not server_assignments:
+                        logger.warning(
+                            f"No tool assignments found for MCP server",
+                            extra={
+                                "server_id": str(server.id),
+                                "server_name": server.name,
+                                "tools_by_server_keys": [str(k) for k in tools_by_server.keys()],
+                            },
+                        )
+                        continue
 
-                    try:
-                        # BUGFIX (Story 11.1.7): Manually manage session lifecycle to keep it alive
-                        # Reason: langchain_mcp_adapters tools reference the session, which must remain
-                        # open for the entire agent execution. Using 'async with' would close it when
-                        # get_langchain_tools() returns, causing ClosedResourceError during tool execution.
+                    # Story 12.8 AC1: Child span for loading tools from one server
+                    with tracer.start_as_current_span("mcp.bridge.load_tools") as load_span:
+                        load_span.set_attribute("mcp.server_id", str(server.id))
+                        load_span.set_attribute("mcp.server_name", server.name)
+                        load_span.set_attribute("mcp.transport_type", server.transport_type)
+                        load_span.set_attribute("mcp.assignment_count", len(server_assignments))
 
-                        server_id_str = str(server.id)
-
-                        # Manually enter the session context manager
-                        session_cm = self.client.session(server_id_str)
-                        session = await session_cm.__aenter__()
-
-                        # Store session for later cleanup (in cleanup() method)
-                        self._sessions[server_id_str] = session_cm
-
+                        # DIAGNOSTIC: Log before attempting to connect to each server
+                        # Reason: Helps identify which server fails when TaskGroup errors occur
                         logger.info(
-                            f"MCP session opened for server (will remain open until cleanup)",
-                            extra={"server_id": server_id_str, "server_name": server.name},
-                        )
-
-                        # Story 12.8 AC1: Span for MCP client connection
-                        with tracer.start_as_current_span("mcp.client.connect") as connect_span:
-                            connect_span.set_attribute("mcp.server_id", str(server.id))
-                            connect_span.set_attribute("mcp.server_name", server.name)
-                            # Connection happens in context manager, so we just track it
-
-                        # Story 12.8 AC1: Span for listing tools from server
-                        with tracer.start_as_current_span("mcp.client.list_tools") as list_span:
-                            list_span.set_attribute("mcp.server_id", str(server.id))
-                            # Load all tools from server (primitive_type="tool")
-                            server_tools = await asyncio.wait_for(load_mcp_tools(session), timeout=30.0)
-                            list_span.set_attribute("mcp.tools_discovered", len(server_tools))
-
-                        # Filter tools by assignments (only include assigned tools)
-                        assigned_tool_names = {
-                            a["name"]
-                            for a in server_assignments
-                            if a.get("mcp_primitive_type") == "tool"
-                        }
-                        filtered_tools = [t for t in server_tools if t.name in assigned_tool_names]
-
-                        # Story 12.8 AC1: Span for validating filtered tools
-                        with tracer.start_as_current_span("mcp.tool.validate") as validate_span:
-                            validate_span.set_attribute("mcp.tools_filtered", len(filtered_tools))
-                            validate_span.set_attribute("mcp.tools_assigned", len(assigned_tool_names))
-
-                        langchain_tools.extend(filtered_tools)
-
-                        logger.info(
-                            f"Loaded {len(filtered_tools)} tools from MCP server",
+                            f"Attempting to load tools from MCP server '{server.name}' "
+                            f"(transport={server.transport_type})",
                             extra={
                                 "server_id": str(server.id),
                                 "server_name": server.name,
-                                "tool_count": len(filtered_tools),
-                                "loaded_tool_names": [t.name for t in filtered_tools],
-                                "assigned_tool_names": list(assigned_tool_names),
+                                "transport_type": server.transport_type,
+                                "assignment_count": len(server_assignments),
                             },
                         )
 
-                        # Create custom wrappers for resources and prompts
-                        for assignment in server_assignments:
-                            primitive_type = assignment.get("mcp_primitive_type")
+                        try:
+                            # BUGFIX (Story 11.1.7): Manually manage session lifecycle to keep it alive
+                            # Reason: langchain_mcp_adapters tools reference the session, which must remain
+                            # open for the entire agent execution. Using 'async with' would close it when
+                            # get_langchain_tools() returns, causing ClosedResourceError during tool execution.
 
-                            if primitive_type == "resource":
-                                resource_tool = self._create_resource_wrapper(
-                                    server, assignment, session
-                                )
-                                langchain_tools.append(resource_tool)
+                            server_id_str = str(server.id)
 
-                            elif primitive_type == "prompt":
-                                prompt_tool = self._create_prompt_wrapper(server, assignment, session)
-                                langchain_tools.append(prompt_tool)
+                            # Manually enter the session context manager
+                            session_cm = self.client.session(server_id_str)
+                            session = await session_cm.__aenter__()
 
-                        load_span.set_attribute("mcp.tools_loaded", len(filtered_tools))
+                            # Store session for later cleanup (in cleanup() method)
+                            self._sessions[server_id_str] = session_cm
 
-                    except asyncio.TimeoutError:
-                        # Story 12.8 AC1: Error handling span
-                        with tracer.start_as_current_span("mcp.error.handling") as error_span:
-                            error_span.set_attribute("error.type", "TimeoutError")
-                            error_span.set_attribute("error.message", "MCP server timeout >30s")
-                            error_span.set_attribute("mcp.server_id", str(server.id))
-                            error_span.set_attribute("mcp.server_name", server.name)
+                            logger.info(
+                                f"MCP session opened for server (will remain open until cleanup)",
+                                extra={"server_id": server_id_str, "server_name": server.name},
+                            )
 
-                        logger.error(
-                            f"Timeout loading tools from MCP server (>30s)",
-                            extra={
-                                "server_id": str(server.id),
-                                "server_name": server.name,
-                                "timeout_seconds": 30,
-                            },
-                        )
-                        load_span.set_attribute("mcp.error", "timeout")
+                            # Story 12.8 AC1: Span for MCP client connection
+                            with tracer.start_as_current_span("mcp.client.connect") as connect_span:
+                                connect_span.set_attribute("mcp.server_id", str(server.id))
+                                connect_span.set_attribute("mcp.server_name", server.name)
+                                # Connection happens in context manager, so we just track it
 
-                    except Exception as e:
-                        # Story 12.8 AC1: Error handling span
-                        with tracer.start_as_current_span("mcp.error.handling") as error_span:
-                            error_span.set_attribute("error.type", type(e).__name__)
-                            error_span.set_attribute("error.message", str(e))
-                            error_span.set_attribute("mcp.server_id", str(server.id))
-                            error_span.set_attribute("mcp.server_name", server.name)
+                            # Story 12.8 AC1: Span for listing tools from server
+                            with tracer.start_as_current_span("mcp.client.list_tools") as list_span:
+                                list_span.set_attribute("mcp.server_id", str(server.id))
+                                # Load all tools from server (primitive_type="tool")
+                                server_tools = await asyncio.wait_for(load_mcp_tools(session), timeout=30.0)
+                                list_span.set_attribute("mcp.tools_discovered", len(server_tools))
 
-                        logger.error(
-                            f"Failed to load tools from MCP server: {e}",
-                            extra={
-                                "server_id": str(server.id),
-                                "server_name": server.name,
-                                "error_type": type(e).__name__,
-                            },
-                        )
-                        load_span.set_attribute("mcp.error", type(e).__name__)
+                            # Filter tools by assignments (only include assigned tools)
+                            assigned_tool_names = {
+                                a["name"]
+                                for a in server_assignments
+                                if a.get("mcp_primitive_type") == "tool"
+                            }
+                            filtered_tools = [t for t in server_tools if t.name in assigned_tool_names]
+
+                            # Story 12.8 AC1: Span for validating filtered tools
+                            with tracer.start_as_current_span("mcp.tool.validate") as validate_span:
+                                validate_span.set_attribute("mcp.tools_filtered", len(filtered_tools))
+                                validate_span.set_attribute("mcp.tools_assigned", len(assigned_tool_names))
+
+                            langchain_tools.extend(filtered_tools)
+
+                            logger.info(
+                                f"Loaded {len(filtered_tools)} tools from MCP server",
+                                extra={
+                                    "server_id": str(server.id),
+                                    "server_name": server.name,
+                                    "tool_count": len(filtered_tools),
+                                    "loaded_tool_names": [t.name for t in filtered_tools],
+                                    "assigned_tool_names": list(assigned_tool_names),
+                                },
+                            )
+
+                            # Create custom wrappers for resources and prompts
+                            for assignment in server_assignments:
+                                primitive_type = assignment.get("mcp_primitive_type")
+
+                                if primitive_type == "resource":
+                                    resource_tool = self._create_resource_wrapper(
+                                        server, assignment, session
+                                    )
+                                    langchain_tools.append(resource_tool)
+
+                                elif primitive_type == "prompt":
+                                    prompt_tool = self._create_prompt_wrapper(server, assignment, session)
+                                    langchain_tools.append(prompt_tool)
+
+                            load_span.set_attribute("mcp.tools_loaded", len(filtered_tools))
+
+                        except asyncio.TimeoutError:
+                            # Story 12.8 AC1: Error handling span
+                            with tracer.start_as_current_span("mcp.error.handling") as error_span:
+                                error_span.set_attribute("error.type", "TimeoutError")
+                                error_span.set_attribute("error.message", "MCP server timeout >30s")
+                                error_span.set_attribute("mcp.server_id", str(server.id))
+                                error_span.set_attribute("mcp.server_name", server.name)
+
+                            logger.error(
+                                f"Timeout loading tools from MCP server (>30s)",
+                                extra={
+                                    "server_id": str(server.id),
+                                    "server_name": server.name,
+                                    "timeout_seconds": 30,
+                                },
+                            )
+                            load_span.set_attribute("mcp.error", "timeout")
+
+                        except Exception as e:
+                            # Story 12.8 AC1: Error handling span
+                            with tracer.start_as_current_span("mcp.error.handling") as error_span:
+                                error_span.set_attribute("error.type", type(e).__name__)
+                                error_span.set_attribute("error.message", str(e))
+                                error_span.set_attribute("mcp.server_id", str(server.id))
+                                error_span.set_attribute("mcp.server_name", server.name)
+
+                            # DIAGNOSTIC: Include server name in message + traceback for debugging
+                            # Reason: TaskGroup errors need detailed tracing to identify root cause
+                            import traceback
+
+                            logger.error(
+                                f"Failed to load tools from MCP server '{server.name}' "
+                                f"(id={server.id}, transport={server.transport_type}): {e}",
+                                extra={
+                                    "server_id": str(server.id),
+                                    "server_name": server.name,
+                                    "error_type": type(e).__name__,
+                                    "transport_type": server.transport_type,
+                                    "traceback": traceback.format_exc(),
+                                },
+                            )
+                            load_span.set_attribute("mcp.error", type(e).__name__)
 
                 logger.info(
                     f"MCP Tool Bridge created {len(langchain_tools)} LangChain tools",
@@ -498,15 +705,29 @@ class MCPToolBridge:
         BUGFIX (Story 11.1.7): Now properly closes all manually-managed sessions
         that were opened in get_langchain_tools() to keep tools functional during
         agent execution.
+
+        BUGFIX (Story 12.9): Handle anyio cancel scope errors gracefully.
+        The langchain-mcp-adapters library uses anyio which enforces that context
+        managers must be exited from the same async task they were entered.
+        In Celery workers, cleanup may happen in a different task context,
+        causing "cancel scope" errors. We catch these and log them as warnings
+        since the subprocess will be terminated anyway when the connection closes.
         """
-        # Close all active sessions
+        # Close all active sessions in LIFO order (reverse of creation)
+        # Reference: https://github.com/modelcontextprotocol/python-sdk/issues/922
+        # anyio cancel scopes must be exited in reverse order of entry to avoid
+        # "Attempted to exit a cancel scope that isn't the current task's current cancel scope"
         if self._sessions:
             logger.info(
-                f"Closing {len(self._sessions)} active MCP sessions",
+                f"Closing {len(self._sessions)} active MCP sessions (LIFO order)",
                 extra={"session_count": len(self._sessions)},
             )
 
-            for server_id, session_cm in list(self._sessions.items()):
+            # Reverse the session order for LIFO cleanup
+            session_items = list(self._sessions.items())
+            session_items.reverse()
+
+            for server_id, session_cm in session_items:
                 try:
                     # Manually exit the session context manager
                     await session_cm.__aexit__(None, None, None)
@@ -514,6 +735,21 @@ class MCPToolBridge:
                         f"MCP session closed for server",
                         extra={"server_id": server_id},
                     )
+                except RuntimeError as e:
+                    # BUGFIX (Story 12.9): anyio cancel scope errors may still occur
+                    # in edge cases (e.g., when cleanup runs in a different async task).
+                    # This is expected in Celery workers - the subprocess is still cleaned up.
+                    if "cancel scope" in str(e).lower():
+                        logger.warning(
+                            f"MCP session cleanup encountered cancel scope issue for server {server_id} "
+                            "(expected in Celery workers, subprocess will be terminated)",
+                            extra={"server_id": server_id},
+                        )
+                    else:
+                        logger.error(
+                            f"Error closing MCP session for server {server_id}: {e}",
+                            extra={"server_id": server_id, "error_type": type(e).__name__},
+                        )
                 except Exception as e:
                     logger.error(
                         f"Error closing MCP session for server {server_id}: {e}",

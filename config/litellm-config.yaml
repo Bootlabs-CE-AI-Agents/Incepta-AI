@@ -1,29 +1,67 @@
+# LiteLLM Proxy Configuration
+# This is the single source of truth for model routing
+# All LLM calls from agents go through this proxy
+#
+# Key Architecture Principle:
+# - Agents specify model names that match `model_name` entries here
+# - LiteLLM proxy handles all provider-specific routing automatically
+# - Agent code should NOT contain provider-specific knowledge
+#
+# Environment Variable Syntax: os.environ/VAR_NAME (NOT {{ VAR_NAME }})
+
 model_list:
-  - model_name: "anthropic/claude-3-sonnet-20240229"
-    litellm_params:
-      model: "claude-3-sonnet-20240229"
-      api_key: "{{ ANTHROPIC_API_KEY }}"
+  # ===========================================================================
+  # WILDCARD ROUTING - Automatically routes ANY model from these providers
+  # ===========================================================================
+  # When agent uses "openrouter/x-ai/grok-beta", LiteLLM matches "openrouter/*"
+  # and routes to OpenRouter with proper credentials. No per-model config needed!
 
-  - model_name: "anthropic/claude-3-5-sonnet-20241022"
+  # OpenRouter - Routes ALL openrouter/* models automatically
+  - model_name: "openrouter/*"
     litellm_params:
-      model: "claude-3-5-sonnet-20241022"
-      api_key: "{{ ANTHROPIC_API_KEY }}"
+      model: "openrouter/*"
+      api_key: os.environ/AI_AGENTS_OPENROUTER_API_KEY
 
-  - model_name: "openai/gpt-4o-mini"
+  # Anthropic - Routes ALL anthropic/* models automatically
+  - model_name: "anthropic/*"
+    litellm_params:
+      model: "anthropic/*"
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # OpenAI - Routes ALL openai/* models automatically
+  - model_name: "openai/*"
+    litellm_params:
+      model: "openai/*"
+      api_key: os.environ/OPENAI_API_KEY
+
+  # ===========================================================================
+  # EXPLICIT MODEL ALIASES (Optional - for convenience or backward compatibility)
+  # ===========================================================================
+  # These allow agents to use short names like "gpt-4o-mini" instead of "openai/gpt-4o-mini"
+
+  # GPT-4o Mini (default model)
+  - model_name: "gpt-4o-mini"
     litellm_params:
       model: "gpt-4o-mini"
-      api_key: "{{ OPENAI_API_KEY }}"
+      api_key: os.environ/OPENAI_API_KEY
 
-  - model_name: "openrouter/z-ai/glm-4.6"
+  # Claude 3.5 Sonnet (latest)
+  - model_name: "claude-3-5-sonnet"
     litellm_params:
-      model: "z-ai/glm-4.6"
-      api_key: "{{ AI_AGENTS_OPENROUTER_API_KEY }}"
-      api_base: "{{ AI_AGENTS_OPENROUTER_BASE_URL }}"
+      model: "claude-3-5-sonnet-20241022"
+      api_key: os.environ/ANTHROPIC_API_KEY
 
-# LiteLLM Settings - Preserve function calling parameters
+  # Claude 3 Sonnet
+  - model_name: "claude-3-sonnet"
+    litellm_params:
+      model: "claude-3-sonnet-20240229"
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+# LiteLLM Settings
 # Bug Fix (Story 11.2.7): Disabled drop_params to preserve 'tools' parameter
 # Reason: drop_params has known bugs with xAI Grok (GitHub #16204, #14056, #12635)
 # and incorrectly strips 'tools' even for models that support function calling
-# All tested models (OpenAI, Anthropic, xAI Grok) support function calling natively
 litellm_settings:
   drop_params: false
+  # Set telemetry to false for privacy
+  telemetry: false

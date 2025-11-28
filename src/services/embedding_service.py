@@ -1,8 +1,12 @@
 """
-Embedding service for generating OpenAI text embeddings with Redis caching.
+Embedding service for generating text embeddings with Redis caching.
 
-Provides text-to-vector conversion using OpenAI's text-embedding-3-small model
-(1536 dimensions) with Redis caching to reduce API costs and improve performance.
+Provides text-to-vector conversion using LiteLLM proxy gateway with OpenAI's
+text-embedding-3-small model (1536 dimensions) with Redis caching to reduce API
+costs and improve performance.
+
+All embedding requests route through LiteLLM proxy for centralized cost tracking
+and budget enforcement.
 
 Story 8.15: Memory Configuration UI - Embedding Service (Task 7)
 """
@@ -11,9 +15,8 @@ import hashlib
 import json
 from typing import List, Optional
 
-import openai
 import redis.asyncio as redis
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, APIError, APIConnectionError, APITimeoutError
 
 from src.config import settings
 from src.utils.logger import logger
@@ -21,10 +24,11 @@ from src.utils.logger import logger
 
 class EmbeddingService:
     """
-    Service for generating text embeddings with caching.
+    Service for generating text embeddings with caching via LiteLLM proxy.
 
-    Uses OpenAI text-embedding-3-small model (1536 dimensions) with Redis
-    cache to minimize API costs. Handles rate limiting and API failures gracefully.
+    Routes embedding requests through LiteLLM proxy gateway using OpenAI's
+    text-embedding-3-small model (1536 dimensions) with Redis cache to minimize
+    API costs. All requests are tracked under tenant's budget and cost tracking.
     """
 
     # OpenAI embedding model configuration
@@ -35,28 +39,49 @@ class EmbeddingService:
 
     def __init__(
         self,
-        openai_api_key: Optional[str] = None,
+        litellm_proxy_url: Optional[str] = None,
+        litellm_master_key: Optional[str] = None,
         redis_url: Optional[str] = None,
     ):
         """
-        Initialize embedding service.
+        Initialize embedding service with LiteLLM proxy.
+
+        Routes all embedding requests through LiteLLM proxy gateway instead of
+        directly calling OpenAI API. This ensures centralized cost tracking and
+        budget enforcement.
 
         Args:
-            openai_api_key: OpenAI API key (defaults to settings.openai_api_key)
+            litellm_proxy_url: LiteLLM proxy URL (defaults to settings.litellm_proxy_url)
+            litellm_master_key: LiteLLM master key (defaults to settings.litellm_master_key)
             redis_url: Redis connection URL (defaults to settings.redis_url)
 
         Raises:
-            ValueError: If OpenAI API key not configured
+            ValueError: If LiteLLM proxy configuration missing
         """
-        self.api_key = openai_api_key or getattr(settings, "openai_api_key", None)
+        self.litellm_proxy_url = litellm_proxy_url or getattr(
+            settings, "litellm_proxy_url", "http://litellm:4000"
+        )
+        self.litellm_master_key = litellm_master_key or getattr(
+            settings, "litellm_master_key", None
+        )
 
-        if not self.api_key:
+        if not self.litellm_proxy_url:
             raise ValueError(
-                "OpenAI API key not configured. Set AI_AGENTS_OPENAI_API_KEY environment variable."
+                "LiteLLM proxy URL is required (LITELLM_PROXY_URL). "
+                "Set AI_AGENTS_LITELLM_PROXY_URL environment variable."
             )
 
-        # Initialize OpenAI async client
-        self.client = AsyncOpenAI(api_key=self.api_key)
+        if not self.litellm_master_key:
+            raise ValueError(
+                "LiteLLM master key is required (LITELLM_MASTER_KEY). "
+                "Set AI_AGENTS_LITELLM_MASTER_KEY environment variable."
+            )
+
+        # Initialize AsyncOpenAI client pointing to LiteLLM proxy (not OpenAI directly)
+        self.client = AsyncOpenAI(
+            api_key=self.litellm_master_key,
+            base_url=f"{self.litellm_proxy_url}/v1",
+        )
 
         # Initialize Redis cache (optional)
         self.redis_url = redis_url or getattr(settings, "redis_url", None)
@@ -171,7 +196,7 @@ class EmbeddingService:
         if cached_embedding:
             return cached_embedding
 
-        # Generate embedding via OpenAI API
+        # Generate embedding via LiteLLM proxy
         try:
             response = await self.client.embeddings.create(
                 model=self.EMBEDDING_MODEL, input=text, dimensions=self.EMBEDDING_DIMENSIONS
@@ -187,24 +212,32 @@ class EmbeddingService:
             await self._cache_embedding(text, embedding_json)
 
             logger.info(
-                f"EmbeddingService: Generated embedding ({self.EMBEDDING_DIMENSIONS} dims) for text (length: {len(text)})"
+                f"EmbeddingService: Generated embedding ({self.EMBEDDING_DIMENSIONS} dims) via LiteLLM proxy for text (length: {len(text)})"
             )
 
             return embedding_json
 
-        except openai.RateLimitError as e:
+        except APIConnectionError as e:
             logger.error(
-                f"EmbeddingService: OpenAI rate limit exceeded: {e}. Consider implementing retry with exponential backoff."
+                f"EmbeddingService: LiteLLM proxy connection error: {e}"
             )
             return None
 
-        except openai.APIError as e:
-            logger.error(f"EmbeddingService: OpenAI API error: {e}")
+        except APITimeoutError as e:
+            logger.error(
+                f"EmbeddingService: LiteLLM proxy timeout: {e}"
+            )
+            return None
+
+        except APIError as e:
+            logger.error(
+                f"EmbeddingService: LiteLLM proxy API error: {e}"
+            )
             return None
 
         except Exception as e:
             logger.error(
-                f"EmbeddingService: Unexpected error generating embedding: {e}"
+                f"EmbeddingService: Unexpected error generating embedding via LiteLLM proxy: {e}"
             )
             return None
 

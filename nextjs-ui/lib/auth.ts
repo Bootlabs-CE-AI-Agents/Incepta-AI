@@ -230,5 +230,43 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 24 * 60 * 60, // 24 hours
   },
+  // Cookie configuration for HTTPS behind reverse proxy (Cloudflare Tunnel)
+  // When useSecureCookies is true, cookies will have Secure flag
+  // This requires NEXTAUTH_URL to be https://
+  useSecureCookies: process.env.NEXTAUTH_URL?.startsWith("https://"),
+  cookies: {
+    sessionToken: {
+      name: process.env.NEXTAUTH_URL?.startsWith("https://")
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NEXTAUTH_URL?.startsWith("https://"),
+      },
+    },
+    callbackUrl: {
+      name: process.env.NEXTAUTH_URL?.startsWith("https://")
+        ? "__Secure-next-auth.callback-url"
+        : "next-auth.callback-url",
+      options: {
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NEXTAUTH_URL?.startsWith("https://"),
+      },
+    },
+    csrfToken: {
+      name: process.env.NEXTAUTH_URL?.startsWith("https://")
+        ? "__Host-next-auth.csrf-token"
+        : "next-auth.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NEXTAUTH_URL?.startsWith("https://"),
+      },
+    },
+  },
   secret: process.env.NEXTAUTH_SECRET,
 };

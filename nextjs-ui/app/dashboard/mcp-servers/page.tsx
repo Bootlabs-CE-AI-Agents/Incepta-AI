@@ -126,7 +126,7 @@ export default function McpServersPage() {
       { server_id: id },
       {
         onSuccess: (data) => {
-          if (data.status === 'healthy') {
+          if (data.success) {
             toast.success(`Connection to "${serverName}" successful`);
           } else {
             toast.warning(`Connection to "${serverName}" unhealthy`, {

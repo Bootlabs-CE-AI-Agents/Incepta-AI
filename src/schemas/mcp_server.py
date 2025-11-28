@@ -248,16 +248,20 @@ class MCPServerCreate(BaseModel):
     - stdio transport: command required, url/headers not allowed
     - http_sse transport: url required, command/args/env not allowed
 
-    Following MCP Specification 2025-03-26 transport types.
+    Following MCP Specification 2025-03-26 and langchain-mcp-adapters transport types.
 
     Attributes:
         name: Human-readable server name (max 255 chars, unique per tenant)
         description: Optional detailed description of server purpose
-        transport_type: Transport protocol ('stdio' or 'http_sse')
+        transport_type: Transport protocol - one of:
+            - 'stdio': Local subprocess (npx, docker, python)
+            - 'streamable_http': Modern HTTP MCP (/mcp endpoints like Exa AI)
+            - 'sse': Server-Sent Events (/sse endpoints, legacy)
+            - 'websocket': WebSocket transport (wss://)
         command: Executable path for stdio (e.g., 'npx', '/usr/bin/python3')
         args: Command-line arguments array for stdio (default [])
         env: Environment variables object for stdio (default {})
-        url: Base URL for HTTP+SSE transport (max 500 chars)
+        url: Base URL for HTTP transports (max 500 chars)
         headers: HTTP headers for authentication (default {})
 
     Examples:
@@ -267,17 +271,26 @@ class MCPServerCreate(BaseModel):
             "description": "Local filesystem access via MCP",
             "transport_type": "stdio",
             "command": "npx",
-            "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/ravi/Documents"],
+            "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"],
             "env": {"LOG_LEVEL": "debug"}
         }
 
-        http_sse configuration:
+        streamable_http configuration (recommended for hosted MCP servers):
         {
-            "name": "GitHub MCP Server",
-            "description": "GitHub API integration",
-            "transport_type": "http_sse",
-            "url": "https://mcp.github.com/api",
-            "headers": {"Authorization": "Bearer ghp_xxxxxxxxxxxx"}
+            "name": "Exa AI Search",
+            "description": "Web search via Exa AI MCP",
+            "transport_type": "streamable_http",
+            "url": "https://mcp.exa.ai/mcp?exaApiKey=your-api-key",
+            "headers": {}
+        }
+
+        sse configuration (legacy):
+        {
+            "name": "Legacy SSE Server",
+            "description": "MCP server with /sse endpoint",
+            "transport_type": "sse",
+            "url": "https://mcp.example.com/sse",
+            "headers": {"Authorization": "Bearer token"}
         }
     """
 
@@ -297,7 +310,12 @@ class MCPServerCreate(BaseModel):
         ],
     )
     transport_type: TransportType = Field(
-        ..., description="Transport protocol: 'stdio' or 'http_sse'"
+        ...,
+        description=(
+            "Transport protocol: 'stdio' (local subprocess), "
+            "'streamable_http' (modern HTTP MCP), 'sse' (Server-Sent Events), "
+            "or 'websocket' (WebSocket). Use 'streamable_http' for hosted servers like Exa AI."
+        ),
     )
 
     # stdio transport fields
@@ -339,13 +357,16 @@ class MCPServerCreate(BaseModel):
         """
         Validate transport-specific required fields.
 
-        stdio transport:
-        - command must be non-empty string
-        - url and headers not allowed
-
-        http_sse transport:
-        - url must be valid HTTP/HTTPS URL
-        - command, args, and env not allowed
+        Transport types (per langchain-mcp-adapters):
+        - stdio: Local subprocess communication
+          - command required, url/headers not allowed
+        - streamable_http: Modern HTTP MCP for /mcp endpoints (e.g., Exa AI)
+          - url required (http:// or https://), command/args/env not allowed
+        - sse: Server-Sent Events for /sse endpoints (legacy)
+          - url required (http:// or https://), command/args/env not allowed
+        - websocket: WebSocket transport
+          - url required (ws:// or wss://), command/args/env not allowed
+        - http_sse: @deprecated alias for streamable_http (backward compatibility)
 
         Returns:
             MCPServerCreate: Validated instance
@@ -353,6 +374,13 @@ class MCPServerCreate(BaseModel):
         Raises:
             ValueError: If transport requirements not met
         """
+        # HTTP-based transports that require URL
+        http_transports = {
+            TransportType.STREAMABLE_HTTP,
+            TransportType.SSE,
+            TransportType.HTTP_SSE,  # deprecated alias
+        }
+
         if self.transport_type == TransportType.STDIO:
             # stdio requires command
             if not self.command or not self.command.strip():
@@ -360,29 +388,52 @@ class MCPServerCreate(BaseModel):
                     "command is required when transport_type is 'stdio'. "
                     "Provide an executable path (e.g., 'npx', '/usr/bin/python3')."
                 )
-            # stdio should not have http_sse fields
+            # stdio should not have HTTP fields
             if self.url or self.headers:
                 raise ValueError(
                     "Cannot provide url or headers with stdio transport. "
-                    "These fields are only valid for http_sse transport."
+                    "These fields are only valid for HTTP-based transports."
                 )
 
-        elif self.transport_type == TransportType.HTTP_SSE:
-            # http_sse requires url
+        elif self.transport_type in http_transports:
+            # HTTP-based transports require url
             if not self.url or not self.url.strip():
                 raise ValueError(
-                    "url is required when transport_type is 'http_sse'. "
-                    "Provide a valid HTTP/HTTPS URL (e.g., 'https://mcp.example.com/api')."
+                    f"url is required when transport_type is '{self.transport_type.value}'. "
+                    "Provide a valid HTTP/HTTPS URL (e.g., 'https://mcp.exa.ai/mcp')."
                 )
-            # http_sse should not have stdio fields
+            # HTTP transports should not have stdio fields
             if self.command or self.args or self.env:
                 raise ValueError(
-                    "Cannot provide command, args, or env with http_sse transport. "
+                    f"Cannot provide command, args, or env with {self.transport_type.value} transport. "
                     "These fields are only valid for stdio transport."
                 )
-            # Validate URL format (basic HTTP/HTTPS check)
+            # Validate URL format (HTTP/HTTPS)
             if not (self.url.startswith("http://") or self.url.startswith("https://")):
-                raise ValueError("url must start with 'http://' or 'https://'. " f"Got: {self.url}")
+                raise ValueError(
+                    f"url must start with 'http://' or 'https://' for {self.transport_type.value} transport. "
+                    f"Got: {self.url}"
+                )
+
+        elif self.transport_type == TransportType.WEBSOCKET:
+            # WebSocket requires url with ws:// or wss:// scheme
+            if not self.url or not self.url.strip():
+                raise ValueError(
+                    "url is required when transport_type is 'websocket'. "
+                    "Provide a valid WebSocket URL (e.g., 'wss://mcp.example.com/ws')."
+                )
+            # WebSocket should not have stdio fields
+            if self.command or self.args or self.env:
+                raise ValueError(
+                    "Cannot provide command, args, or env with websocket transport. "
+                    "These fields are only valid for stdio transport."
+                )
+            # Validate URL format (WebSocket)
+            if not (self.url.startswith("ws://") or self.url.startswith("wss://")):
+                raise ValueError(
+                    f"url must start with 'ws://' or 'wss://' for websocket transport. "
+                    f"Got: {self.url}"
+                )
 
         return self
 
@@ -402,11 +453,25 @@ class MCPServerCreate(BaseModel):
                     "env": {"LOG_LEVEL": "debug"},
                 },
                 {
-                    "name": "GitHub MCP Server",
-                    "description": "GitHub API integration",
-                    "transport_type": "http_sse",
-                    "url": "https://mcp.github.com/api",
-                    "headers": {"Authorization": "Bearer ghp_xxxxxxxxxxxx"},
+                    "name": "Exa AI Search",
+                    "description": "Web search via Exa AI MCP (modern /mcp endpoint)",
+                    "transport_type": "streamable_http",
+                    "url": "https://mcp.exa.ai/mcp?exaApiKey=your-api-key",
+                    "headers": {},
+                },
+                {
+                    "name": "Legacy SSE Server",
+                    "description": "MCP server with /sse endpoint (legacy)",
+                    "transport_type": "sse",
+                    "url": "https://mcp.example.com/sse",
+                    "headers": {"Authorization": "Bearer token"},
+                },
+                {
+                    "name": "WebSocket MCP Server",
+                    "description": "Real-time MCP via WebSocket",
+                    "transport_type": "websocket",
+                    "url": "wss://mcp.example.com/ws",
+                    "headers": {"X-API-Key": "secret"},
                 },
             ]
         }
@@ -466,6 +531,13 @@ class MCPServerUpdate(BaseModel):
         """
         Validate transport-specific requirements for updates.
 
+        Transport types (per langchain-mcp-adapters):
+        - stdio: Local subprocess, requires command
+        - streamable_http: Modern HTTP MCP (/mcp endpoints), requires http/https URL
+        - sse: Server-Sent Events (/sse endpoints), requires http/https URL
+        - websocket: WebSocket transport, requires ws/wss URL
+        - http_sse: @deprecated alias for backward compatibility
+
         If transport_type is provided, validate corresponding fields.
         If transport_type is changed, ensure new transport fields are valid.
 
@@ -475,27 +547,54 @@ class MCPServerUpdate(BaseModel):
         Raises:
             ValueError: If transport requirements not met
         """
+        # HTTP-based transports that require URL
+        http_transports = {
+            TransportType.STREAMABLE_HTTP,
+            TransportType.SSE,
+            TransportType.HTTP_SSE,  # deprecated alias
+        }
+
         # Only validate if transport_type is being updated
         if self.transport_type is not None:
             if self.transport_type == TransportType.STDIO:
                 # If switching to stdio, command should be provided
                 if self.command is not None and not self.command.strip():
                     raise ValueError("command must be non-empty when transport_type is 'stdio'")
-                # Warn if http_sse fields provided with stdio
+                # Warn if HTTP fields provided with stdio
                 if self.url or self.headers:
                     raise ValueError("Cannot provide url or headers with stdio transport")
 
-            elif self.transport_type == TransportType.HTTP_SSE:
-                # If switching to http_sse, url should be provided
+            elif self.transport_type in http_transports:
+                # If switching to HTTP transport, url should be provided
                 if self.url is not None:
                     if not self.url.strip():
-                        raise ValueError("url must be non-empty when transport_type is 'http_sse'")
-                    # Validate URL format
+                        raise ValueError(
+                            f"url must be non-empty when transport_type is '{self.transport_type.value}'"
+                        )
+                    # Validate URL format (HTTP/HTTPS)
                     if not (self.url.startswith("http://") or self.url.startswith("https://")):
-                        raise ValueError("url must start with 'http://' or 'https://'")
-                # Warn if stdio fields provided with http_sse
+                        raise ValueError(
+                            f"url must start with 'http://' or 'https://' for {self.transport_type.value} transport"
+                        )
+                # Warn if stdio fields provided with HTTP transport
                 if self.command or self.args or self.env:
-                    raise ValueError("Cannot provide command, args, or env with http_sse transport")
+                    raise ValueError(
+                        f"Cannot provide command, args, or env with {self.transport_type.value} transport"
+                    )
+
+            elif self.transport_type == TransportType.WEBSOCKET:
+                # If switching to websocket, url should be provided
+                if self.url is not None:
+                    if not self.url.strip():
+                        raise ValueError("url must be non-empty when transport_type is 'websocket'")
+                    # Validate URL format (WebSocket)
+                    if not (self.url.startswith("ws://") or self.url.startswith("wss://")):
+                        raise ValueError(
+                            "url must start with 'ws://' or 'wss://' for websocket transport"
+                        )
+                # Warn if stdio fields provided with websocket
+                if self.command or self.args or self.env:
+                    raise ValueError("Cannot provide command, args, or env with websocket transport")
 
         return self
 

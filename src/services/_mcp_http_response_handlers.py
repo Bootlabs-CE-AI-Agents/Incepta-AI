@@ -39,7 +39,12 @@ class MCPServerError(MCPError):
 
 
 async def handle_sse_stream(
-    client: httpx.AsyncClient, url: str, jsonrpc_payload: dict[str, Any]
+    client: httpx.AsyncClient,
+    url: str,
+    jsonrpc_payload: dict[str, Any],
+    custom_headers: dict[str, str] | None = None,
+    session_id: str | None = None,
+    protocol_version: str = "2025-03-26",
 ) -> tuple[dict[str, Any], str | None]:
     """
     Handle SSE stream response mode (text/event-stream).
@@ -48,6 +53,9 @@ async def handle_sse_stream(
         client: httpx.AsyncClient instance for making requests.
         url: MCP server URL endpoint.
         jsonrpc_payload: JSON-RPC request payload to send.
+        custom_headers: User-provided headers (e.g., Authorization).
+        session_id: MCP session ID from server (optional).
+        protocol_version: MCP protocol version (default: 2025-03-26).
 
     Returns:
         Tuple of (JSON-RPC result dict, last event ID).
@@ -60,8 +68,17 @@ async def handle_sse_stream(
     cumulative_events = 0
     last_event_id: str | None = None
 
+    # Build MCP-compliant headers for SSE request
+    request_headers = build_mcp_headers(
+        custom_headers=custom_headers,
+        session_id=session_id,
+        protocol_version=protocol_version,
+    )
+
     try:
-        async with aconnect_sse(client, "POST", url, json=jsonrpc_payload) as event_source:
+        async with aconnect_sse(
+            client, "POST", url, json=jsonrpc_payload, headers=request_headers
+        ) as event_source:
             async for event in event_source.aiter_sse():
                 cumulative_events += 1
 
@@ -136,22 +153,86 @@ def handle_json_response(response: httpx.Response) -> dict[str, Any]:
     return cast(dict[str, Any], data.get("result", {}))
 
 
+def build_mcp_headers(
+    custom_headers: dict[str, str] | None = None,
+    session_id: str | None = None,
+    protocol_version: str = "2025-03-26",
+    last_event_id: str | None = None,
+) -> dict[str, str]:
+    """
+    Build MCP-compliant HTTP headers per specification 2025-03-26/2025-06-18.
+
+    Per MCP spec, POST requests MUST include:
+    - Accept: application/json, text/event-stream (support both response modes)
+    - Content-Type: application/json
+    - MCP-Protocol-Version: protocol version (after init)
+    - Mcp-Session-Id: session ID (after init, if provided by server)
+
+    Per WHATWG SSE spec, for reconnection:
+    - Last-Event-ID: last received event ID (for resuming broken connections)
+
+    Args:
+        custom_headers: User-provided headers (e.g., Authorization).
+        session_id: MCP session ID from server (set after initialize).
+        protocol_version: MCP protocol version (default: 2025-03-26).
+        last_event_id: Last received SSE event ID for reconnection support.
+
+    Returns:
+        Complete headers dict for MCP HTTP requests.
+    """
+    # Start with MCP-required headers per spec
+    headers = {
+        "Accept": "application/json, text/event-stream",
+        "Content-Type": "application/json",
+    }
+
+    # Add protocol version header (required after init per spec 2025-06-18)
+    if protocol_version:
+        headers["MCP-Protocol-Version"] = protocol_version
+
+    # Add session ID if available (required after init per spec)
+    if session_id:
+        headers["Mcp-Session-Id"] = session_id
+
+    # Add Last-Event-ID for SSE reconnection (per WHATWG SSE spec)
+    # This allows servers to replay missed events from disconnection point
+    if last_event_id:
+        headers["Last-Event-ID"] = last_event_id
+
+    # Merge user-provided headers (e.g., Authorization, API keys)
+    # User headers take precedence to allow custom overrides
+    if custom_headers:
+        headers.update(custom_headers)
+
+    return headers
+
+
 async def post_request(
     client: httpx.AsyncClient,
     url: str,
     jsonrpc_payload: dict[str, Any],
     headers: dict[str, str],
     redact_func: callable,
+    session_id: str | None = None,
+    protocol_version: str = "2025-03-26",
 ) -> httpx.Response:
     """
     Send HTTP POST request to MCP server with comprehensive error handling.
+
+    Automatically includes MCP-required headers per specification 2025-03-26:
+    - Accept: application/json, text/event-stream
+    - Content-Type: application/json
+    - MCP-Protocol-Version: protocol version
+    - Mcp-Session-Id: session ID (if available)
 
     Args:
         client: httpx.AsyncClient instance for making requests.
         url: MCP server URL endpoint.
         jsonrpc_payload: JSON-RPC request payload.
-        headers: HTTP headers dict.
+        headers: User-provided HTTP headers (e.g., Authorization).
         redact_func: Function to redact sensitive headers for logging.
+        session_id: MCP session ID from server (optional, set after init).
+        protocol_version: MCP protocol version (default: 2025-03-26).
 
     Returns:
         httpx.Response object.
@@ -164,17 +245,24 @@ async def post_request(
     request_id = jsonrpc_payload.get("id")
     method = jsonrpc_payload.get("method")
 
+    # Build MCP-compliant headers (merges required + user headers)
+    request_headers = build_mcp_headers(
+        custom_headers=headers,
+        session_id=session_id,
+        protocol_version=protocol_version,
+    )
+
     # Log request (redact sensitive headers)
     logger.info(
         "MCP HTTP POST request",
         url=url,
         method=method,
         request_id=request_id,
-        headers=redact_func(headers),
+        headers=redact_func(request_headers),
     )
 
     try:
-        response = await client.post(url, json=jsonrpc_payload)
+        response = await client.post(url, json=jsonrpc_payload, headers=request_headers)
         response.raise_for_status()
 
         # Log response

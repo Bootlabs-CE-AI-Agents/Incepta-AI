@@ -31,6 +31,7 @@ from src.services._mcp_http_response_handlers import (
     handle_json_response,
     post_request,
     redact_sensitive_headers,
+    build_mcp_headers,
 )
 
 
@@ -72,8 +73,13 @@ class MCPStreamableHTTPClient:
         # JSON-RPC state
         self._request_id = 0
 
-        # SSE resumability
+        # SSE resumability (per WHATWG SSE spec)
         self.last_event_id: str | None = None
+        self._reconnection_time_ms: int = 3000  # Default 3 seconds per spec recommendation
+
+        # MCP session management (set after initialize)
+        self.session_id: str | None = None
+        self.protocol_version: str = "2025-03-26"
 
         # Server capabilities (set after initialize)
         self.server_capabilities: dict[str, Any] = {}
@@ -142,6 +148,68 @@ class MCPStreamableHTTPClient:
             logger.info("MCP HTTP client closed")
 
         self._closed = True
+
+    async def _make_request_with_retry(
+        self,
+        method: str,
+        params: dict[str, Any],
+        max_retries: int = 3,
+    ) -> dict[str, Any]:
+        """
+        Make JSON-RPC request with automatic retry and exponential backoff.
+
+        Per WHATWG SSE spec, reconnection should use:
+        - Last-Event-ID header to resume from disconnection point
+        - Exponential backoff to avoid overloading server
+        - Server-provided retry time (via `retry:` field)
+
+        Args:
+            method: JSON-RPC method name.
+            params: Method parameters.
+            max_retries: Maximum number of retry attempts (default: 3).
+
+        Returns:
+            JSON-RPC result dict.
+
+        Raises:
+            MCPError: If all retries exhausted or non-retryable error.
+        """
+        last_error: Exception | None = None
+        retry_delay_ms = self._reconnection_time_ms
+
+        for attempt in range(max_retries + 1):
+            try:
+                return await self._make_request(method, params)
+
+            except MCPConnectionError as e:
+                # Connection errors are retryable
+                last_error = e
+                if attempt < max_retries:
+                    # Exponential backoff with jitter
+                    import random
+
+                    jitter = random.uniform(0.5, 1.5)
+                    wait_time = (retry_delay_ms / 1000) * jitter
+
+                    logger.warning(
+                        f"Connection error on attempt {attempt + 1}/{max_retries + 1}, "
+                        f"retrying in {wait_time:.1f}s with Last-Event-ID={self.last_event_id}",
+                        error=str(e),
+                    )
+
+                    await asyncio.sleep(wait_time)
+
+                    # Exponential backoff: double the delay for next retry
+                    retry_delay_ms = min(retry_delay_ms * 2, 30000)  # Cap at 30 seconds
+
+            except MCPError:
+                # Non-retryable MCP errors (JSON-RPC errors, etc.)
+                raise
+
+        # All retries exhausted
+        raise MCPConnectionError(
+            f"Request failed after {max_retries + 1} attempts: {last_error}"
+        ) from last_error
 
     def _next_request_id(self) -> int:
         """
@@ -228,6 +296,11 @@ class MCPStreamableHTTPClient:
         """
         Make JSON-RPC request with dual response mode handling.
 
+        Uses httpx.stream directly instead of httpx-sse's aconnect_sse because
+        aconnect_sse overwrites the Accept header, causing HTTP 406 errors with
+        MCP servers that strictly enforce the spec requirement for
+        "Accept: application/json, text/event-stream".
+
         Args:
             method: JSON-RPC method name.
             params: Method parameters.
@@ -247,39 +320,206 @@ class MCPStreamableHTTPClient:
         request_id = self._next_request_id()
         jsonrpc_payload = self._build_jsonrpc_request(method, params, request_id)
 
-        # Attempt POST request using handler
-        response = await post_request(
-            self.client, self.url, jsonrpc_payload, self.headers, redact_sensitive_headers
+        # Build MCP-compliant headers (IMPORTANT: must include both content types)
+        # Include Last-Event-ID for SSE reconnection support
+        request_headers = build_mcp_headers(
+            custom_headers=self.headers,
+            session_id=self.session_id,
+            protocol_version=self.protocol_version,
+            last_event_id=self.last_event_id,
         )
 
-        # Determine response mode based on Content-Type
-        content_type = response.headers.get("content-type", "")
+        logger.debug(
+            "MCP HTTP request",
+            method=method,
+            request_id=request_id,
+            url=self.url,
+        )
 
-        if "application/json" in content_type:
-            # Single JSON response mode
-            return handle_json_response(response)
+        import json
 
-        elif "text/event-stream" in content_type:
-            # SSE stream response mode - delegate to handler
-            result, last_event_id = await handle_sse_stream(self.client, self.url, jsonrpc_payload)
+        # Use httpx.stream directly to preserve MCP-compliant Accept headers
+        async with self.client.stream(
+            "POST",
+            self.url,
+            json=jsonrpc_payload,
+            headers=request_headers,
+        ) as response:
+            # Check for HTTP errors
+            if response.status_code >= 400:
+                body = await response.aread()
+                raise MCPError(f"HTTP {response.status_code}: {body.decode()[:500]}")
 
-            # Store last event ID for resumability
-            if last_event_id:
-                self.last_event_id = last_event_id
+            # Determine response mode based on Content-Type
+            content_type = response.headers.get("content-type", "")
 
-            return result
+            if "application/json" in content_type:
+                # Single JSON response mode
+                body = await response.aread()
+                data = json.loads(body)
 
-        else:
-            raise MCPError(f"Unexpected Content-Type: {content_type}")
+                # Validate JSON-RPC structure
+                if "jsonrpc" not in data or data["jsonrpc"] != "2.0":
+                    raise InvalidJSONError(f"Invalid JSON-RPC response: {data}")
+
+                # Check for JSON-RPC error
+                if "error" in data:
+                    error = data["error"]
+                    raise MCPError(
+                        f"JSON-RPC error: {error.get('message', 'Unknown error')}"
+                    )
+
+                return cast(dict[str, Any], data.get("result", {}))
+
+            elif "text/event-stream" in content_type:
+                # SSE stream response mode - parse manually
+                return await self._parse_sse_response(response, request_id)
+
+            else:
+                raise MCPError(f"Unexpected Content-Type: {content_type}")
+
+    async def _parse_sse_response(
+        self, response: httpx.Response, request_id: int
+    ) -> dict[str, Any]:
+        """
+        Parse SSE stream response per WHATWG HTML Living Standard.
+
+        Implements the SSE parsing algorithm from:
+        https://html.spec.whatwg.org/multipage/server-sent-events.html
+
+        Key features:
+        - Multi-line data: Multiple `data:` lines are concatenated with newlines
+        - Event ID tracking: `id:` field updates last_event_id for reconnection
+        - Retry handling: `retry:` field updates reconnection time
+        - Comment ignoring: Lines starting with `:` are ignored (keep-alive)
+
+        This is needed because httpx-sse's aconnect_sse overwrites the Accept header
+        to just "text/event-stream", but MCP spec requires "application/json, text/event-stream"
+        and some servers (like Exa) enforce this with HTTP 406.
+
+        Args:
+            response: httpx.Response with text/event-stream Content-Type.
+            request_id: JSON-RPC request ID to match.
+
+        Returns:
+            JSON-RPC result dict from matching response.
+
+        Raises:
+            MCPError: If no matching response found or JSON-RPC error.
+        """
+        import json
+
+        # SSE event buffers (per WHATWG spec)
+        data_buffer: list[str] = []  # Accumulates data: lines
+        event_type_buffer = "message"  # Default event type
+        last_event_id_buffer: str | None = None  # Tracks event ID for reconnection
+
+        event_count = 0
+
+        async for line in response.aiter_lines():
+            # Per spec: Lines can end with CRLF, LF, or CR
+            # aiter_lines() handles line splitting, we just need to process
+
+            # Empty line = dispatch event
+            if line == "":
+                if data_buffer:
+                    # Join multi-line data with newlines, remove trailing newline per spec
+                    event_data = "\n".join(data_buffer)
+                    if event_data.endswith("\n"):
+                        event_data = event_data[:-1]
+
+                    event_count += 1
+
+                    # Update last_event_id if we received one
+                    if last_event_id_buffer is not None:
+                        self.last_event_id = last_event_id_buffer
+
+                    logger.debug(
+                        "SSE event dispatched",
+                        event_count=event_count,
+                        event_type=event_type_buffer,
+                        event_id=last_event_id_buffer,
+                        data_size=len(event_data),
+                    )
+
+                    # Parse event data as JSON-RPC
+                    try:
+                        data = json.loads(event_data)
+                    except json.JSONDecodeError as e:
+                        logger.warning(f"Skipping non-JSON SSE event: {e}")
+                        # Reset buffers for next event
+                        data_buffer = []
+                        event_type_buffer = "message"
+                        continue
+
+                    # Check if this is the matching response
+                    if data.get("id") == request_id:
+                        # Check for JSON-RPC error
+                        if "error" in data:
+                            error = data["error"]
+                            raise MCPError(
+                                f"JSON-RPC error: {error.get('message', 'Unknown error')}"
+                            )
+
+                        return cast(dict[str, Any], data.get("result", {}))
+
+                # Reset buffers for next event (keep last_event_id_buffer per spec)
+                data_buffer = []
+                event_type_buffer = "message"
+                continue
+
+            # Comment line (starts with colon) - ignore but useful for keep-alive
+            if line.startswith(":"):
+                continue
+
+            # Parse field name and value
+            if ":" in line:
+                colon_idx = line.index(":")
+                field_name = line[:colon_idx]
+                field_value = line[colon_idx + 1 :]
+                # Per spec: "If value starts with a U+0020 SPACE character, remove it"
+                if field_value.startswith(" "):
+                    field_value = field_value[1:]
+            else:
+                # Line with no colon: field name is entire line, value is empty
+                field_name = line
+                field_value = ""
+
+            # Process field based on name
+            if field_name == "data":
+                # Append to data buffer (multi-line support)
+                data_buffer.append(field_value)
+
+            elif field_name == "event":
+                # Set event type
+                event_type_buffer = field_value
+
+            elif field_name == "id":
+                # Per spec: "If the field value does not contain U+0000 NULL"
+                if "\x00" not in field_value:
+                    last_event_id_buffer = field_value
+
+            elif field_name == "retry":
+                # Per spec: "If the field value consists of only ASCII digits"
+                if field_value.isdigit():
+                    self._reconnection_time_ms = int(field_value)
+                    logger.debug(f"SSE retry time set to {self._reconnection_time_ms}ms")
+
+            # Unknown fields are ignored per spec
+
+        raise MCPError(f"No response found for request ID {request_id} in SSE stream")
 
     # ========== MCP Interface Methods (Match stdio client) ==========
 
     async def initialize(self) -> dict[str, Any]:
         """
-        Perform MCP initialize handshake.
+        Perform MCP initialize handshake per MCP Specification 2025-03-26.
 
         Sends initialize request with protocol version 2025-03-26.
-        Validates server response and stores capabilities.
+        Validates server response, stores capabilities, and captures session ID.
+
+        Per MCP spec, if server returns Mcp-Session-Id header, client MUST
+        include it in all subsequent requests.
 
         Returns:
             Server capabilities dict.
@@ -291,24 +531,89 @@ class MCPStreamableHTTPClient:
         if self._closed:
             raise MCPError("Client is closed")
 
+        if not self.client:
+            raise MCPError("Client not initialized (use async with)")
+
         params = {
-            "protocolVersion": "2025-03-26",
+            "protocolVersion": self.protocol_version,
             "capabilities": {},
             "clientInfo": {"name": "ai-ops-platform", "version": "1.0.0"},
         }
 
         logger.info("Initializing MCP HTTP connection", url=self.url)
 
+        # Build JSON-RPC request
+        request_id = self._next_request_id()
+        jsonrpc_payload = self._build_jsonrpc_request("initialize", params, request_id)
+
         try:
-            result = await self._make_request("initialize", params)
+            # Build MCP-compliant headers per specification 2025-03-26
+            # IMPORTANT: We cannot use httpx-sse's aconnect_sse because it
+            # overwrites our Accept header to just "text/event-stream".
+            # MCP spec requires "Accept: application/json, text/event-stream"
+            # and some servers (like Exa) strictly enforce this with HTTP 406.
+            request_headers = build_mcp_headers(
+                custom_headers=self.headers,
+                session_id=None,  # No session yet
+                protocol_version=self.protocol_version,
+            )
+
+            logger.info(
+                "MCP HTTP POST request (initialize)",
+                url=self.url,
+                headers=redact_sensitive_headers(request_headers),
+            )
+
+            # Use httpx.stream directly to preserve our MCP-compliant headers
+            import json
+
+            async with self.client.stream(
+                "POST",
+                self.url,
+                json=jsonrpc_payload,
+                headers=request_headers,
+            ) as response:
+                # Check for HTTP errors
+                if response.status_code >= 400:
+                    body = await response.aread()
+                    raise MCPError(f"HTTP {response.status_code}: {body.decode()[:500]}")
+
+                # Capture session ID from response headers (per MCP spec)
+                session_id_header = response.headers.get(
+                    "mcp-session-id"
+                ) or response.headers.get("Mcp-Session-Id")
+                if session_id_header:
+                    self.session_id = session_id_header
+                    logger.info(f"MCP session established: {session_id_header[:8]}...")
+
+                # Determine response type from Content-Type header
+                content_type = response.headers.get("content-type", "")
+
+                if "text/event-stream" in content_type:
+                    # Parse SSE stream manually to find the initialize response
+                    result = await self._parse_sse_response(response, request_id)
+                elif "application/json" in content_type:
+                    # Single JSON response mode
+                    body = await response.aread()
+                    data = json.loads(body)
+                    if "error" in data:
+                        error = data["error"]
+                        raise MCPError(
+                            f"JSON-RPC error: {error.get('message', 'Unknown error')}"
+                        )
+                    result = data.get("result", {})
+                else:
+                    raise MCPError(f"Unexpected Content-Type: {content_type}")
+
         except Exception as e:
             raise InitializationError(f"Initialize handshake failed: {e}") from e
 
-        # Validate protocol version
-        server_version = result.get("protocolVersion")
-        if server_version != "2025-03-26":
-            raise InitializationError(
-                f"Incompatible protocol version: {server_version} (expected 2025-03-26)"
+        # Validate protocol version (be flexible - accept compatible versions)
+        server_version = result.get("protocolVersion", "")
+        compatible_versions = ["2025-03-26", "2025-06-18", "2024-11-05"]
+        if server_version and server_version not in compatible_versions:
+            logger.warning(
+                f"Server protocol version {server_version} may not be fully compatible"
             )
 
         # Store server capabilities

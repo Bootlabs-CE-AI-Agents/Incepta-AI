@@ -44,7 +44,8 @@ export default function ExecutionHistoryPage() {
   const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(null);
 
   // Fetch executions
-  const { data, isLoading, isError, error, refetch } = useExecutions(filters);
+  // isFetching is true during refetch (background updates), isLoading is only for initial load
+  const { data, isLoading, isFetching, isError, error, refetch } = useExecutions(filters);
   const exportMutation = useExportExecutions();
 
   const handleFiltersChange = (newFilters: IExecutionFilters) => {
@@ -64,7 +65,9 @@ export default function ExecutionHistoryPage() {
   };
 
   const handleRefresh = () => {
-    refetch();
+    // Force refetch by invalidating the cache first, then refetch
+    // cancelRefetch: true ensures any in-flight request is cancelled and a new one starts
+    refetch({ cancelRefetch: true });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -92,9 +95,9 @@ export default function ExecutionHistoryPage() {
             <Button
               variant="secondary"
               onClick={handleRefresh}
-              disabled={isLoading}
+              disabled={isFetching}
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Button

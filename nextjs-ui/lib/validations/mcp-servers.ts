@@ -2,7 +2,7 @@
  * MCP Server Form Validation Schemas
  *
  * Zod schemas for MCP server CRUD operations with conditional validation
- * based on server type (HTTP, SSE, stdio)
+ * based on server type (HTTP, SSE, WebSocket, stdio)
  * following 2025 best practices
  *
  * @see https://zod.dev (Zod v3 documentation)
@@ -14,13 +14,32 @@ import { z } from 'zod';
  * MCP Server Transport Type Enum
  *
  * Matches backend TransportType enum in src/database/models.py
+ * Compatible with langchain-mcp-adapters transport types.
+ *
+ * Transport Types:
  * - "stdio": Local subprocess communication via stdin/stdout
- * - "http_sse": HTTP with Server-Sent Events for persistent connections
+ * - "streamable_http": Modern HTTP MCP for /mcp endpoints (e.g., Exa AI, Brave Search)
+ * - "sse": Server-Sent Events for /sse endpoints (legacy MCP servers)
+ * - "websocket": WebSocket transport for ws:// or wss:// endpoints
+ * - "http_sse": @deprecated - use "streamable_http" or "sse" instead
  */
 export const mcpTransportTypeEnum = z.enum([
   'stdio',
-  'http_sse'
+  'streamable_http',
+  'sse',
+  'websocket',
+  'http_sse'  // Deprecated, kept for backward compatibility
 ]);
+
+/**
+ * HTTP-based transport types (require URL with http:// or https://)
+ */
+export const HTTP_TRANSPORT_TYPES = ['streamable_http', 'sse', 'http_sse'] as const;
+
+/**
+ * WebSocket transport types (require URL with ws:// or wss://)
+ */
+export const WEBSOCKET_TRANSPORT_TYPES = ['websocket'] as const;
 
 /**
  * Environment Variable Schema
@@ -47,7 +66,7 @@ export const httpConnectionSchema = z.object({
   headers: z.record(z.string(), z.string())
     .optional(),
 
-  timeout: z.number()
+  timeout: z.coerce.number()
     .int()
     .positive()
     .max(300000) // 5 minutes max
@@ -88,9 +107,8 @@ export const mcpServerSchema = z.object({
     .optional(),
 
   // stdio transport fields (optional, validated in superRefine)
-  command: z.string()
-    .min(1, { message: "Command is required for stdio servers" })
-    .optional(),
+  // Note: Don't use .min(1) here - superRefine handles conditional requirement
+  command: z.string().optional(),
 
   args: z.array(z.string())
     .default([]),
@@ -108,7 +126,7 @@ export const mcpServerSchema = z.object({
   headers: z.record(z.string(), z.string())
     .default({}),
 
-  timeout: z.number()
+  timeout: z.coerce.number()
     .int()
     .positive()
     .max(300000) // 5 minutes max
@@ -123,7 +141,11 @@ export const mcpServerSchema = z.object({
     .default(true),
 }).superRefine((data, ctx) => {
   // Validate transport-specific required fields
+  const httpTransports = ['streamable_http', 'sse', 'http_sse'];
+  const wsTransports = ['websocket'];
+
   if (data.transport_type === 'stdio') {
+    // stdio requires command, no URL
     if (!data.command || data.command.trim() === '') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -131,7 +153,7 @@ export const mcpServerSchema = z.object({
         path: ['command'],
       });
     }
-    // Warn if http_sse fields are provided
+    // Warn if URL fields are provided
     if (data.url) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -139,19 +161,55 @@ export const mcpServerSchema = z.object({
         path: ['url'],
       });
     }
-  } else if (data.transport_type === 'http_sse') {
+  } else if (httpTransports.includes(data.transport_type)) {
+    // HTTP-based transports require URL with http:// or https://
     if (!data.url || data.url.trim() === '') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Server URL is required for HTTP/SSE transport",
+        message: "Server URL is required for HTTP-based transport",
         path: ['url'],
       });
+    } else {
+      const urlLower = data.url.toLowerCase();
+      if (!urlLower.startsWith('http://') && !urlLower.startsWith('https://')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "URL must start with http:// or https:// for HTTP-based transport",
+          path: ['url'],
+        });
+      }
     }
     // Warn if stdio fields are provided
     if (data.command) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Command field is not used for HTTP/SSE transport",
+        message: "Command field is not used for HTTP-based transport",
+        path: ['command'],
+      });
+    }
+  } else if (wsTransports.includes(data.transport_type)) {
+    // WebSocket transport requires URL with ws:// or wss://
+    if (!data.url || data.url.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Server URL is required for WebSocket transport",
+        path: ['url'],
+      });
+    } else {
+      const urlLower = data.url.toLowerCase();
+      if (!urlLower.startsWith('ws://') && !urlLower.startsWith('wss://')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "URL must start with ws:// or wss:// for WebSocket transport",
+          path: ['url'],
+        });
+      }
+    }
+    // Warn if stdio fields are provided
+    if (data.command) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Command field is not used for WebSocket transport",
         path: ['command'],
       });
     }
@@ -162,6 +220,46 @@ export const mcpServerSchema = z.object({
  * Helper schemas for different transport types
  * These make form rendering easier
  */
+export const streamableHttpMcpServerSchema = z.object({
+  name: z.string()
+    .min(2, { message: "Server name must be at least 2 characters" })
+    .max(100, { message: "Server name must not exceed 100 characters" }),
+  transport_type: z.literal('streamable_http'),
+  description: z.string()
+    .max(500, { message: "Description must not exceed 500 characters" })
+    .optional(),
+  connection_config: httpConnectionSchema,
+  health_check_enabled: z.boolean().default(true),
+  is_active: z.boolean().default(true),
+});
+
+export const sseMcpServerSchema = z.object({
+  name: z.string()
+    .min(2, { message: "Server name must be at least 2 characters" })
+    .max(100, { message: "Server name must not exceed 100 characters" }),
+  transport_type: z.literal('sse'),
+  description: z.string()
+    .max(500, { message: "Description must not exceed 500 characters" })
+    .optional(),
+  connection_config: httpConnectionSchema,
+  health_check_enabled: z.boolean().default(true),
+  is_active: z.boolean().default(true),
+});
+
+export const websocketMcpServerSchema = z.object({
+  name: z.string()
+    .min(2, { message: "Server name must be at least 2 characters" })
+    .max(100, { message: "Server name must not exceed 100 characters" }),
+  transport_type: z.literal('websocket'),
+  description: z.string()
+    .max(500, { message: "Description must not exceed 500 characters" })
+    .optional(),
+  connection_config: httpConnectionSchema,  // WebSocket uses similar config
+  health_check_enabled: z.boolean().default(true),
+  is_active: z.boolean().default(true),
+});
+
+/** @deprecated Use streamableHttpMcpServerSchema or sseMcpServerSchema instead */
 export const httpSseMcpServerSchema = z.object({
   name: z.string()
     .min(2, { message: "Server name must be at least 2 characters" })
@@ -215,6 +313,10 @@ export type EnvVar = z.infer<typeof envVarSchema>;
 export type HTTPConnectionConfig = z.infer<typeof httpConnectionSchema>;
 export type StdioConnectionConfig = z.infer<typeof stdioConnectionSchema>;
 export type MCPServerFormData = z.infer<typeof mcpServerSchema>;
+export type StreamableHttpMCPServerData = z.infer<typeof streamableHttpMcpServerSchema>;
+export type SSEMCPServerData = z.infer<typeof sseMcpServerSchema>;
+export type WebSocketMCPServerData = z.infer<typeof websocketMcpServerSchema>;
+/** @deprecated Use StreamableHttpMCPServerData or SSEMCPServerData instead */
 export type HTTPSSEMCPServerData = z.infer<typeof httpSseMcpServerSchema>;
 export type StdioMCPServerData = z.infer<typeof stdioMcpServerSchema>;
 export type MCPServerCreateData = z.infer<typeof mcpServerCreateSchema>;

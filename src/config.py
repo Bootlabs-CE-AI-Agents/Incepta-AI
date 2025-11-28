@@ -229,26 +229,29 @@ class Settings(BaseSettings):
         description="OpenAI API key for GPT models (sk-proj-... or sk-...)",
     )
 
-    # OpenRouter/LLM Configuration
+    # DEPRECATED: OpenRouter/LLM Configuration
+    # NOTE: These settings are NO LONGER USED. All LLM requests must route through LiteLLM proxy.
+    # LiteLLM proxy gateway is the single source of truth for all models and API keys.
+    # Keeping these for backward compatibility only - new code should NOT use these directly.
     openrouter_api_key: str = Field(
-        ...,
-        description="OpenRouter API key for LLM synthesis (sk-or-v1-...)",
+        default="",
+        description="[DEPRECATED] OpenRouter API key - DO NOT USE. Route through LiteLLM proxy instead.",
     )
     openrouter_base_url: str = Field(
         default="https://openrouter.ai/api/v1",
-        description="OpenRouter API base URL",
+        description="[DEPRECATED] OpenRouter API base URL - DO NOT USE. Use LiteLLM proxy instead.",
     )
     openrouter_site_url: str = Field(
-        ...,
-        description="Site URL for HTTP-Referer header (for OpenRouter rankings)",
+        default="",
+        description="[DEPRECATED] Site URL for OpenRouter - DO NOT USE. Use LiteLLM proxy instead.",
     )
     openrouter_app_name: str = Field(
-        ...,
-        description="App name for X-Title header (for OpenRouter rankings)",
+        default="",
+        description="[DEPRECATED] App name for OpenRouter - DO NOT USE. Use LiteLLM proxy instead.",
     )
     llm_model: str = Field(
         default="openai/gpt-4o-mini",
-        description="LLM model to use for synthesis (via OpenRouter)",
+        description="[DEPRECATED] LLM model config - use agent.llm_config instead. All requests route through LiteLLM proxy.",
     )
     llm_max_tokens: int = Field(
         default=1000,

@@ -1,20 +1,28 @@
 """
 MCP Server Form Renderers
 
-Renders add/edit forms for MCP servers (stdio and HTTP+SSE transports).
+Renders add/edit forms for MCP servers with multiple transport types.
 Extracted from 12_MCP_Servers.py for maintainability (Story 12.7).
 
 Features:
-- Transport type selection (stdio, http_sse)
+- Transport type selection (stdio, streamable_http, sse, websocket)
 - Stdio fields: command, args, environment variables
-- HTTP+SSE fields: URL, custom headers
+- HTTP-based fields (streamable_http, sse): URL, custom headers
+- WebSocket fields: URL (ws:// or wss://), custom headers
 - Form validation with helpful error messages
 - Session state management for multi-page form flow
+
+Transport Types (langchain-mcp-adapters compatible):
+- stdio: Local subprocess communication (e.g., npx @modelcontextprotocol/server)
+- streamable_http: Modern HTTP MCP for /mcp endpoints (e.g., Exa AI, Brave Search)
+- sse: Server-Sent Events for /sse endpoints (legacy MCP servers)
+- websocket: WebSocket transport for ws:// or wss:// endpoints
 
 References:
 - Story 12.7: File Size Refactoring and Code Quality
 - Story 11.1.9: Admin UI for MCP Server Management
 - Story 11.2.1: MCP HTTP+SSE Transport Client
+- MCP Transport Type Enhancement (Migration 018)
 
 Usage:
     from src.admin.utils.mcp_admin_ui import render_server_form
@@ -130,29 +138,62 @@ def render_server_form(edit_mode: bool = False) -> None:
                 st.rerun()
             return
 
+    # Transport type options with descriptions
+    TRANSPORT_OPTIONS = {
+        "streamable_http": "Streamable HTTP (Modern MCP - /mcp endpoints)",
+        "sse": "SSE (Server-Sent Events - /sse endpoints)",
+        "websocket": "WebSocket (ws:// or wss://)",
+        "stdio": "stdio (Local Command-line)",
+    }
+    TRANSPORT_HELP = {
+        "streamable_http": "Modern HTTP MCP for /mcp endpoints (Exa AI, Brave Search, etc.)",
+        "sse": "Server-Sent Events for legacy /sse endpoints",
+        "websocket": "WebSocket transport for ws:// or wss:// endpoints",
+        "stdio": "Local subprocess communication via stdin/stdout",
+    }
+
     # Transport type selection OUTSIDE the form so page can rerender when changed
     if edit_mode and server_data:
+        current_transport = server_data.get("transport_type", "stdio")
+        # Show display label for deprecated http_sse
+        display_label = (
+            "http_sse (Deprecated - use Streamable HTTP)"
+            if current_transport == "http_sse"
+            else TRANSPORT_OPTIONS.get(current_transport, current_transport)
+        )
         st.text_input(
             "Transport Type",
-            value=server_data.get("transport_type", ""),
+            value=display_label,
             disabled=True,
             help="Transport type cannot be changed after creation",
         )
-        transport_type = server_data.get("transport_type", "stdio")
+        transport_type = current_transport
     else:
         # Initialize transport_type in session state if not present
         if "transport_type" not in st.session_state:
-            st.session_state.transport_type = "stdio"
+            st.session_state.transport_type = "streamable_http"  # Default to modern transport
+
+        # Get index for selectbox
+        transport_keys = list(TRANSPORT_OPTIONS.keys())
+        try:
+            current_index = transport_keys.index(st.session_state.transport_type)
+        except ValueError:
+            current_index = 0
 
         transport_type = st.selectbox(
             "Transport Type *",
-            options=["stdio", "http_sse"],
-            index=0 if st.session_state.transport_type == "stdio" else 1,
+            options=transport_keys,
+            format_func=lambda x: TRANSPORT_OPTIONS[x],
+            index=current_index,
             help="Protocol for communicating with the MCP server",
             key="transport_type_selector",
         )
         # Update session state when selection changes
         st.session_state.transport_type = transport_type
+
+        # Show transport-specific help text
+        if transport_type in TRANSPORT_HELP:
+            st.caption(f"ℹ️ {TRANSPORT_HELP[transport_type]}")
 
     with st.form("mcp_server_form"):
         name = st.text_input(
@@ -217,11 +258,11 @@ def render_server_form(edit_mode: bool = False) -> None:
                     placeholder="value" if i < 3 else "",
                 )
 
-        elif transport_type == "http_sse":
-            # URL field with validation
-            url = render_http_sse_url_field(server_data)
+        elif transport_type in ("streamable_http", "sse", "http_sse", "websocket"):
+            # URL field with validation (all HTTP-based and WebSocket transports)
+            url = render_http_sse_url_field(server_data, transport_type)
 
-            # HTTP Headers editor
+            # HTTP Headers editor (also used for WebSocket auth)
             render_http_headers_editor()
 
         # Form buttons
@@ -236,19 +277,23 @@ def render_server_form(edit_mode: bool = False) -> None:
         cancel = col2.form_submit_button("Cancel", use_container_width=True)
 
         if submitted:
+            # Define network-based transport types
+            network_transports = ("streamable_http", "sse", "http_sse", "websocket")
+
             # Validate required fields
             if not name:
                 st.error("Server name is required")
             elif transport_type == "stdio" and not command:
                 st.error("Command is required for stdio transport")
-            elif transport_type == "http_sse":
-                url_valid, url_error = validate_url(url)
+            elif transport_type in network_transports:
+                url_valid, url_error = validate_url(url, transport_type)
                 if not url_valid:
                     st.error(url_error)
                     return
+
             # Build payload only if validation passes
             if (transport_type == "stdio" and name and command) or (
-                transport_type == "http_sse" and name and url
+                transport_type in network_transports and name and url
             ):
                 # Build payload
                 payload: dict[str, Any] = {
@@ -265,7 +310,7 @@ def render_server_form(edit_mode: bool = False) -> None:
                     payload["env"] = {
                         ev["key"]: ev["value"] for ev in st.session_state.env_vars if ev["key"]
                     }
-                elif transport_type == "http_sse":
+                elif transport_type in network_transports:
                     payload["url"] = url
                     headers_dict = {
                         h["key"]: h["value"] for h in st.session_state.http_headers if h["key"]

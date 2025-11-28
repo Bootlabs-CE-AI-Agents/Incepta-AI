@@ -311,15 +311,42 @@ class AgentExecutionService:
 
             # Step 6: Initialize chat model with ChatLiteLLM
             # Using ChatLiteLLM configured to route through LiteLLM proxy gateway
-            # Key fix: Set api_base (not base_url) to ensure ChatLiteLLM uses the proxy
-            # instead of trying to call upstream providers directly (Story 12.10 - LiteLLM Proxy Gateway Fix)
-            llm = ChatLiteLLM(
-                model=model_string,  # e.g., "openrouter/z-ai/glm-4.6", "openai/gpt-4o-mini"
-                api_key=virtual_key,  # Tenant's virtual key from LiteLLM proxy
-                api_base=f"{self.litellm_proxy_url}/v1",  # LiteLLM proxy endpoint (CRITICAL: use api_base not base_url)
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+            # Key fixes:
+            # - Set api_base (not base_url) to ensure ChatLiteLLM uses the proxy
+            # - Set custom_llm_provider='openai' to force routing through api_base
+            #   Reason: Without this, LiteLLM SDK "smart routes" provider-prefixed models
+            #   (like openrouter/z-ai/glm-4.6) directly to the provider, bypassing the proxy.
+            #   Setting custom_llm_provider='openai' treats api_base as OpenAI-compatible endpoint.
+            # (Story 12.10 - LiteLLM Proxy Gateway Fix)
+            try:
+                llm = ChatLiteLLM(
+                    model=model_string,  # e.g., "openrouter/z-ai/glm-4.6", "openai/gpt-4o-mini"
+                    api_key=virtual_key,  # Tenant's virtual key from LiteLLM proxy
+                    api_base=f"{self.litellm_proxy_url}/v1",  # LiteLLM proxy endpoint
+                    custom_llm_provider="openai",  # CRITICAL: Force routing through api_base
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+            except Exception as e:
+                error_msg = str(e)
+
+                # Check if it's a deployment availability error
+                if "no healthy deployments" in error_msg.lower() or "badrequeesterror" in error_msg.lower():
+                    # Provide helpful error message for model availability issue
+                    raise AgentExecutionError(
+                        f"Model '{model_string}' is not available in LiteLLM proxy. "
+                        f"Likely causes:\n"
+                        f"1. Model is not configured in LiteLLM gateway\n"
+                        f"2. Model provider credentials are missing in LiteLLM config\n"
+                        f"3. LiteLLM proxy service is not healthy\n\n"
+                        f"Original error: {error_msg}\n\n"
+                        f"To fix: Check LiteLLM model registry via /v1/models endpoint and verify model is available."
+                    ) from e
+                else:
+                    # Re-raise other exceptions as-is
+                    raise AgentExecutionError(
+                        f"Failed to initialize LLM model '{model_string}': {error_msg}"
+                    ) from e
 
             # Step 7: Create agent executor based on architecture
             # Using factory pattern to support multiple cognitive architectures (Story 12.8)

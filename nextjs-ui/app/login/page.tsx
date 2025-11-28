@@ -62,23 +62,34 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("[Login] Form submitted, username:", username);
     setError("");
     setIsLoading(true);
 
     try {
+      console.log("[Login] Calling signIn...");
       const result = await signIn("credentials", {
         username,
         password,
         redirect: false,
       });
+      console.log("[Login] signIn result:", result);
 
       if (result?.error) {
+        console.log("[Login] Error:", result.error);
         setError("Invalid username or password");
       } else if (result?.ok) {
-        router.push("/dashboard");
+        console.log("[Login] Success, redirecting to dashboard...");
+        // Get the callback URL from search params or default to dashboard
+        const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+        router.push(callbackUrl);
+      } else {
+        console.log("[Login] Unexpected result - no error, no ok");
+        setError("An unexpected error occurred. Please try again.");
       }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_err) {
+      console.error("[Login] Exception:", _err);
       setError("An error occurred. Please try again.");
     } finally {
       setIsLoading(false);

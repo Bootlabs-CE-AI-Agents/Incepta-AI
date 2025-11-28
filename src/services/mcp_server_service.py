@@ -319,8 +319,12 @@ class MCPServerService:
                         else:
                             raise
 
-            elif server.transport_type == TransportType.HTTP_SSE:
-                # Run discovery with HTTP client
+            elif server.transport_type in (
+                TransportType.STREAMABLE_HTTP,
+                TransportType.SSE,
+                TransportType.HTTP_SSE,  # Deprecated alias
+            ):
+                # Run discovery with HTTP client (works for all HTTP-based transports)
                 if not server.url:
                     raise ValueError(f"HTTP transport requires URL for server {server_id}")
 
@@ -496,8 +500,12 @@ class MCPServerService:
                         "capabilities": list(init_response.get("capabilities", {}).keys()),
                     }
 
-            elif server_config.transport_type == TransportType.HTTP_SSE:
-                # Test HTTP+SSE transport
+            elif server_config.transport_type in (
+                TransportType.STREAMABLE_HTTP,
+                TransportType.SSE,
+                TransportType.HTTP_SSE,  # Deprecated alias
+            ):
+                # Test HTTP-based transports (streamable_http, sse, http_sse)
                 if not server_config.url:
                     return {
                         "success": False,
@@ -505,7 +513,7 @@ class MCPServerService:
                         "discovered_tools": [],
                         "discovered_resources": [],
                         "discovered_prompts": [],
-                        "error": "URL is required for http_sse transport",
+                        "error": f"URL is required for {server_config.transport_type.value} transport",
                         "error_details": "Cannot test connection without a valid HTTP/HTTPS URL",
                     }
 
@@ -537,7 +545,7 @@ class MCPServerService:
                     "discovered_resources": [],
                     "discovered_prompts": [],
                     "error": f"Unsupported transport type: {server_config.transport_type}",
-                    "error_details": "Only 'stdio' and 'http_sse' transports are supported",
+                    "error_details": "Supported transports: stdio, streamable_http, sse",
                 }
 
             # Success - return discovered capabilities
@@ -652,7 +660,11 @@ class MCPServerService:
                 async with MCPStdioClient(config) as client:
                     await client.initialize()
 
-            elif server.transport_type == TransportType.HTTP_SSE:
+            elif server.transport_type in (
+                TransportType.STREAMABLE_HTTP,
+                TransportType.SSE,
+                TransportType.HTTP_SSE,  # Deprecated alias
+            ):
                 if not server.url:
                     raise ValueError(f"HTTP transport requires URL for server {server_id}")
 

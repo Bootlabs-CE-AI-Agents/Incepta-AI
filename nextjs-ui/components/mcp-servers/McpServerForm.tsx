@@ -38,11 +38,11 @@ export function McpServerForm({
     if (!defaultValues) {
       return {
         name: '',
-        transport_type: 'http_sse' as const,
+        transport_type: 'streamable_http' as const,  // Default to modern HTTP transport
         description: '',
         health_check_enabled: true,
         is_active: true,
-        // HTTP/SSE fields
+        // HTTP/SSE/WebSocket fields
         url: '',
         timeout: 30000,
         headers: {},
@@ -83,6 +83,7 @@ export function McpServerForm({
 
   const handleSubmit = async (data: MCPServerCreateData) => {
     try {
+      console.log('[McpServerForm] Form data passed validation:', data);
       // Transform env array to object for backend compatibility
       const transformedData = {
         ...data,
@@ -98,9 +99,15 @@ export function McpServerForm({
     }
   };
 
+  // Error handler to capture and log validation errors
+  const handleError = (errors: Record<string, unknown>) => {
+    console.error('[McpServerForm] Validation errors:', errors);
+    console.log('[McpServerForm] Current form values:', form.getValues());
+  };
+
   return (
     // @ts-expect-error - Zod type inference issue with default values
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+    <form onSubmit={form.handleSubmit(handleSubmit, handleError)} className="space-y-6">
       {/* Basic Information */}
       <div className="glass-card p-6 space-y-6">
         <div className="flex items-center gap-2 mb-4">
@@ -139,15 +146,20 @@ export function McpServerForm({
                 {...field}
                 className="w-full px-4 py-2 rounded-lg border border-border bg-white text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-blue"
               >
-                <option value="http_sse">HTTP+SSE (Server-Sent Events)</option>
-                <option value="stdio">stdio (Command-line)</option>
+                <option value="streamable_http">Streamable HTTP (Modern MCP - /mcp endpoints)</option>
+                <option value="sse">SSE (Server-Sent Events - /sse endpoints)</option>
+                <option value="websocket">WebSocket (ws:// or wss://)</option>
+                <option value="stdio">stdio (Local Command-line)</option>
               </select>
               {fieldState.error && (
                 <p className="text-sm text-destructive">{fieldState.error.message}</p>
               )}
               <p className="text-xs text-text-secondary">
-                {transportType === 'http_sse' && 'Persistent HTTP connection using Server-Sent Events'}
+                {transportType === 'streamable_http' && 'Modern HTTP MCP for /mcp endpoints (Exa AI, Brave Search, etc.)'}
+                {transportType === 'sse' && 'Server-Sent Events for legacy /sse endpoints'}
+                {transportType === 'websocket' && 'WebSocket transport for ws:// or wss:// endpoints'}
                 {transportType === 'stdio' && 'Local subprocess communication via stdin/stdout'}
+                {transportType === 'http_sse' && '⚠️ Deprecated - Please use Streamable HTTP or SSE instead'}
               </p>
             </div>
           )}
@@ -224,6 +236,7 @@ export function McpServerForm({
           // @ts-expect-error - Zod type inference issue with control prop
           <StdioConfig control={form.control} />
         ) : (
+          // HTTP-based transports (streamable_http, sse, websocket, http_sse) all use ConnectionConfig
           // @ts-expect-error - Zod type inference issue with control prop
           <ConnectionConfig control={form.control} />
         )}

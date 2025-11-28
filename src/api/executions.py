@@ -107,8 +107,12 @@ async def list_executions(
                 )
 
         # Apply status filter
+        # Map 'completed' to also include legacy 'success' status for backward compatibility
         if status_filter:
             status_list = [s.strip() for s in status_filter.split(",")]
+            # If 'completed' is in the filter, also match legacy 'success' status
+            if "completed" in status_list:
+                status_list.append("success")
             conditions.append(AgentTestExecution.status.in_(status_list))
 
         # Apply agent filter
@@ -156,12 +160,17 @@ async def list_executions(
             if execution.execution_time:
                 duration_ms = execution.execution_time.get("total_duration_ms")
 
+            # Map 'success' to 'completed' for backward compatibility
+            # Older records used 'success', new records use 'completed'
+            raw_status = execution.status or "unknown"
+            normalized_status = "completed" if raw_status == "success" else raw_status
+
             execution_list.append({
                 "id": str(execution.id),
                 "agent_id": str(execution.agent_id) if execution.agent_id else "",
                 "agent_name": agent_name,
                 "tenant_id": str(execution.tenant_id),
-                "status": execution.status or "unknown",
+                "status": normalized_status,
                 "duration_ms": duration_ms,
                 "started_at": execution.created_at.isoformat() if execution.created_at else "",
                 "completed_at": execution.created_at.isoformat() if execution.created_at else None,

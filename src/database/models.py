@@ -1884,13 +1884,36 @@ class AgentTestExecution(Base):
 class TransportType(str, Enum):
     """
     MCP server transport protocol types.
-    
+
+    These map directly to langchain-mcp-adapters transport types for clarity.
+    See: https://github.com/langchain-ai/langchain-mcp-adapters
+
     Attributes:
-        STDIO: Subprocess communication via stdin/stdout (JSON-RPC over pipes)
-        HTTP_SSE: HTTP with Server-Sent Events for streaming (future support)
+        STDIO: Subprocess communication via stdin/stdout (JSON-RPC over pipes).
+            Use for local MCP servers like npx-based or Docker containers.
+            Example: npx @modelcontextprotocol/server-filesystem
+
+        STREAMABLE_HTTP: Modern HTTP-based MCP transport for /mcp endpoints.
+            Use for hosted MCP servers like Exa AI, Smithery-hosted servers.
+            Example: https://mcp.exa.ai/mcp?exaApiKey=...
+
+        SSE: Server-Sent Events transport for /sse endpoints (legacy).
+            Use for MCP servers that expose an /sse endpoint specifically.
+            Example: https://mcp.example.com/sse
+
+        WEBSOCKET: WebSocket transport for real-time bidirectional MCP.
+            Use for MCP servers requiring persistent connections.
+            Requires: pip install mcp[ws] or pip install websockets
+            Example: wss://realtime.example.com/mcp
     """
     STDIO = "stdio"
-    HTTP_SSE = "http_sse"
+    STREAMABLE_HTTP = "streamable_http"
+    SSE = "sse"
+    WEBSOCKET = "websocket"
+
+    # Backward compatibility alias - will be removed in future version
+    # Reason: http_sse was ambiguous; now we have explicit sse vs streamable_http
+    HTTP_SSE = "http_sse"  # @deprecated: Use STREAMABLE_HTTP instead
 
 
 class MCPServerStatus(str, Enum):
@@ -2129,8 +2152,9 @@ class MCPServer(Base):
     # Constraints and indexes
     __table_args__ = (
         # CHECK constraints for enum validation
+        # Note: http_sse kept for backward compatibility during migration
         CheckConstraint(
-            "transport_type IN ('stdio', 'http_sse')",
+            "transport_type IN ('stdio', 'streamable_http', 'sse', 'websocket', 'http_sse')",
             name="ck_mcp_servers_transport_type"
         ),
         CheckConstraint(
